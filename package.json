@@ -1,0 +1,47 @@
+{
+  "name": "akinariportal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@badrap/bar-of-progress": "^0.2.1",
+    "@fortawesome/fontawesome-svg-core": "^6.1.2",
+    "@fortawesome/free-regular-svg-icons": "^6.1.2",
+    "@fortawesome/free-solid-svg-icons": "^6.1.2",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "airtable": "^0.11.1",
+    "cors": "^2.8.5",
+    "formik": "^2.2.9",
+    "framer-motion": "^4.1.17",
+    "generate-api-key": "^1.0.0",
+    "iconsax-react": "0.0.4",
+    "next": "^12.0.7",
+    "next-auth": "^4.10.0",
+    "next-transpile-modules": "^9.0.0",
+    "react": "17.0.2",
+    "react-accessible-accordion": "^4.0.0",
+    "react-collapsible": "^2.10.0",
+    "react-copy-to-clipboard": "^5.0.4",
+    "react-countdown": "^2.3.2",
+    "react-dom": "17.0.2",
+    "react-dropdown": "^1.9.2",
+    "react-external-link": "^1.2.2",
+    "react-haiku": "^2.0.3",
+    "react-hook-form": "^7.17.4",
+    "react-odometerjs": "^2.1.2",
+    "react-tippy": "^1.4.0",
+    "react-tooltip": "^4.2.21",
+    "socket.io": "^4.2.0",
+    "socket.io-client": "^4.2.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "eslint": "7.32.0",
+    "eslint-config-next": "11.1.0"
+  }
+}

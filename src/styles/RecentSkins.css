@@ -1,0 +1,70 @@
+.modeImg {
+  height: 20px;
+  width: 20px;
+  filter: brightness(0) saturate(100%) invert(33%) sepia(24%) saturate(349%)
+    hue-rotate(172deg) brightness(98%) contrast(89%);
+  user-select: none;
+  cursor: pointer;
+}
+
+.modeImg.active {
+  filter: brightness(0) saturate(100%) invert(84%) sepia(5%) saturate(2279%)
+    hue-rotate(183deg) brightness(88%) contrast(89%);
+}
+
+.homepageContainer .items .item.skins .content .name {
+  padding: 20px 0 0 0;
+}
+
+.item.skins .content .info {
+  display: flex;
+  flex-flow: row;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.item.skins .content .info .owner {
+  width: 100%;
+  font-size: 10.5pt;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #92a9c6;
+}
+
+.item.skins .content .info .owner img {
+  height: 20px;
+  width: 20px;
+  border-radius: 50vh;
+}
+
+.item.skins .content .info .gamemodes {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1px;
+}
+
+.item.skins .content .info .downloads {
+  display: flex;
+  flex-flow: row;
+  font-family: "Poppins";
+  font-weight: 500;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 10pt;
+  color: #92a9c6;
+  position: relative;
+}
+
+.item.skins .content .info .downloads i {
+  font-size: 20px;
+  position: relative;
+  right: -1px;
+  top: -2px;
+}

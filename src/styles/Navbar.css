@@ -1,0 +1,187 @@
+header {
+  display: flex;
+  align-items: center;
+  height: 4.2em;
+  position: fixed;
+  width: 100vw;
+  background-color: transparent /* var(--site-background-color) */;
+  /* box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0px 4px 6px -2px; */
+  z-index: 999;
+  padding: 0 6em;
+  box-sizing: border-box;
+  gap: 4.4em;
+  backdrop-filter: blur(14px);
+}
+
+.logoNavbar {
+  display: flex;
+  align-content: center;
+  cursor: pointer;
+}
+
+.navLinks {
+  color: #eee;
+  font-family: "Poppins";
+  display: flex;
+  gap: 2.2em;
+  margin: auto;
+  font-weight: 500;
+  list-style: none;
+  padding: 0;
+}
+
+.navLinks li {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.navLinks_link {
+  cursor: pointer !important;
+  transition: 0.2s ease-out;
+  position: relative;
+}
+
+.navLinks_link::after {
+  position: absolute;
+  content: "";
+  display: block;
+  width: 0%;
+  height: 2px;
+  border-radius: 100vh;
+  background: #eee;
+  transition: all 0.14s ease-in-out;
+}
+
+.navLinks li:hover > .navLinks_link::after {
+  width: 100%;
+  transition: all 0.14s ease-in-out;
+}
+
+.userInfo {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-end;
+  position: relative;
+  cursor: default;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.userInfo .userInfoContent {
+  position: relative;
+}
+
+.userInfo .userInfoContent .profileActions {
+  position: absolute;
+  display: flex;
+  flex-flow: column;
+  top: 3.2em;
+  right: 1px;
+  width: 9em;
+  padding: 5px;
+  gap: 1px;
+  border-radius: 10px;
+  background-color: var(--site-primary-color);
+  backdrop-filter: blur(2px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0px 4px 6px -2px;
+  z-index: 995;
+}
+
+.userInfo .userInfoContent .profileActions .item {
+  display: flex;
+  font-size: 11pt;
+  color: var(--navbar-text-color);
+  padding: 4px 12px;
+  text-align: left;
+  border-radius: 8px;
+  align-items: center;
+  gap: 8px;
+}
+
+.userInfo .userInfoContent .profileActions .item:hover {
+  background-color: #3f4a58;
+  color: var(--navbar-text-hover-color);
+}
+
+.userInfo .userInfoContent .profileActions .item:last-child {
+  color: var(--navbar-logout-text-color);
+}
+
+.userInfo .userInfoContent .profileActions .item:last-child:hover {
+  background-color: var(--navbar-logout-bg-color);
+  color: var(--navbar-logout-text-color);
+}
+
+.userBackground {
+  border-radius: 20px;
+}
+
+.userContent {
+  align-items: center;
+  display: flex;
+  cursor: pointer;
+}
+
+.userInfo_name {
+  align-self: center;
+  font-size: 1em;
+  color: #eee;
+  font-family: "Poppins";
+  font-weight: 500;
+  position: relative;
+  user-select: none;
+}
+
+.userInfo_name::after {
+  position: absolute;
+  content: "";
+  display: block;
+  width: 0%;
+  height: 2px;
+  border-radius: 100vh;
+  background: #eee;
+  transition: all 0.14s ease-in-out;
+}
+
+.userContent:hover > .userInfo_name::after {
+  width: 100%;
+  transition: all 0.14s ease-in-out;
+}
+
+.userInfo_image {
+  width: 2.6em;
+  border-radius: 50%;
+  margin: 0 0 0 12px;
+}
+
+.profileDropdown {
+  height: 200px;
+  width: 30px;
+  position: absolute;
+}
+
+.userLogin button {
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  color: #fff;
+  background-color: #414d5b;
+  fill: #fff;
+  font-weight: 400;
+  padding: 6px 14px;
+  border: 0px;
+  transition: 0.1s ease-out;
+  border-radius: 10px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.userLogin button:hover {
+  background-color: #607086b4 !important;
+  font-weight: 400;
+  transition: 0.1s ease-in;
+}

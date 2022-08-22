@@ -1,0 +1,50 @@
+.mobileNav {
+  display: none;
+  position: fixed;
+  bottom: 10px;
+  width: 100vw;
+  height: 4.2em;
+  z-index: 999;
+}
+
+.mobileNav .nav {
+  padding: 0 10px;
+  margin: auto;
+  display: flex;
+  flex-flow: row;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 100%;
+  border-radius: 100vh;
+  width: fit-content;
+  gap: 30px;
+  color: #ddd;
+  /* border: 1px solid hsla(219, 40%, 20%, 0.902); */
+  background-color: hsla(218, 16%, 13%, 0.7);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0px 4px 6px -2px;
+}
+
+.mobileNav .nav .item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 100vh;
+}
+
+.mobileNav .nav .item img {
+  width: 24px;
+  height: 24px;
+  border-radius: 100vh;
+}
+
+.mobileNav .nav .item.active {
+  background-color: var(--navbar-link-active-background-color);
+}
+
+.mobileNav .nav .item i {
+  font-size: 19pt;
+  margin-bottom: 2px;
+}
