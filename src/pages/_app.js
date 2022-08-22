@@ -1,5 +1,6 @@
 import { getSession } from "next-auth/react";
 import "../styles/styles.css";
+import "../styles/scrollbars.css";
 import "../styles/Navbar.css";
 import "../styles/MobileNavbar.css";
 import "../styles/RecentSkins.css";
@@ -60,6 +61,20 @@ function MyApp({ Component, pageProps, session, userStatus }) {
         ></meta>
         <meta name="twitter:site" content="@Akinari_osu" />
         <meta name="twitter:image:alt" content="Akinari Portal Logo" />
+        {/* Google tag (gtag.js) */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-RXYZ8EPLR2"
+        ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: ` window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-RXYZ8EPLR2');`,
+          }}
+        ></script>
 
         <link
           href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css"

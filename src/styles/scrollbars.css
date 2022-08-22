@@ -1,0 +1,26 @@
+/* SCROLLBAR */
+
+::-webkit-scrollbar {
+  width: 10px;
+  z-index: 6;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--site-background-users-page-color);
+  margin-top: 4.2em;
+  z-index: 6;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--site-secondary-color);
+  border-radius: 10px;
+  z-index: 6;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-color-hover);
+  z-index: 6;
+}

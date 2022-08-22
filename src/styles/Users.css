@@ -159,6 +159,12 @@
   color: #cee0f6;
 }
 
+.section .header .styles .viewStyle:focus,
+.section .header .styles .viewStyle:focus-visible {
+  outline: 0;
+  border: 0;
+}
+
 /* LIST VIEW */
 
 .section#skins .list {
@@ -444,7 +450,7 @@
 }
 
 .section#skins .grid .itemCreateSkin {
-  width: 18.5em;
+  width: calc(18.5em - 4px);
   display: flex;
   border-radius: 6px;
   flex-flow: row;
@@ -454,13 +460,12 @@
   border: 2px dashed #414a55;
   color: #76818d;
   text-transform: uppercase;
-  font-size: 11pt;
   font-weight: 500;
   user-select: none;
   cursor: pointer;
 }
 
-.section#skins .list .itemCreateSkin:hover {
+.section#skins .grid .itemCreateSkin:hover {
   border: 2px dashed #545c66;
   color: #8b97a6;
 }
