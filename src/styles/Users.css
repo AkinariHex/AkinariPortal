@@ -519,9 +519,15 @@
   color: #ddefff;
 }
 
-.tag.current {
+.tag:is(.current, .stream, .tech, .aim, .reading, .speed, .highAR, .lowAR, .tournaments, .highCS, .lowCS, .casual) {
   background-color: rgba(79, 93, 107, 1);
   color: #ddefff;
+}
+
+.tag.NM {
+  background-color: var(--mods-nm-bg);
+  color: var(--mods-nm-text);
+  font-weight: 500;
 }
 
 .tag.HD {
@@ -545,6 +551,12 @@
 .tag.EZ {
   background-color: var(--mods-ez-bg);
   color: var(--mods-ez-text);
+  font-weight: 500;
+}
+
+.tag:is(.FL, .troll) {
+  background-color: var(--mods-fl-bg);
+  color: var(--mods-fl-text);
   font-weight: 500;
 }
 

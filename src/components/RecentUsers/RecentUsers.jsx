@@ -10,9 +10,9 @@ function RecentUsers({ rUsers }) {
             <div
               key={index}
               className="item users"
-              /* onClick={() =>
+              onClick={() =>
                 window.open(`https://akinariportal.vercel.app/users/${user.ID}`)
-              } */
+              }
             >
               <div
                 className="header"

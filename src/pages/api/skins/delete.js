@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const session = await getSession({ req });
 
-    if (session && req.query.id) {
+    if (session && req.query.id && session.id == req.query.user) {
       base("Skins").destroy([req.query.id], function (err, deletedRecords) {
         if (err) {
           console.error(err);

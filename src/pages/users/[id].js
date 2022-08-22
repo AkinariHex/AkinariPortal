@@ -2,6 +2,7 @@ import { getSession } from "next-auth/react";
 import { useState } from "react";
 import ReactTooltip from "react-tooltip";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import {
   faGrip,
   faDownload,
@@ -16,8 +17,8 @@ function modifyDownloadCount(downloadCount, recordID) {
   fetch(`/api/skins/modifydownload?c=${downloadCount + 1}&id=${recordID}`);
 }
 
-async function deleteSkinFromDB(recordID) {
-  var data = await fetch(`/api/skins/delete?id=${recordID}`);
+async function deleteSkinFromDB(recordID, userid) {
+  var data = await fetch(`/api/skins/delete?id=${recordID}&user=${userid}`);
   data = await data.json();
   data.status === "done" && window.location.reload();
 }
@@ -158,6 +159,47 @@ export default function User({ session, userData, skinsData }) {
                             {skin.Tags.includes("current") && (
                               <div className="tag current">Currently Using</div>
                             )}
+                            {skin.Tags.includes("tournaments") && (
+                              <div className="tag tournaments">
+                                Using in Tournaments
+                              </div>
+                            )}
+                            {skin.Tags.includes("casual") && (
+                              <div className="tag casual">Casual</div>
+                            )}
+                            {skin.Tags.includes("aim") && (
+                              <div className="tag aim">Aim</div>
+                            )}
+                            {skin.Tags.includes("stream") && (
+                              <div className="tag stream">Stream</div>
+                            )}
+                            {skin.Tags.includes("tech") && (
+                              <div className="tag tech">Tech</div>
+                            )}
+                            {skin.Tags.includes("reading") && (
+                              <div className="tag reading">Reading</div>
+                            )}
+                            {skin.Tags.includes("speed") && (
+                              <div className="tag speed">Speed</div>
+                            )}
+                            {skin.Tags.includes("highAR") && (
+                              <div className="tag highAR">HighAR</div>
+                            )}
+                            {skin.Tags.includes("lowAR") && (
+                              <div className="tag lowAR">LowAR</div>
+                            )}
+                            {skin.Tags.includes("highCS") && (
+                              <div className="tag highCS">HighCS</div>
+                            )}
+                            {skin.Tags.includes("lowCS") && (
+                              <div className="tag lowCS">LowCS</div>
+                            )}
+                            {skin.Tags.includes("troll") && (
+                              <div className="tag troll">Troll</div>
+                            )}
+                            {skin.Tags.includes("NM") && (
+                              <div className="tag NM">NM</div>
+                            )}
                             {skin.Tags.includes("HD") && (
                               <div className="tag HD">HD</div>
                             )}
@@ -169,6 +211,9 @@ export default function User({ session, userData, skinsData }) {
                             )}
                             {skin.Tags.includes("EZ") && (
                               <div className="tag EZ">EZ</div>
+                            )}
+                            {skin.Tags.includes("FL") && (
+                              <div className="tag FL">FL</div>
                             )}
                           </div>
                         )}
@@ -189,12 +234,18 @@ export default function User({ session, userData, skinsData }) {
                           className="button"
                           icon={faTrash}
                           style={{ color: "#ffb2b2" }}
-                          onClick={() => deleteSkinFromDB(skin.RecordID)}
+                          onClick={() =>
+                            deleteSkinFromDB(skin.RecordID, skin.Owner)
+                          }
                         />
                       </div>
                     )}
                     <div className="buttons">
-                      <FontAwesomeIcon className="button" icon={faShare} />
+                      <CopyToClipboard
+                        text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                      >
+                        <FontAwesomeIcon className="button" icon={faShare} />
+                      </CopyToClipboard>
                       <FontAwesomeIcon
                         className="button"
                         icon={faDownload}
@@ -232,6 +283,47 @@ export default function User({ session, userData, skinsData }) {
                         {skin.Tags.includes("current") && (
                           <div className="tag current">Currently Using</div>
                         )}
+                        {skin.Tags.includes("tournaments") && (
+                          <div className="tag tournaments">
+                            Using in Tournaments
+                          </div>
+                        )}
+                        {skin.Tags.includes("casual") && (
+                          <div className="tag casual">Casual</div>
+                        )}
+                        {skin.Tags.includes("aim") && (
+                          <div className="tag aim">Aim</div>
+                        )}
+                        {skin.Tags.includes("stream") && (
+                          <div className="tag stream">Stream</div>
+                        )}
+                        {skin.Tags.includes("tech") && (
+                          <div className="tag tech">Tech</div>
+                        )}
+                        {skin.Tags.includes("reading") && (
+                          <div className="tag reading">Reading</div>
+                        )}
+                        {skin.Tags.includes("speed") && (
+                          <div className="tag speed">Speed</div>
+                        )}
+                        {skin.Tags.includes("highAR") && (
+                          <div className="tag highAR">HighAR</div>
+                        )}
+                        {skin.Tags.includes("lowAR") && (
+                          <div className="tag lowAR">LowAR</div>
+                        )}
+                        {skin.Tags.includes("highCS") && (
+                          <div className="tag highCS">HighCS</div>
+                        )}
+                        {skin.Tags.includes("lowCS") && (
+                          <div className="tag lowCS">LowCS</div>
+                        )}
+                        {skin.Tags.includes("troll") && (
+                          <div className="tag troll">Troll</div>
+                        )}
+                        {skin.Tags.includes("NM") && (
+                          <div className="tag NM">NM</div>
+                        )}
                         {skin.Tags.includes("HD") && (
                           <div className="tag HD">HD</div>
                         )}
@@ -243,6 +335,9 @@ export default function User({ session, userData, skinsData }) {
                         )}
                         {skin.Tags.includes("EZ") && (
                           <div className="tag EZ">EZ</div>
+                        )}
+                        {skin.Tags.includes("FL") && (
+                          <div className="tag FL">FL</div>
                         )}
                       </div>
                     )}
@@ -308,7 +403,11 @@ export default function User({ session, userData, skinsData }) {
                         </div>
                       )}
                       <div className="buttons">
-                        <FontAwesomeIcon className="button" icon={faShare} />
+                        <CopyToClipboard
+                          text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                        >
+                          <FontAwesomeIcon className="button" icon={faShare} />
+                        </CopyToClipboard>
                         <FontAwesomeIcon
                           className="button"
                           icon={faDownload}

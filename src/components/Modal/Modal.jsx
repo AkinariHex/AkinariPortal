@@ -9,6 +9,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   const [inputAuthorError, setInputAuthorError] = useState(false);
   const [inputURLError, setInputURLError] = useState(false);
   const [inputURLNot, setInputURLNot] = useState(false);
+  const [inputBgURLNot, setInputBgURLNot] = useState(false);
 
   const [skinName, setSkinName] = useState(
     skinToEdit != null ? skinToEdit?.Name : ""
@@ -28,10 +29,24 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   );
   const [availableTags, setAvailableTags] = useState([
     "current",
+    "tournaments",
+    "casual",
+    "aim",
+    "stream",
+    "tech",
+    "reading",
+    "speed",
+    "highAR",
+    "lowAR",
+    "highCS",
+    "lowCS",
+    "troll",
+    "NM",
     "HD",
     "HR",
     "DT",
     "EZ",
+    "FL",
   ]);
 
   const [selectedModes, setSelectedModes] = useState(
@@ -191,6 +206,9 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                 <span className={styles.advice}>
                   &#x0028;Preferably in-game screen&#x0029;
                 </span>
+                {inputBgURLNot && (
+                  <span className={styles.error}>Invalid URL</span>
+                )}
               </label>
               <input
                 type="url"
@@ -223,13 +241,17 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                           cursor: "pointer",
                         }}
                         onClick={() => {
-                          setAvailableTags((prev) => [...prev, tag].sort());
+                          setAvailableTags((prev) => [...prev, tag]);
                           setSelectedTags(
                             selectedTags.filter((item) => item !== tag)
                           );
                         }}
                       >
-                        {tag === "current" ? "Currently Using" : tag}
+                        {tag === "current"
+                          ? "Currently Using"
+                          : tag === "tournaments"
+                          ? "Using in Tournaments"
+                          : tag[0].toUpperCase() + tag.substring(1)}
                         <FontAwesomeIcon icon={faXmark} />
                       </div>
                     );
@@ -242,13 +264,17 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                         className={`tag ${tag}`}
                         style={{ cursor: "pointer" }}
                         onClick={() => {
-                          setSelectedTags((prev) => [...prev, tag].sort());
+                          setSelectedTags((prev) => [...prev, tag]);
                           setAvailableTags(
                             availableTags.filter((item) => item !== tag)
                           );
                         }}
                       >
-                        {tag === "current" ? "Currently Using" : tag}
+                        {tag === "current"
+                          ? "Currently Using"
+                          : tag === "tournaments"
+                          ? "Using in Tournaments"
+                          : tag[0].toUpperCase() + tag.substring(1)}
                       </div>
                     );
                   })}
@@ -267,7 +293,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                         className={`tag skinMode`}
                         style={{ cursor: "pointer", gap: "5px" }}
                         onClick={() => {
-                          setAvailableModes((prev) => [...prev, tag].sort());
+                          setAvailableModes((prev) => [...prev, tag]);
                           setSelectedModes(
                             selectedModes.filter((item) => item !== tag)
                           );
@@ -314,7 +340,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                         className={`tag skinMode`}
                         style={{ cursor: "pointer", gap: "5px" }}
                         onClick={() => {
-                          setSelectedModes((prev) => [...prev, tag].sort());
+                          setSelectedModes((prev) => [...prev, tag]);
                           setAvailableModes(
                             availableModes.filter((item) => item !== tag)
                           );
