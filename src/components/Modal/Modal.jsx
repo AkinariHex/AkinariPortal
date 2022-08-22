@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { useClickOutside } from "react-haiku";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import styles from "./Modal.module.css";
@@ -7,6 +8,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   const [inputNameError, setInputNameError] = useState(false);
   const [inputAuthorError, setInputAuthorError] = useState(false);
   const [inputURLError, setInputURLError] = useState(false);
+  const [inputURLNot, setInputURLNot] = useState(false);
 
   const [skinName, setSkinName] = useState(
     skinToEdit != null ? skinToEdit?.Name : ""
@@ -47,10 +49,17 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
     skinAuthor === "" ? setInputAuthorError(true) : setInputAuthorError(false);
     skinURL === "" ? setInputURLError(true) : setInputURLError(false);
 
+    const matchURL = skinURL.match(
+      /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/
+    );
+
+    !matchURL ? setInputURLNot(true) : setInputURLNot(false);
+
     if (
-      !inputNameError &&
-      !inputAuthorError &&
-      !inputURLError &&
+      skinName !== "" &&
+      skinAuthor !== "" &&
+      skinURL !== "" &&
+      matchURL &&
       selectedModes !== []
     ) {
       var values = {
@@ -78,6 +87,8 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
       submit = await submit.json();
 
       submit.status === "done" && window.location.reload();
+    } else {
+      return;
     }
   }
 
@@ -92,9 +103,15 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
     }
   }, []);
 
+  const ref = useRef(null);
+  useClickOutside(ref, () => {
+    openModal(false);
+    skinToEditStatus();
+  });
+
   return (
     <div className={styles.modal}>
-      <div className={styles.modalMainDiv}>
+      <div className={styles.modalMainDiv} ref={ref}>
         <div className={styles.modalHeader}>
           <span>{skinToEdit != null ? "Edit skin" : "Add a new skin"}</span>
           <FontAwesomeIcon
@@ -156,6 +173,9 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                 {inputURLError && (
                   <span className={styles.error}>Cannot be empty</span>
                 )}
+                {inputURLNot && !inputURLError && (
+                  <span className={styles.error}>Invalid URL</span>
+                )}
               </label>
               <input
                 type="url"
@@ -166,7 +186,12 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
               />
             </div>
             <div className={styles.field}>
-              <label htmlFor="skinBgURL">Background Image URL</label>
+              <label htmlFor="skinBgURL">
+                Background Image URL{" "}
+                <span className={styles.advice}>
+                  &#x0028;Preferably in-game screen&#x0029;
+                </span>
+              </label>
               <input
                 type="url"
                 name="skinBgURL"

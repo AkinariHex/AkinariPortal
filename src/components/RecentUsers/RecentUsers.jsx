@@ -7,7 +7,13 @@ function RecentUsers({ rUsers }) {
       <div className="items">
         {rUsers.map((user, index) => {
           return (
-            <div key={index} className="item users">
+            <div
+              key={index}
+              className="item users"
+              /* onClick={() =>
+                window.open(`https://akinariportal.vercel.app/users/${user.ID}`)
+              } */
+            >
               <div
                 className="header"
                 style={{ backgroundImage: `url(${user.Banner})` }}

@@ -21,7 +21,14 @@ function RecentSkins({ rSkins }) {
               <div className="content">
                 <div className="name">{skin.Name}</div>
                 <div className="info">
-                  <div className="owner">
+                  <div
+                    className="owner"
+                    onClick={() =>
+                      window.open(
+                        `https://akinariportal.vercel.app/users/${user.ID}`
+                      )
+                    }
+                  >
                     <img
                       src={`http://s.ppy.sh/a/${skin.Owner}`}
                       alt={skin.Owner}
