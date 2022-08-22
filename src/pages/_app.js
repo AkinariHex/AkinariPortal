@@ -58,8 +58,8 @@ function MyApp({ Component, pageProps, session, userStatus }) {
           name="twitter:image"
           content="https://akinariosu.s-ul.eu/7Gcmq9qk"
         ></meta>
-        <meta name="twitter:site" content="@akinari_osu" />
-        <meta name="twitter:image:alt" content="OTMD Logo" />
+        <meta name="twitter:site" content="@Akinari_osu" />
+        <meta name="twitter:image:alt" content="Akinari Portal Logo" />
 
         <link
           href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css"
