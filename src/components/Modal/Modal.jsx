@@ -14,8 +14,14 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   const [skinName, setSkinName] = useState(
     skinToEdit != null ? skinToEdit?.Name : ""
   );
+  const [skinNameLength, setSkinNameLength] = useState(
+    skinToEdit != null ? skinToEdit?.Name.length : 0
+  );
   const [skinAuthor, setSkinAuthor] = useState(
     skinToEdit != null ? skinToEdit?.Creator : ""
+  );
+  const [skinAuthorLength, setSkinAuthorLength] = useState(
+    skinToEdit != null ? skinToEdit?.Creator.length : 0
   );
   const [skinURL, setSkinURL] = useState(
     skinToEdit != null ? skinToEdit?.URL : ""
@@ -31,6 +37,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
     "current",
     "tournaments",
     "casual",
+    "old",
     "aim",
     "stream",
     "tech",
@@ -72,7 +79,9 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
 
     if (
       skinName !== "" &&
+      skinNameLength <= 45 &&
       skinAuthor !== "" &&
+      skinAuthorLength <= 25 &&
       skinURL !== "" &&
       matchURL &&
       selectedModes !== []
@@ -157,13 +166,28 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                   <span className={styles.error}>Cannot be empty</span>
                 )}
               </label>
-              <input
-                type="text"
-                name="skinName"
-                id="skinName"
-                value={skinName}
-                onChange={(e) => setSkinName(e.target.value)}
-              />
+              <div className={styles.complexField}>
+                <input
+                  type="text"
+                  name="skinName"
+                  id="skinName"
+                  value={skinName}
+                  onChange={(e) => {
+                    setSkinName(e.target.value);
+                    setSkinNameLength(e.target.value.length);
+                  }}
+                />
+                <div className={styles.counter}>
+                  {skinNameLength > 45 ? (
+                    <div id="actualCount" style={{ color: "#ffbedc" }}>
+                      {skinNameLength}
+                    </div>
+                  ) : (
+                    <div id="actualCount">{skinNameLength}</div>
+                  )}
+                  <div id={styles.maxCount}>45</div>
+                </div>
+              </div>
             </div>
             <div className={styles.field}>
               <label htmlFor="skinAuthor">
@@ -172,13 +196,28 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                   <span className={styles.error}>Cannot be empty</span>
                 )}
               </label>
-              <input
-                type="text"
-                name="skinAuthor"
-                id="skinAuthor"
-                value={skinAuthor}
-                onChange={(e) => setSkinAuthor(e.target.value)}
-              />
+              <div className={styles.complexField}>
+                <input
+                  type="text"
+                  name="skinAuthor"
+                  id="skinAuthor"
+                  value={skinAuthor}
+                  onChange={(e) => {
+                    setSkinAuthor(e.target.value);
+                    setSkinAuthorLength(e.target.value.length);
+                  }}
+                />
+                <div className={styles.counter}>
+                  {skinAuthorLength > 25 ? (
+                    <div id="actualCount" style={{ color: "#ffbedc" }}>
+                      {skinAuthorLength}
+                    </div>
+                  ) : (
+                    <div id="actualCount">{skinAuthorLength}</div>
+                  )}
+                  <div id={styles.maxCount}>25</div>
+                </div>
+              </div>
             </div>
           </div>
           <div className={styles.row}>

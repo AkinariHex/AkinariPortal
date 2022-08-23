@@ -1,6 +1,7 @@
 import { getSession } from "next-auth/react";
 import "../styles/styles.css";
 import "../styles/scrollbars.css";
+import "../styles/tags.css";
 import "../styles/Navbar.css";
 import "../styles/MobileNavbar.css";
 import "../styles/RecentSkins.css";
@@ -31,7 +32,7 @@ function MyApp({ Component, pageProps, session, userStatus }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         {/* HTML */}
         <title>Akinari Portal</title>
-        <meta name="description" content="Just a cool skins portal!" />
+        <meta name="description" content="Another osu! skins website!" />
         <meta name="author" content="Akinari" />
         <meta name="copyright" content="Akinari" />
         <meta name="keywords" content="Akinari Portal, Portal, Akinari, osu" />
@@ -41,7 +42,7 @@ function MyApp({ Component, pageProps, session, userStatus }) {
         <meta property="og:url" content="https://akinariportal.vercel.app/" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Akinari Portal" />
-        <meta property="og:description" content="Just a cool skins portal!" />
+        <meta property="og:description" content="Another osu! skins website!" />
         <meta
           property="og:image"
           content="https://akinariosu.s-ul.eu/7Gcmq9qk"
@@ -54,7 +55,10 @@ function MyApp({ Component, pageProps, session, userStatus }) {
           content="https://akinariportal.vercel.app/"
         />
         <meta name="twitter:title" content="Akinari Portal" />
-        <meta name="twitter:description" content="Just a cool skins portal!" />
+        <meta
+          name="twitter:description"
+          content="Another osu! skins website!"
+        />
         <meta
           name="twitter:image"
           content="https://akinariosu.s-ul.eu/7Gcmq9qk"

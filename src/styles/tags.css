@@ -1,0 +1,83 @@
+.item .tags .tag,
+.tag {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  font-size: 8pt;
+  font-weight: 400;
+  padding: 2px 10px;
+  border-radius: 50vh;
+  user-select: none;
+  text-align: center;
+}
+
+.tag.skinMode {
+  background-color: rgba(79, 93, 107, 0.6);
+  color: #ddefff;
+}
+
+.tag:is(.current, .stream, .tech, .aim, .reading, .speed, .highAR, .lowAR, .tournaments, .highCS, .lowCS, .casual, .old) {
+  background-color: rgba(79, 93, 107, 1);
+  color: #ddefff;
+}
+
+.tag.NM {
+  box-sizing: border-box;
+  background-color: var(--mods-nm-bg);
+  color: var(--mods-nm-text);
+  font-weight: 500;
+}
+
+.tag.NM.gridTag {
+  background-color: var(--mods-nm-bg-grid);
+}
+
+.tag.HD {
+  background-color: var(--mods-hd-bg);
+  color: var(--mods-hd-text);
+  font-weight: 500;
+}
+
+.tag.HD.gridTag {
+  background-color: var(--mods-hd-bg-grid);
+}
+
+.tag.HR {
+  background-color: var(--mods-hr-bg);
+  color: var(--mods-hr-text);
+  font-weight: 500;
+}
+
+.tag.HR.gridTag {
+  background-color: var(--mods-hr-bg-grid);
+}
+
+.tag.DT {
+  background-color: var(--mods-dt-bg);
+  color: var(--mods-dt-text);
+  font-weight: 500;
+}
+
+.tag.DT.gridTag {
+  background-color: var(--mods-dt-bg-grid);
+}
+
+.tag.EZ {
+  background-color: var(--mods-ez-bg);
+  color: var(--mods-ez-text);
+  font-weight: 500;
+}
+
+.tag.EZ.gridTag {
+  background-color: var(--mods-ez-bg-grid);
+}
+
+.tag:is(.FL, .troll) {
+  background-color: var(--mods-fl-bg);
+  color: var(--mods-fl-text);
+  font-weight: 500;
+}
+
+.tag:is(.FL, .troll).gridTag {
+  background-color: var(--mods-fl-bg-grid);
+}

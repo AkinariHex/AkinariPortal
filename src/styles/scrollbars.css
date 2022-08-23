@@ -3,13 +3,13 @@
 ::-webkit-scrollbar {
   width: 10px;
   z-index: 6;
+  background: var(--site-background-users-page-color);
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: var(--site-background-users-page-color);
-  margin-top: 4.2em;
   z-index: 6;
+  margin-top: 4.2em;
 }
 
 /* Handle */
@@ -21,6 +21,6 @@
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-color-hover);
+  background: var(--site-primary-color);
   z-index: 6;
 }

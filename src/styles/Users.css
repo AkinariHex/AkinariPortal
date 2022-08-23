@@ -198,7 +198,7 @@
   height: 100%;
   display: flex;
   flex-flow: row wrap;
-  gap: 0 4px;
+  gap: 0 5px;
   align-items: center;
   user-select: none;
   margin: 0 0 1px 1px;
@@ -302,11 +302,11 @@
   flex-flow: row wrap;
   width: 100%;
   gap: 14px 2px;
-  justify-content: space-around;
+  justify-content: space-between;
 }
 
 .section#skins .grid .item {
-  width: 18.5em;
+  width: 18.8em;
   height: 14em;
   border-radius: 6px;
   display: flex;
@@ -366,11 +366,12 @@
 .section#skins .grid .item .tags {
   display: flex;
   flex-flow: row wrap;
-  position: absolute;
-  top: 2px;
-  left: 2px;
   gap: 4px;
   z-index: 1;
+  width: 100%;
+  margin: 0 0 auto 0;
+  padding: 3px;
+  box-sizing: border-box;
 }
 
 .section#skins .grid .item .info {
@@ -450,7 +451,8 @@
 }
 
 .section#skins .grid .itemCreateSkin {
-  width: calc(18.5em - 4px);
+  width: calc(18.8em - 4px);
+  height: calc(14em - 4px);
   display: flex;
   border-radius: 6px;
   flex-flow: row;
@@ -504,65 +506,6 @@
   display: flex;
   flex-flow: row wrap;
   gap: 4px;
-}
-
-.item .tags .tag,
-.tag {
-  display: flex;
-  flex-flow: row;
-  align-items: center;
-  font-size: 8pt;
-  font-weight: 400;
-  padding: 2px 10px;
-  border-radius: 50vh;
-  user-select: none;
-  text-align: center;
-}
-
-.tag.skinMode {
-  background-color: rgba(79, 93, 107, 0.6);
-  color: #ddefff;
-}
-
-.tag:is(.current, .stream, .tech, .aim, .reading, .speed, .highAR, .lowAR, .tournaments, .highCS, .lowCS, .casual) {
-  background-color: rgba(79, 93, 107, 1);
-  color: #ddefff;
-}
-
-.tag.NM {
-  background-color: var(--mods-nm-bg);
-  color: var(--mods-nm-text);
-  font-weight: 500;
-}
-
-.tag.HD {
-  background-color: var(--mods-hd-bg);
-  color: var(--mods-hd-text);
-  font-weight: 500;
-}
-
-.tag.HR {
-  background-color: var(--mods-hr-bg);
-  color: var(--mods-hr-text);
-  font-weight: 500;
-}
-
-.tag.DT {
-  background-color: var(--mods-dt-bg);
-  color: var(--mods-dt-text);
-  font-weight: 500;
-}
-
-.tag.EZ {
-  background-color: var(--mods-ez-bg);
-  color: var(--mods-ez-text);
-  font-weight: 500;
-}
-
-.tag:is(.FL, .troll) {
-  background-color: var(--mods-fl-bg);
-  color: var(--mods-fl-text);
-  font-weight: 500;
 }
 
 @media screen and (max-width: 1100px) {

@@ -31,16 +31,22 @@
   /* MODS COLORS */
   --mods-nm-text: hsl(226, 99%, 65%);
   --mods-nm-bg: hsla(226, 99%, 65%, 0.2);
+  --mods-nm-bg-grid: #263b7e;
   --mods-hd-text: hsl(43, 98%, 60%);
   --mods-hd-bg: hsla(43, 98%, 60%, 0.2);
+  --mods-hd-bg-grid: #7d611a;
   --mods-hr-text: hsl(0, 100%, 69%);
   --mods-hr-bg: hsla(0, 100%, 69%, 0.2);
+  --mods-hr-bg-grid: #803232;
   --mods-ez-text: hsl(120, 100%, 50%);
   --mods-ez-bg: hsla(120, 100%, 50%, 0.1);
+  --mods-ez-bg-grid: #008000;
   --mods-fl-text: hsl(0, 0%, 0%);
   --mods-fl-bg: hsla(0, 0%, 0%, 0.2);
+  --mods-fl-bg-grid: hsla(0, 0%, 0%, 0.4);
   --mods-dt-text: hsl(267, 97%, 73%);
   --mods-dt-bg: hsla(267, 97%, 73%, 0.2);
+  --mods-dt-bg-grid: #593b7d;
   --mods-fm-text: hsl(101, 38%, 63%);
   --mods-fm-bg: hsla(101, 38%, 63%, 0.2);
   --mods-tb-text: hsl(191, 26%, 57%);
@@ -127,7 +133,6 @@ a:visited {
   border-radius: 0.7em;
   background-color: var(--site-secondary-color);
   user-select: none;
-  cursor: pointer;
 }
 
 .homepageContainer .items .item.users {

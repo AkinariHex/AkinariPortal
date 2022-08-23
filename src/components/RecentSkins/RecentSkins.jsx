@@ -7,11 +7,7 @@ function RecentSkins({ rSkins }) {
       <div className="items">
         {rSkins.map((skin, index) => {
           return (
-            <div
-              key={index}
-              className="item skins"
-              onClick={() => window.open(skin.URL, "_blank")}
-            >
+            <div key={index} className="item skins">
               <div
                 className="header"
                 style={{ backgroundImage: `url(${skin.Banner})` }}
@@ -19,21 +15,22 @@ function RecentSkins({ rSkins }) {
                 <div className="dimForBG"></div>
               </div>
               <div className="content">
-                <div className="name">{skin.Name}</div>
+                <div
+                  className="name"
+                  onClick={() => window.open(skin.URL, "_blank")}
+                >
+                  {skin.Name}
+                </div>
                 <div className="info">
-                  <div
-                    className="owner"
-                    onClick={() =>
-                      window.open(
-                        `https://akinariportal.vercel.app/users/${user.ID}`
-                      )
-                    }
-                  >
+                  <div className="owner">
                     <img
                       src={`http://s.ppy.sh/a/${skin.Owner}`}
                       alt={skin.Owner}
+                      onClick={() => window.open(`/users/${skin.Owner}`)}
                     />{" "}
-                    <span>{skin.OwnerName}</span>
+                    <span onClick={() => window.open(`/users/${skin.Owner}`)}>
+                      {skin.OwnerName}
+                    </span>
                   </div>
                   <div className="rightSide">
                     <div className="downloads">
