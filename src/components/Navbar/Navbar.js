@@ -2,7 +2,8 @@ import { signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 import NavLink from "../NavLink/NavLink";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useClickOutside } from "react-haiku";
 import {
   Home2,
   Cup,
@@ -21,6 +22,13 @@ export default function Navbar({ session, userStatus }) {
     open: { opacity: 1, y: 0, display: "block" },
     closed: { opacity: 0, y: -10, display: "none" },
   };
+
+  const ref = useRef(null);
+  useClickOutside(ref, () => {
+    setTimeout(() => {
+      if (isDropdownOpen) setIsDropdownOpen(false);
+    }, 100);
+  });
 
   return (
     <>
@@ -93,6 +101,7 @@ export default function Navbar({ session, userStatus }) {
                 animate={isDropdownOpen ? "open" : "closed"}
                 variants={variants}
                 transition={{ duration: 0.2 }}
+                ref={ref}
               >
                 <Link href={`/users/${session.id}`}>
                   <div

@@ -139,244 +139,9 @@ export default function User({ session, userData, skinsData }) {
             {skinView === "list" ? (
               <div className="list">
                 {skinsData.map((skin, index) => {
-                  return (
-                    <div className="item" key={index} id={skin.RecordID}>
-                      <div className="about">
-                        <div className="title">
-                          <div className="name">{skin.Name}</div>
-                          <div className="author">by {skin.Creator}</div>
-                        </div>
-                        <div className="info">
-                          <div className="gamemodes">
-                            <img
-                              className={`skinMode ${
-                                skin.Modes.includes("osu!standard")
-                                  ? "active"
-                                  : ""
-                              }`}
-                              src="/img/modes/mode-osu.png"
-                            />
-                            <img
-                              className={`skinMode ${
-                                skin.Modes.includes("osu!mania") ? "active" : ""
-                              }`}
-                              src="/img/modes/mode-mania.png"
-                            />
-                            <img
-                              className={`skinMode ${
-                                skin.Modes.includes("osu!taiko") ? "active" : ""
-                              }`}
-                              src="/img/modes/mode-taiko.png"
-                            />
-                            <img
-                              className={`skinMode ${
-                                skin.Modes.includes("osu!ctb") ? "active" : ""
-                              }`}
-                              src="/img/modes/mode-fruits.png"
-                              style={{ rotate: "-90deg" }}
-                            />
-                          </div>
-                          <div className="downloads">
-                            <i className="bx bxs-download"></i>
-                            {skin.Downloads}
-                          </div>
-                          {skin.Tags && (
-                            <div className="tags">
-                              {skin.Tags.includes("current") && (
-                                <div className="tag current">
-                                  Currently Using
-                                </div>
-                              )}
-                              {skin.Tags.includes("tournaments") && (
-                                <div className="tag tournaments">
-                                  Using in Tournaments
-                                </div>
-                              )}
-                              {skin.Tags.includes("casual") && (
-                                <div className="tag casual">Casual</div>
-                              )}
-                              {skin.Tags.includes("old") && (
-                                <div className="tag old">Old</div>
-                              )}
-                              {skin.Tags.includes("aim") && (
-                                <div className="tag aim">Aim</div>
-                              )}
-                              {skin.Tags.includes("stream") && (
-                                <div className="tag stream">Stream</div>
-                              )}
-                              {skin.Tags.includes("tech") && (
-                                <div className="tag tech">Tech</div>
-                              )}
-                              {skin.Tags.includes("reading") && (
-                                <div className="tag reading">Reading</div>
-                              )}
-                              {skin.Tags.includes("speed") && (
-                                <div className="tag speed">Speed</div>
-                              )}
-                              {skin.Tags.includes("highAR") && (
-                                <div className="tag highAR">HighAR</div>
-                              )}
-                              {skin.Tags.includes("lowAR") && (
-                                <div className="tag lowAR">LowAR</div>
-                              )}
-                              {skin.Tags.includes("highCS") && (
-                                <div className="tag highCS">HighCS</div>
-                              )}
-                              {skin.Tags.includes("lowCS") && (
-                                <div className="tag lowCS">LowCS</div>
-                              )}
-                              {skin.Tags.includes("troll") && (
-                                <div className="tag troll">Troll</div>
-                              )}
-                              {skin.Tags.includes("NM") && (
-                                <div className="tag NM">NM</div>
-                              )}
-                              {skin.Tags.includes("HD") && (
-                                <div className="tag HD">HD</div>
-                              )}
-                              {skin.Tags.includes("HR") && (
-                                <div className="tag HR">HR</div>
-                              )}
-                              {skin.Tags.includes("DT") && (
-                                <div className="tag DT">DT</div>
-                              )}
-                              {skin.Tags.includes("EZ") && (
-                                <div className="tag EZ">EZ</div>
-                              )}
-                              {skin.Tags.includes("FL") && (
-                                <div className="tag FL">FL</div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {session && session?.id === userData.ID && (
-                        <div className="adminButtons">
-                          <FontAwesomeIcon
-                            className="button"
-                            icon={faPen}
-                            style={{ color: "#fee7ad" }}
-                            onClick={() => {
-                              setModalIsOpen(true);
-                              setModalSkinEdit(skin);
-                            }}
-                          />
-                          <FontAwesomeIcon
-                            className="button"
-                            icon={faTrash}
-                            style={{ color: "#ffb2b2" }}
-                            onClick={() =>
-                              deleteSkinFromDB(skin.RecordID, skin.Owner)
-                            }
-                          />
-                        </div>
-                      )}
-                      <div className="buttons">
-                        <CopyToClipboard
-                          text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
-                          onCopy={showCopyAlert}
-                        >
-                          <FontAwesomeIcon className="button" icon={faShare} />
-                        </CopyToClipboard>
-                        <FontAwesomeIcon
-                          className="button"
-                          icon={faDownload}
-                          onClick={() => {
-                            modifyDownloadCount(skin.Downloads, skin.RecordID);
-                            window.open(skin.URL, "_blank");
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-                {session && session?.id === userData.ID && (
-                  <div
-                    className="item createSkin"
-                    onClick={() => setModalIsOpen(true)}
-                  >
-                    <span>Add Skin</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="grid">
-                {skinsData.map((skin, index) => {
-                  return (
-                    <div
-                      className="item"
-                      key={index}
-                      style={{
-                        backgroundImage: `url('${skin.Banner}')`,
-                      }}
-                    >
-                      {skin.Tags && (
-                        <div className="tags">
-                          {skin.Tags.includes("current") && (
-                            <div className="tag current">Currently Using</div>
-                          )}
-                          {skin.Tags.includes("tournaments") && (
-                            <div className="tag tournaments">
-                              Using in Tournaments
-                            </div>
-                          )}
-                          {skin.Tags.includes("casual") && (
-                            <div className="tag casual">Casual</div>
-                          )}
-                          {skin.Tags.includes("old") && (
-                            <div className="tag old">Old</div>
-                          )}
-                          {skin.Tags.includes("aim") && (
-                            <div className="tag aim">Aim</div>
-                          )}
-                          {skin.Tags.includes("stream") && (
-                            <div className="tag stream">Stream</div>
-                          )}
-                          {skin.Tags.includes("tech") && (
-                            <div className="tag tech">Tech</div>
-                          )}
-                          {skin.Tags.includes("reading") && (
-                            <div className="tag reading">Reading</div>
-                          )}
-                          {skin.Tags.includes("speed") && (
-                            <div className="tag speed">Speed</div>
-                          )}
-                          {skin.Tags.includes("highAR") && (
-                            <div className="tag highAR">HighAR</div>
-                          )}
-                          {skin.Tags.includes("lowAR") && (
-                            <div className="tag lowAR">LowAR</div>
-                          )}
-                          {skin.Tags.includes("highCS") && (
-                            <div className="tag highCS">HighCS</div>
-                          )}
-                          {skin.Tags.includes("lowCS") && (
-                            <div className="tag lowCS">LowCS</div>
-                          )}
-                          {skin.Tags.includes("troll") && (
-                            <div className="tag troll">Troll</div>
-                          )}
-                          {skin.Tags.includes("NM") && (
-                            <div className="tag NM gridTag">NM</div>
-                          )}
-                          {skin.Tags.includes("HD") && (
-                            <div className="tag HD gridTag">HD</div>
-                          )}
-                          {skin.Tags.includes("HR") && (
-                            <div className="tag HR gridTag">HR</div>
-                          )}
-                          {skin.Tags.includes("DT") && (
-                            <div className="tag DT gridTag">DT</div>
-                          )}
-                          {skin.Tags.includes("EZ") && (
-                            <div className="tag EZ gridTag">EZ</div>
-                          )}
-                          {skin.Tags.includes("FL") && (
-                            <div className="tag FL gridTag">FL</div>
-                          )}
-                        </div>
-                      )}
-                      <div className="content">
+                  if (skin.Tags.includes("current")) {
+                    return (
+                      <div className="item" key={index} id={skin.RecordID}>
                         <div className="about">
                           <div className="title">
                             <div className="name">{skin.Name}</div>
@@ -417,9 +182,77 @@ export default function User({ session, userData, skinsData }) {
                               />
                             </div>
                             <div className="downloads">
-                              {skin.Downloads}
                               <i className="bx bxs-download"></i>
+                              {skin.Downloads}
                             </div>
+                            {skin.Tags && (
+                              <div className="tags">
+                                {skin.Tags.includes("current") && (
+                                  <div className="tag current">
+                                    Currently Using
+                                  </div>
+                                )}
+                                {skin.Tags.includes("tournaments") && (
+                                  <div className="tag tournaments">
+                                    Using in Tournaments
+                                  </div>
+                                )}
+                                {skin.Tags.includes("casual") && (
+                                  <div className="tag casual">Casual</div>
+                                )}
+                                {skin.Tags.includes("old") && (
+                                  <div className="tag old">Old</div>
+                                )}
+                                {skin.Tags.includes("aim") && (
+                                  <div className="tag aim">Aim</div>
+                                )}
+                                {skin.Tags.includes("stream") && (
+                                  <div className="tag stream">Stream</div>
+                                )}
+                                {skin.Tags.includes("tech") && (
+                                  <div className="tag tech">Tech</div>
+                                )}
+                                {skin.Tags.includes("reading") && (
+                                  <div className="tag reading">Reading</div>
+                                )}
+                                {skin.Tags.includes("speed") && (
+                                  <div className="tag speed">Speed</div>
+                                )}
+                                {skin.Tags.includes("highAR") && (
+                                  <div className="tag highAR">HighAR</div>
+                                )}
+                                {skin.Tags.includes("lowAR") && (
+                                  <div className="tag lowAR">LowAR</div>
+                                )}
+                                {skin.Tags.includes("highCS") && (
+                                  <div className="tag highCS">HighCS</div>
+                                )}
+                                {skin.Tags.includes("lowCS") && (
+                                  <div className="tag lowCS">LowCS</div>
+                                )}
+                                {skin.Tags.includes("troll") && (
+                                  <div className="tag troll">Troll</div>
+                                )}
+                                {skin.Tags.includes("NM") && (
+                                  <div className="tag NM">NM</div>
+                                )}
+                                {skin.Tags.includes("HD") && (
+                                  <div className="tag HD">HD</div>
+                                )}
+                                {skin.Tags.includes("HR") && (
+                                  <div className="tag HR">HR</div>
+                                )}
+                                {skin.Tags.includes("DT") && (
+                                  <div className="tag DT">DT</div>
+                                )}
+                                {skin.Tags.includes("EZ") && (
+                                  <div className="tag EZ">EZ</div>
+                                )}
+                                {skin.Tags.includes("FL") && (
+                                  <div className="tag FL">FL</div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         {session && session?.id === userData.ID && (
@@ -437,7 +270,9 @@ export default function User({ session, userData, skinsData }) {
                               className="button"
                               icon={faTrash}
                               style={{ color: "#ffb2b2" }}
-                              onClick={() => deleteSkinFromDB(skin.RecordID)}
+                              onClick={() =>
+                                deleteSkinFromDB(skin.RecordID, skin.Owner)
+                              }
                             />
                           </div>
                         )}
@@ -455,18 +290,535 @@ export default function User({ session, userData, skinsData }) {
                             className="button"
                             icon={faDownload}
                             onClick={() => {
-                              window.open(skin.URL, "_blank");
                               modifyDownloadCount(
                                 skin.Downloads,
                                 skin.RecordID
                               );
+                              window.open(skin.URL, "_blank");
                             }}
                           />
                         </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  }
                 })}
+                {skinsData.map((skin, index) => {
+                  if (!skin.Tags.includes("current")) {
+                    return (
+                      <div className="item" key={index} id={skin.RecordID}>
+                        <div className="about">
+                          <div className="title">
+                            <div className="name">{skin.Name}</div>
+                            <div className="author">by {skin.Creator}</div>
+                          </div>
+                          <div className="info">
+                            <div className="gamemodes">
+                              <img
+                                className={`skinMode ${
+                                  skin.Modes.includes("osu!standard")
+                                    ? "active"
+                                    : ""
+                                }`}
+                                src="/img/modes/mode-osu.png"
+                              />
+                              <img
+                                className={`skinMode ${
+                                  skin.Modes.includes("osu!mania")
+                                    ? "active"
+                                    : ""
+                                }`}
+                                src="/img/modes/mode-mania.png"
+                              />
+                              <img
+                                className={`skinMode ${
+                                  skin.Modes.includes("osu!taiko")
+                                    ? "active"
+                                    : ""
+                                }`}
+                                src="/img/modes/mode-taiko.png"
+                              />
+                              <img
+                                className={`skinMode ${
+                                  skin.Modes.includes("osu!ctb") ? "active" : ""
+                                }`}
+                                src="/img/modes/mode-fruits.png"
+                                style={{ rotate: "-90deg" }}
+                              />
+                            </div>
+                            <div className="downloads">
+                              <i className="bx bxs-download"></i>
+                              {skin.Downloads}
+                            </div>
+                            {skin.Tags && (
+                              <div className="tags">
+                                {skin.Tags.includes("current") && (
+                                  <div className="tag current">
+                                    Currently Using
+                                  </div>
+                                )}
+                                {skin.Tags.includes("tournaments") && (
+                                  <div className="tag tournaments">
+                                    Using in Tournaments
+                                  </div>
+                                )}
+                                {skin.Tags.includes("casual") && (
+                                  <div className="tag casual">Casual</div>
+                                )}
+                                {skin.Tags.includes("old") && (
+                                  <div className="tag old">Old</div>
+                                )}
+                                {skin.Tags.includes("aim") && (
+                                  <div className="tag aim">Aim</div>
+                                )}
+                                {skin.Tags.includes("stream") && (
+                                  <div className="tag stream">Stream</div>
+                                )}
+                                {skin.Tags.includes("tech") && (
+                                  <div className="tag tech">Tech</div>
+                                )}
+                                {skin.Tags.includes("reading") && (
+                                  <div className="tag reading">Reading</div>
+                                )}
+                                {skin.Tags.includes("speed") && (
+                                  <div className="tag speed">Speed</div>
+                                )}
+                                {skin.Tags.includes("highAR") && (
+                                  <div className="tag highAR">HighAR</div>
+                                )}
+                                {skin.Tags.includes("lowAR") && (
+                                  <div className="tag lowAR">LowAR</div>
+                                )}
+                                {skin.Tags.includes("highCS") && (
+                                  <div className="tag highCS">HighCS</div>
+                                )}
+                                {skin.Tags.includes("lowCS") && (
+                                  <div className="tag lowCS">LowCS</div>
+                                )}
+                                {skin.Tags.includes("troll") && (
+                                  <div className="tag troll">Troll</div>
+                                )}
+                                {skin.Tags.includes("NM") && (
+                                  <div className="tag NM">NM</div>
+                                )}
+                                {skin.Tags.includes("HD") && (
+                                  <div className="tag HD">HD</div>
+                                )}
+                                {skin.Tags.includes("HR") && (
+                                  <div className="tag HR">HR</div>
+                                )}
+                                {skin.Tags.includes("DT") && (
+                                  <div className="tag DT">DT</div>
+                                )}
+                                {skin.Tags.includes("EZ") && (
+                                  <div className="tag EZ">EZ</div>
+                                )}
+                                {skin.Tags.includes("FL") && (
+                                  <div className="tag FL">FL</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {session && session?.id === userData.ID && (
+                          <div className="adminButtons">
+                            <FontAwesomeIcon
+                              className="button"
+                              icon={faPen}
+                              style={{ color: "#fee7ad" }}
+                              onClick={() => {
+                                setModalIsOpen(true);
+                                setModalSkinEdit(skin);
+                              }}
+                            />
+                            <FontAwesomeIcon
+                              className="button"
+                              icon={faTrash}
+                              style={{ color: "#ffb2b2" }}
+                              onClick={() =>
+                                deleteSkinFromDB(skin.RecordID, skin.Owner)
+                              }
+                            />
+                          </div>
+                        )}
+                        <div className="buttons">
+                          <CopyToClipboard
+                            text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                            onCopy={showCopyAlert}
+                          >
+                            <FontAwesomeIcon
+                              className="button"
+                              icon={faShare}
+                            />
+                          </CopyToClipboard>
+                          <FontAwesomeIcon
+                            className="button"
+                            icon={faDownload}
+                            onClick={() => {
+                              modifyDownloadCount(
+                                skin.Downloads,
+                                skin.RecordID
+                              );
+                              window.open(skin.URL, "_blank");
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+                {session && session?.id === userData.ID && (
+                  <div
+                    className="item createSkin"
+                    onClick={() => setModalIsOpen(true)}
+                  >
+                    <span>Add Skin</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid">
+                {skinsData.map((skin, index) => {
+                  if (skin.Tags.includes("current")) {
+                    return (
+                      <div
+                        className="item"
+                        key={index}
+                        style={{
+                          backgroundImage: `url('${skin.Banner}')`,
+                        }}
+                      >
+                        {skin.Tags && (
+                          <div className="tags">
+                            {skin.Tags.includes("current") && (
+                              <div className="tag current">Currently Using</div>
+                            )}
+                            {skin.Tags.includes("tournaments") && (
+                              <div className="tag tournaments">
+                                Using in Tournaments
+                              </div>
+                            )}
+                            {skin.Tags.includes("casual") && (
+                              <div className="tag casual">Casual</div>
+                            )}
+                            {skin.Tags.includes("old") && (
+                              <div className="tag old">Old</div>
+                            )}
+                            {skin.Tags.includes("aim") && (
+                              <div className="tag aim">Aim</div>
+                            )}
+                            {skin.Tags.includes("stream") && (
+                              <div className="tag stream">Stream</div>
+                            )}
+                            {skin.Tags.includes("tech") && (
+                              <div className="tag tech">Tech</div>
+                            )}
+                            {skin.Tags.includes("reading") && (
+                              <div className="tag reading">Reading</div>
+                            )}
+                            {skin.Tags.includes("speed") && (
+                              <div className="tag speed">Speed</div>
+                            )}
+                            {skin.Tags.includes("highAR") && (
+                              <div className="tag highAR">HighAR</div>
+                            )}
+                            {skin.Tags.includes("lowAR") && (
+                              <div className="tag lowAR">LowAR</div>
+                            )}
+                            {skin.Tags.includes("highCS") && (
+                              <div className="tag highCS">HighCS</div>
+                            )}
+                            {skin.Tags.includes("lowCS") && (
+                              <div className="tag lowCS">LowCS</div>
+                            )}
+                            {skin.Tags.includes("troll") && (
+                              <div className="tag troll">Troll</div>
+                            )}
+                            {skin.Tags.includes("NM") && (
+                              <div className="tag NM gridTag">NM</div>
+                            )}
+                            {skin.Tags.includes("HD") && (
+                              <div className="tag HD gridTag">HD</div>
+                            )}
+                            {skin.Tags.includes("HR") && (
+                              <div className="tag HR gridTag">HR</div>
+                            )}
+                            {skin.Tags.includes("DT") && (
+                              <div className="tag DT gridTag">DT</div>
+                            )}
+                            {skin.Tags.includes("EZ") && (
+                              <div className="tag EZ gridTag">EZ</div>
+                            )}
+                            {skin.Tags.includes("FL") && (
+                              <div className="tag FL gridTag">FL</div>
+                            )}
+                          </div>
+                        )}
+                        <div className="content">
+                          <div className="about">
+                            <div className="title">
+                              <div className="name">{skin.Name}</div>
+                              <div className="author">by {skin.Creator}</div>
+                            </div>
+                            <div className="info">
+                              <div className="gamemodes">
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!standard")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-osu.png"
+                                />
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!mania")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-mania.png"
+                                />
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!taiko")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-taiko.png"
+                                />
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!ctb")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-fruits.png"
+                                  style={{ rotate: "-90deg" }}
+                                />
+                              </div>
+                              <div className="downloads">
+                                {skin.Downloads}
+                                <i className="bx bxs-download"></i>
+                              </div>
+                            </div>
+                          </div>
+                          {session && session?.id === userData.ID && (
+                            <div className="adminButtons">
+                              <FontAwesomeIcon
+                                className="button"
+                                icon={faPen}
+                                style={{ color: "#fee7ad" }}
+                                onClick={() => {
+                                  setModalIsOpen(true);
+                                  setModalSkinEdit(skin);
+                                }}
+                              />
+                              <FontAwesomeIcon
+                                className="button"
+                                icon={faTrash}
+                                style={{ color: "#ffb2b2" }}
+                                onClick={() => deleteSkinFromDB(skin.RecordID)}
+                              />
+                            </div>
+                          )}
+                          <div className="buttons">
+                            <CopyToClipboard
+                              text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                              onCopy={showCopyAlert}
+                            >
+                              <FontAwesomeIcon
+                                className="button"
+                                icon={faShare}
+                              />
+                            </CopyToClipboard>
+                            <FontAwesomeIcon
+                              className="button"
+                              icon={faDownload}
+                              onClick={() => {
+                                window.open(skin.URL, "_blank");
+                                modifyDownloadCount(
+                                  skin.Downloads,
+                                  skin.RecordID
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+
+                {skinsData.map((skin, index) => {
+                  if (!skin.Tags.includes("current")) {
+                    return (
+                      <div
+                        className="item"
+                        key={index}
+                        style={{
+                          backgroundImage: `url('${skin.Banner}')`,
+                        }}
+                      >
+                        {skin.Tags && (
+                          <div className="tags">
+                            {skin.Tags.includes("current") && (
+                              <div className="tag current">Currently Using</div>
+                            )}
+                            {skin.Tags.includes("tournaments") && (
+                              <div className="tag tournaments">
+                                Using in Tournaments
+                              </div>
+                            )}
+                            {skin.Tags.includes("casual") && (
+                              <div className="tag casual">Casual</div>
+                            )}
+                            {skin.Tags.includes("old") && (
+                              <div className="tag old">Old</div>
+                            )}
+                            {skin.Tags.includes("aim") && (
+                              <div className="tag aim">Aim</div>
+                            )}
+                            {skin.Tags.includes("stream") && (
+                              <div className="tag stream">Stream</div>
+                            )}
+                            {skin.Tags.includes("tech") && (
+                              <div className="tag tech">Tech</div>
+                            )}
+                            {skin.Tags.includes("reading") && (
+                              <div className="tag reading">Reading</div>
+                            )}
+                            {skin.Tags.includes("speed") && (
+                              <div className="tag speed">Speed</div>
+                            )}
+                            {skin.Tags.includes("highAR") && (
+                              <div className="tag highAR">HighAR</div>
+                            )}
+                            {skin.Tags.includes("lowAR") && (
+                              <div className="tag lowAR">LowAR</div>
+                            )}
+                            {skin.Tags.includes("highCS") && (
+                              <div className="tag highCS">HighCS</div>
+                            )}
+                            {skin.Tags.includes("lowCS") && (
+                              <div className="tag lowCS">LowCS</div>
+                            )}
+                            {skin.Tags.includes("troll") && (
+                              <div className="tag troll">Troll</div>
+                            )}
+                            {skin.Tags.includes("NM") && (
+                              <div className="tag NM gridTag">NM</div>
+                            )}
+                            {skin.Tags.includes("HD") && (
+                              <div className="tag HD gridTag">HD</div>
+                            )}
+                            {skin.Tags.includes("HR") && (
+                              <div className="tag HR gridTag">HR</div>
+                            )}
+                            {skin.Tags.includes("DT") && (
+                              <div className="tag DT gridTag">DT</div>
+                            )}
+                            {skin.Tags.includes("EZ") && (
+                              <div className="tag EZ gridTag">EZ</div>
+                            )}
+                            {skin.Tags.includes("FL") && (
+                              <div className="tag FL gridTag">FL</div>
+                            )}
+                          </div>
+                        )}
+                        <div className="content">
+                          <div className="about">
+                            <div className="title">
+                              <div className="name">{skin.Name}</div>
+                              <div className="author">by {skin.Creator}</div>
+                            </div>
+                            <div className="info">
+                              <div className="gamemodes">
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!standard")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-osu.png"
+                                />
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!mania")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-mania.png"
+                                />
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!taiko")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-taiko.png"
+                                />
+                                <img
+                                  className={`skinMode ${
+                                    skin.Modes.includes("osu!ctb")
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  src="/img/modes/mode-fruits.png"
+                                  style={{ rotate: "-90deg" }}
+                                />
+                              </div>
+                              <div className="downloads">
+                                {skin.Downloads}
+                                <i className="bx bxs-download"></i>
+                              </div>
+                            </div>
+                          </div>
+                          {session && session?.id === userData.ID && (
+                            <div className="adminButtons">
+                              <FontAwesomeIcon
+                                className="button"
+                                icon={faPen}
+                                style={{ color: "#fee7ad" }}
+                                onClick={() => {
+                                  setModalIsOpen(true);
+                                  setModalSkinEdit(skin);
+                                }}
+                              />
+                              <FontAwesomeIcon
+                                className="button"
+                                icon={faTrash}
+                                style={{ color: "#ffb2b2" }}
+                                onClick={() => deleteSkinFromDB(skin.RecordID)}
+                              />
+                            </div>
+                          )}
+                          <div className="buttons">
+                            <CopyToClipboard
+                              text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                              onCopy={showCopyAlert}
+                            >
+                              <FontAwesomeIcon
+                                className="button"
+                                icon={faShare}
+                              />
+                            </CopyToClipboard>
+                            <FontAwesomeIcon
+                              className="button"
+                              icon={faDownload}
+                              onClick={() => {
+                                window.open(skin.URL, "_blank");
+                                modifyDownloadCount(
+                                  skin.Downloads,
+                                  skin.RecordID
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+
                 {session && session?.id === userData.ID && (
                   <div
                     className="itemCreateSkin"
