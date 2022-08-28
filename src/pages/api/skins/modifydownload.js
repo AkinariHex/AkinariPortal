@@ -1,4 +1,3 @@
-import { getSession } from "next-auth/react";
 import Airtable from "airtable";
 
 export default async function handler(req, res) {
@@ -7,9 +6,7 @@ export default async function handler(req, res) {
   );
 
   if (req.method === "GET") {
-    const session = await getSession({ req });
-
-    if (session && req.query.c && req.query.id) {
+    if (req.query.c && req.query.id) {
       base("Skins").update(
         [
           {
