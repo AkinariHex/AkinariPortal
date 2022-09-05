@@ -20,8 +20,6 @@ const postUserDB = (profile) => {
           Badges: "[]",
           Discord: profile.discord,
           Twitter: profile.twitter,
-          /* DiscordChannelsMatch: "[]", */
-          /* DateJoin: Math.floor(new Date().getTime() / 1000.0), */
         },
       },
     ],
