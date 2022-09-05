@@ -2,6 +2,13 @@ import NextAuth from "next-auth";
 import Airtable from "airtable";
 import { v4 as uuidv4 } from "uuid";
 
+const playmodes = {
+  osu: 0,
+  mania: 1,
+  taiko: 2,
+  fruits: 3,
+};
+
 const postUserDB = (profile) => {
   const base = new Airtable({ apiKey: process.env.AIRTABLE_APIKEY }).base(
     process.env.AIRTABLE_BASE
@@ -54,6 +61,8 @@ const checkUserDB = (profile) => {
           postUserDB(profile);
         }
 
+        console.log(mapped[0]);
+
         /* Check if UUID exist otherwise will assign an UUID to the current user */
         if (
           mapped[0].UUID == "" ||
@@ -79,7 +88,7 @@ const checkUserDB = (profile) => {
         }
 
         /* When logging updates username and banner */
-        if (mapped || mapped[0]) {
+        /* if (mapped || mapped[0]) {
           base("Users").update(
             [
               {
@@ -98,7 +107,7 @@ const checkUserDB = (profile) => {
               }
             }
           );
-        }
+        } */
       },
       function done(err) {
         if (err) {
