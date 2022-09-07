@@ -31,7 +31,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   );
 
   const [selectedTags, setSelectedTags] = useState(
-    skinToEdit != null ? skinToEdit?.Tags : []
+    skinToEdit != null ? JSON.parse(skinToEdit?.Tags) : []
   );
   const [availableTags, setAvailableTags] = useState([
     "current",
@@ -57,7 +57,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   ]);
 
   const [selectedModes, setSelectedModes] = useState(
-    skinToEdit != null ? skinToEdit?.Modes : []
+    skinToEdit != null ? JSON.parse(skinToEdit?.Modes) : []
   );
   const [availableModes, setAvailableModes] = useState([
     "osu!standard",
@@ -94,7 +94,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
         modes: JSON.stringify(selectedModes),
         tags: JSON.stringify(selectedTags.sort()),
         url: skinURL,
-        recordID: skinToEdit != null ? skinToEdit.RecordID : "",
+        id: skinToEdit != null ? skinToEdit.id : "",
       };
 
       let submit = await fetch(
@@ -118,10 +118,10 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
 
   useEffect(() => {
     if (skinToEdit != null) {
-      skinToEdit?.Tags.forEach((tag) => {
+      JSON.parse(skinToEdit?.Tags).forEach((tag) => {
         setAvailableTags((prev) => prev.filter((item) => item !== tag));
       });
-      skinToEdit?.Modes.forEach((tag) => {
+      JSON.parse(skinToEdit?.Modes).forEach((tag) => {
         setAvailableModes((prev) => prev.filter((item) => item !== tag));
       });
     }

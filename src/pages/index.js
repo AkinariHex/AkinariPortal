@@ -1,9 +1,8 @@
-import { motion } from "framer-motion";
-import { ExternalLink } from "react-external-link";
 import RecentSkins from "../components/RecentSkins/RecentSkins";
 import RecentUsers from "../components/RecentUsers/RecentUsers";
+import supabase from "../config/supabaseClient";
 
-export default function Home({ recentSkins, recentUsers }) {
+export default function Home({ dbUsers, dbSkins }) {
   return (
     <div className="homeContent">
       <object
@@ -15,25 +14,29 @@ export default function Home({ recentSkins, recentUsers }) {
         type="image/webp"
         data="/img/logoFull.webp"
       />
-      <RecentSkins rSkins={recentSkins} />
-      <RecentUsers rUsers={recentUsers} />
+      <RecentSkins rSkins={dbSkins} />
+      <RecentUsers rUsers={dbUsers} />
     </div>
   );
 }
 
-export async function getServerSideProps() {
-  const recentSkins = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/recentskins`
-  ).then((res) => res.json());
+export async function getStaticProps() {
+  const users = await supabase
+    .from("users")
+    .select()
+    .order("created_at", { ascending: false })
+    .limit(6);
 
-  const recentUsers = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/recentusers`
-  ).then((res) => res.json());
+  const skins = await supabase
+    .from("skins")
+    .select("Banner,URL,Modes,Name,Player(id,username),Downloads")
+    .order("created_at", { ascending: false })
+    .limit(3);
 
   return {
     props: {
-      recentSkins,
-      recentUsers,
+      dbUsers: users.error ? users.error : users.data,
+      dbSkins: skins.error ? skins.error : skins.data,
     },
   };
 }

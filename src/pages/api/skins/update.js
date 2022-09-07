@@ -1,57 +1,30 @@
 import { getSession } from "next-auth/react";
-import Airtable from "airtable";
+import supabase from "../../../config/supabaseClient";
 
 export default async function handler(req, res) {
-  const base = new Airtable({ apiKey: process.env.AIRTABLE_APIKEY }).base(
-    process.env.AIRTABLE_BASE
-  );
-
   if (req.method === "POST") {
     const session = await getSession({ req });
 
     if (session && req.body) {
       const body = req.body;
 
-      base("Users")
-        .select({
-          filterByFormula: `IF({IDuser} = '${body.owner}' , TRUE())`,
-          view: "Grid view",
+      const { data, error } = await supabase
+        .from("skins")
+        .update({
+          Name: body.name,
+          Creator: body.creator,
+          Banner: body.bg,
+          Modes: body.modes,
+          Tags: body.tags,
+          URL: body.url,
         })
-        .eachPage(
-          function page(records, fetchNextPage) {
-            base("Skins").update(
-              [
-                {
-                  id: body.recordID,
-                  fields: {
-                    Name: body.name,
-                    Creator: body.creator,
-                    OwnerRecord: [records[0].getId()],
-                    Banner: body.bg,
-                    Modes: body.modes,
-                    Tags: body.tags,
-                    URL: body.url,
-                  },
-                },
-              ],
-              function (err, records) {
-                if (err) {
-                  console.error(err);
-                  return res.status(500).json({ status: "error" });
-                }
-                return res.status(200).json({ status: "done" });
-              }
-            );
-          },
-          function done(err) {
-            if (err) {
-              console.error(err);
-              return res.status(500).json({ status: "error" });
-            }
+        .eq("id", body.id);
 
-            return res.status(200).json({ status: "done" });
-          }
-        );
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ status: "error" });
+      }
+      return res.status(200).json({ status: "done" });
     } else {
       res.status(401).json({ status: "No authorization" });
     }

@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { getSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactTooltip from "react-tooltip";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -14,6 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "../../components/Modal/Modal";
 import AlertContainer from "../../components/Alert/AlertContainer";
+import supabase from "../../config/supabaseClient";
 
 function modifyDownloadCount(downloadCount, recordID) {
   fetch(`/api/skins/modifydownload?c=${downloadCount + 1}&id=${recordID}`);
@@ -45,15 +46,15 @@ export default function User({ session, userData, skinsData }) {
       <Head>
         <link rel="icon" href="favicon.ico" />
         {/* HTML */}
-        <title>Akinari Portal | {userData.Username}'s Profile</title>
+        <title>Akinari Portal | {userData.username}'s Profile</title>
         {/* DISCORD */}
         <meta
           property="og:title"
-          content={`Akinari Portal | ${userData.Username}'s Profile`}
+          content={`Akinari Portal | ${userData.username}'s Profile`}
         />
         <meta
           name="twitter:title"
-          content={`Akinari Portal | ${userData.Username}'s Profile`}
+          content={`Akinari Portal | ${userData.username}'s Profile`}
         />
       </Head>
       <div className="profileDivBackground">
@@ -61,31 +62,31 @@ export default function User({ session, userData, skinsData }) {
           <div className="userInfo">
             <div
               className="banner"
-              style={{ backgroundImage: `url(${userData.Banner})` }}
+              style={{ backgroundImage: `url(${userData.banner})` }}
             >
               <div className="dim" />
             </div>
             <div className="content">
               <div className="head">
                 <img
-                  src={`http://s.ppy.sh/a/${userData.ID}`}
-                  alt={`${userData.Username}'s propic`}
+                  src={`http://s.ppy.sh/a/${userData.id}`}
+                  alt={`${userData.username}'s propic`}
                   className="propic"
                 />
                 <div className="info">
-                  <div className="name">{userData.Username}</div>
+                  <div className="name">{userData.username}</div>
                   <div className="country">
                     <img
-                      src={`https://raw.githubusercontent.com/ppy/osu-resources/master/osu.Game.Resources/Textures/Flags/${userData.Country.code}.png`}
-                      alt={userData.Country.name}
+                      src={`https://raw.githubusercontent.com/ppy/osu-resources/master/osu.Game.Resources/Textures/Flags/${userData.country?.code}.png`}
+                      alt={userData.country?.name}
                       className="flag"
                     />
-                    <span>{userData.Country.name}</span>{" "}
+                    <span>{userData.country?.name}</span>{" "}
                   </div>
                 </div>
                 <div className="badges">
-                  {userData.Badges.length !== 0 &&
-                    userData.Badges.map((badge, index) => {
+                  {userData.badges.length !== 0 &&
+                    userData.badges.map((badge, index) => {
                       return (
                         <img
                           key={index}
@@ -96,7 +97,7 @@ export default function User({ session, userData, skinsData }) {
                         />
                       );
                     })}
-                  {userData.Badges.length !== 0 && (
+                  {userData.badges.length !== 0 && (
                     <ReactTooltip
                       place="top"
                       effect="solid"
@@ -141,7 +142,7 @@ export default function User({ session, userData, skinsData }) {
                 {skinsData.map((skin, index) => {
                   if (skin.Tags.includes("current")) {
                     return (
-                      <div className="item" key={index} id={skin.RecordID}>
+                      <div className="item" key={index} id={skin.id}>
                         <div className="about">
                           <div className="title">
                             <div className="name">{skin.Name}</div>
@@ -255,7 +256,7 @@ export default function User({ session, userData, skinsData }) {
                             )}
                           </div>
                         </div>
-                        {session && session?.id === userData.ID && (
+                        {session && session?.id === userData.id && (
                           <div className="adminButtons">
                             <FontAwesomeIcon
                               className="button"
@@ -271,14 +272,14 @@ export default function User({ session, userData, skinsData }) {
                               icon={faTrash}
                               style={{ color: "#ffb2b2" }}
                               onClick={() =>
-                                deleteSkinFromDB(skin.RecordID, skin.Owner)
+                                deleteSkinFromDB(skin.id, skin.Player.id)
                               }
                             />
                           </div>
                         )}
                         <div className="buttons">
                           <CopyToClipboard
-                            text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                            text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
                             onCopy={showCopyAlert}
                           >
                             <FontAwesomeIcon
@@ -290,10 +291,7 @@ export default function User({ session, userData, skinsData }) {
                             className="button"
                             icon={faDownload}
                             onClick={() => {
-                              modifyDownloadCount(
-                                skin.Downloads,
-                                skin.RecordID
-                              );
+                              modifyDownloadCount(skin.Downloads, skin.id);
                               window.open(skin.URL, "_blank");
                             }}
                           />
@@ -305,7 +303,7 @@ export default function User({ session, userData, skinsData }) {
                 {skinsData.map((skin, index) => {
                   if (!skin.Tags.includes("current")) {
                     return (
-                      <div className="item" key={index} id={skin.RecordID}>
+                      <div className="item" key={index} id={skin.id}>
                         <div className="about">
                           <div className="title">
                             <div className="name">{skin.Name}</div>
@@ -419,7 +417,7 @@ export default function User({ session, userData, skinsData }) {
                             )}
                           </div>
                         </div>
-                        {session && session?.id === userData.ID && (
+                        {session && session?.id === userData.id && (
                           <div className="adminButtons">
                             <FontAwesomeIcon
                               className="button"
@@ -435,14 +433,14 @@ export default function User({ session, userData, skinsData }) {
                               icon={faTrash}
                               style={{ color: "#ffb2b2" }}
                               onClick={() =>
-                                deleteSkinFromDB(skin.RecordID, skin.Owner)
+                                deleteSkinFromDB(skin.id, skin.Player.id)
                               }
                             />
                           </div>
                         )}
                         <div className="buttons">
                           <CopyToClipboard
-                            text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                            text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
                             onCopy={showCopyAlert}
                           >
                             <FontAwesomeIcon
@@ -454,10 +452,7 @@ export default function User({ session, userData, skinsData }) {
                             className="button"
                             icon={faDownload}
                             onClick={() => {
-                              modifyDownloadCount(
-                                skin.Downloads,
-                                skin.RecordID
-                              );
+                              modifyDownloadCount(skin.Downloads, skin.id);
                               window.open(skin.URL, "_blank");
                             }}
                           />
@@ -466,7 +461,7 @@ export default function User({ session, userData, skinsData }) {
                     );
                   }
                 })}
-                {session && session?.id === userData.ID && (
+                {session && session?.id === userData.id && (
                   <div
                     className="item createSkin"
                     onClick={() => setModalIsOpen(true)}
@@ -601,7 +596,7 @@ export default function User({ session, userData, skinsData }) {
                               </div>
                             </div>
                           </div>
-                          {session && session?.id === userData.ID && (
+                          {session && session?.id === userData.id && (
                             <div className="adminButtons">
                               <FontAwesomeIcon
                                 className="button"
@@ -616,13 +611,13 @@ export default function User({ session, userData, skinsData }) {
                                 className="button"
                                 icon={faTrash}
                                 style={{ color: "#ffb2b2" }}
-                                onClick={() => deleteSkinFromDB(skin.RecordID)}
+                                onClick={() => deleteSkinFromDB(skin.id)}
                               />
                             </div>
                           )}
                           <div className="buttons">
                             <CopyToClipboard
-                              text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                              text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
                               onCopy={showCopyAlert}
                             >
                               <FontAwesomeIcon
@@ -635,10 +630,7 @@ export default function User({ session, userData, skinsData }) {
                               icon={faDownload}
                               onClick={() => {
                                 window.open(skin.URL, "_blank");
-                                modifyDownloadCount(
-                                  skin.Downloads,
-                                  skin.RecordID
-                                );
+                                modifyDownloadCount(skin.Downloads, skin.id);
                               }}
                             />
                           </div>
@@ -772,7 +764,7 @@ export default function User({ session, userData, skinsData }) {
                               </div>
                             </div>
                           </div>
-                          {session && session?.id === userData.ID && (
+                          {session && session?.id === userData.id && (
                             <div className="adminButtons">
                               <FontAwesomeIcon
                                 className="button"
@@ -787,13 +779,13 @@ export default function User({ session, userData, skinsData }) {
                                 className="button"
                                 icon={faTrash}
                                 style={{ color: "#ffb2b2" }}
-                                onClick={() => deleteSkinFromDB(skin.RecordID)}
+                                onClick={() => deleteSkinFromDB(skin.id)}
                               />
                             </div>
                           )}
                           <div className="buttons">
                             <CopyToClipboard
-                              text={`https://akinariportal.vercel.app/users/${userData.ID}#${skin.RecordID}`}
+                              text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
                               onCopy={showCopyAlert}
                             >
                               <FontAwesomeIcon
@@ -806,10 +798,7 @@ export default function User({ session, userData, skinsData }) {
                               icon={faDownload}
                               onClick={() => {
                                 window.open(skin.URL, "_blank");
-                                modifyDownloadCount(
-                                  skin.Downloads,
-                                  skin.RecordID
-                                );
+                                modifyDownloadCount(skin.Downloads, skin.id);
                               }}
                             />
                           </div>
@@ -819,7 +808,7 @@ export default function User({ session, userData, skinsData }) {
                   }
                 })}
 
-                {session && session?.id === userData.ID && (
+                {session && session?.id === userData.id && (
                   <div
                     className="itemCreateSkin"
                     onClick={() => setModalIsOpen(true)}
@@ -849,21 +838,32 @@ export async function getServerSideProps(context) {
   // Get user session
   const session = await getSession(context);
 
-  const statusData = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/users?u=${context.params.id}`
-  )
-    .then((res) => res.json())
-    .then((res) => res[0]);
+  var statusData = await supabase
+    .from("users")
+    .select("id,username,badges,country,banner")
+    .eq("id", context.params.id);
+
+  try {
+    statusData.data[0].badges = JSON.parse(statusData.data[0].badges);
+  } catch (error) {}
+
+  try {
+    statusData.data[0].country = JSON.parse(statusData.data[0].country);
+  } catch (error) {}
 
   const skinsData =
-    statusData !== null
-      ? await fetch(
-          `${process.env.NEXTAUTH_URL}/api/skins?u=${context.params.id}`
-        ).then((res) => res.json())
+    statusData.data !== null || statusData.data.length
+      ? await supabase
+          .from("skins")
+          .select(
+            "id,Name,Creator,Player(id,username),Banner,Modes,Tags,URL,Downloads"
+          )
+          .eq("Player(id)", context.params.id)
+          .order("created_at", { ascending: false })
       : [{}];
 
   const returnProps =
-    statusData === null
+    statusData.data === null || !statusData.data.length
       ? {
           redirect: {
             destination: "/",
@@ -873,8 +873,8 @@ export async function getServerSideProps(context) {
       : {
           props: {
             session: session,
-            userData: statusData,
-            skinsData,
+            userData: !statusData.data.length ? null : statusData.data[0],
+            skinsData: !skinsData.data.length ? [] : skinsData.data,
           },
         };
 

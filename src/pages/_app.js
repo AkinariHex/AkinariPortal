@@ -23,7 +23,7 @@ Router.events.on("routeChangeStart", progress.start);
 Router.events.on("routeChangeComplete", progress.finish);
 Router.events.on("routeChangeError", progress.finish);
 
-function MyApp({ Component, pageProps, session, userStatus }) {
+function MyApp({ Component, pageProps, session }) {
   return (
     <>
       <Head>
@@ -85,7 +85,7 @@ function MyApp({ Component, pageProps, session, userStatus }) {
           rel="stylesheet"
         ></link>
       </Head>
-      <Navbar session={session} userStatus={userStatus} />
+      <Navbar session={session} />
       <Component {...pageProps} />
     </>
   );
@@ -95,16 +95,8 @@ MyApp.getInitialProps = async (context) => {
   // Get user session
   const session = await getSession(context.ctx);
 
-  const statusData =
-    session !== null
-      ? await fetch(`${process.env.NEXTAUTH_URL}/api/users?u=${session.id}`)
-          .then((res) => res.json())
-          .then((res) => res[0])
-      : [{}];
-
   return {
-    session: session,
-    userStatus: statusData,
+    session,
   };
 };
 

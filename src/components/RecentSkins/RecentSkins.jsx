@@ -24,12 +24,14 @@ function RecentSkins({ rSkins }) {
                 <div className="info">
                   <div className="owner">
                     <img
-                      src={`http://s.ppy.sh/a/${skin.Owner}`}
-                      alt={skin.Owner}
-                      onClick={() => window.open(`/users/${skin.Owner}`)}
+                      src={`http://s.ppy.sh/a/${skin.Player.id}`}
+                      alt={skin.Player.id}
+                      onClick={() => window.open(`/users/${skin.Player.id}`)}
                     />{" "}
-                    <span onClick={() => window.open(`/users/${skin.Owner}`)}>
-                      {skin.OwnerName}
+                    <span
+                      onClick={() => window.open(`/users/${skin.Player.id}`)}
+                    >
+                      {skin.Player.username}
                     </span>
                   </div>
                   <div className="rightSide">

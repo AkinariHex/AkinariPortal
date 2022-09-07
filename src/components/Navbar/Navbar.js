@@ -4,19 +4,10 @@ import NavLink from "../NavLink/NavLink";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import { useClickOutside } from "react-haiku";
-import {
-  Home2,
-  Cup,
-  TableDocument,
-  Login,
-  Logout,
-  User,
-  Profile2User,
-  Setting2,
-} from "iconsax-react";
+import { Home2, Login, Logout, User } from "iconsax-react";
 import { motion } from "framer-motion";
 
-export default function Navbar({ session, userStatus }) {
+export default function Navbar({ session }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const variants = {
     open: { opacity: 1, y: 0, display: "block" },

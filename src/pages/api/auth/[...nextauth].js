@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
-import Airtable from "airtable";
-import { v4 as uuidv4 } from "uuid";
+import supabase from "../../../config/supabaseClient";
 
 const playmodes = {
   osu: 0,
@@ -9,113 +8,49 @@ const playmodes = {
   fruits: 3,
 };
 
-const postUserDB = (profile) => {
-  const base = new Airtable({ apiKey: process.env.AIRTABLE_APIKEY }).base(
-    process.env.AIRTABLE_BASE
-  );
+const postUserDBsupabase = async (profile) => {
+  const { data, error } = await supabase.from("users").insert([
+    {
+      id: profile.id,
+      username: profile.username,
+      banner: profile.cover_url,
+      country: JSON.stringify(profile.country),
+      playmode: profile.playmode,
+      badges: "[]",
+      discord: profile.discord,
+      twitter: profile.twitter,
+    },
+  ]);
 
-  base("Users").create(
-    [
-      {
-        fields: {
-          IDuser: profile.id,
-          Username: profile.username,
-          UUID: uuidv4(),
-          Banner: profile.cover_url,
-          Country: JSON.stringify(profile.country),
-          PlayMode: profile.playmode,
-          Badges: "[]",
-          Discord: profile.discord,
-          Twitter: profile.twitter,
-        },
-      },
-    ],
-    function (err, records) {
-      if (err) {
-        console.error(err);
-        return;
-      }
-    }
-  );
+  if (error) {
+    console.log(error);
+    return;
+  }
+  return;
 };
 
-const checkUserDB = (profile) => {
-  const base = new Airtable({ apiKey: process.env.AIRTABLE_APIKEY }).base(
-    process.env.AIRTABLE_BASE
-  );
+const checkUserDBsupabase = async (profile) => {
+  const player = await supabase.from("users").select("*").eq("id", profile.id);
 
-  var mapped = "";
+  if (player.data && player.data.length > 0) {
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        username: profile.username,
+        banner: profile.cover_url,
+        country: JSON.stringify(profile.country),
+      })
+      .eq("id", profile.id);
 
-  base("Users")
-    .select({
-      filterByFormula: `IF({IDuser} = '${profile.id}' , TRUE())`,
-      view: "Grid view",
-    })
-    .eachPage(
-      function page(records, fetchNextPage) {
-        mapped = records.map((record) => {
-          return record.fields;
-        });
-
-        if (mapped[0] === undefined || mapped === undefined) {
-          postUserDB(profile);
-        }
-
-        console.log(mapped[0]);
-
-        /* Check if UUID exist otherwise will assign an UUID to the current user */
-        if (
-          mapped[0].UUID == "" ||
-          mapped[0].UUID == null ||
-          mapped[0].UUID == undefined
-        ) {
-          base("Users").update(
-            [
-              {
-                id: mapped[0].RecordID,
-                fields: {
-                  UUID: uuidv4(),
-                },
-              },
-            ],
-            function (err) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-            }
-          );
-        }
-
-        /* When logging updates username and banner */
-        /* if (mapped || mapped[0]) {
-          base("Users").update(
-            [
-              {
-                id: mapped[0].RecordID,
-                fields: {
-                  Username: profile.username,
-                  Banner: profile.cover_url,
-                  Country: JSON.stringify(profile.country),
-                },
-              },
-            ],
-            function (err) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-            }
-          );
-        } */
-      },
-      function done(err) {
-        if (err) {
-          console.error(err);
-          return;
-        }
-      }
-    );
+    if (error) {
+      console.log(error);
+      return;
+    }
+    return;
+  }
+  if (!player.data.length) {
+    return postUserDBsupabase(profile);
+  }
 };
 
 export default NextAuth({
@@ -170,7 +105,7 @@ export default NextAuth({
         token.refresh_token = account.refresh_token;
 
         // Write user in database
-        checkUserDB(profile);
+        checkUserDBsupabase(profile);
       }
 
       return token;

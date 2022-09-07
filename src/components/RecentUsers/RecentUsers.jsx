@@ -11,18 +11,18 @@ function RecentUsers({ rUsers }) {
               key={index}
               className="item users"
               onClick={() =>
-                window.open(`https://akinariportal.vercel.app/users/${user.ID}`)
+                window.open(`https://akinariportal.vercel.app/users/${user.id}`)
               }
             >
               <div
                 className="header"
-                style={{ backgroundImage: `url(${user.Banner})` }}
+                style={{ backgroundImage: `url(${user.banner})` }}
               >
                 <div className="dimForBG"></div>
-                <img src={`http://s.ppy.sh/a/${user.ID}`} alt={user.ID} />
+                <img src={`http://s.ppy.sh/a/${user.id}`} alt={user.id} />
               </div>
               <div className="content">
-                <div className="name">{user.Username}</div>
+                <div className="name">{user.username}</div>
               </div>
             </div>
           );
