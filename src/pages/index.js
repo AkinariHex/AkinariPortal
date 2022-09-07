@@ -20,7 +20,7 @@ export default function Home({ dbUsers, dbSkins }) {
   );
 }
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
   const users = await supabase
     .from("users")
     .select()
