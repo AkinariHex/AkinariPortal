@@ -283,7 +283,7 @@ export default function User({ session, userData, skinsData }) {
                         )}
                         <div className="buttons">
                           <CopyToClipboard
-                            text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
+                            text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                             onCopy={showCopyAlert}
                           >
                             <FontAwesomeIcon
@@ -444,7 +444,7 @@ export default function User({ session, userData, skinsData }) {
                         )}
                         <div className="buttons">
                           <CopyToClipboard
-                            text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
+                            text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                             onCopy={showCopyAlert}
                           >
                             <FontAwesomeIcon
@@ -622,7 +622,7 @@ export default function User({ session, userData, skinsData }) {
                           )}
                           <div className="buttons">
                             <CopyToClipboard
-                              text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
+                              text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                               onCopy={showCopyAlert}
                             >
                               <FontAwesomeIcon
@@ -791,7 +791,7 @@ export default function User({ session, userData, skinsData }) {
                           )}
                           <div className="buttons">
                             <CopyToClipboard
-                              text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
+                              text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                               onCopy={showCopyAlert}
                             >
                               <FontAwesomeIcon
