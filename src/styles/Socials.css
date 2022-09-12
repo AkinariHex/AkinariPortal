@@ -1,0 +1,134 @@
+/* SOCIALS */
+
+.socialField {
+  height: 50px;
+  width: 50%;
+  background-color: #1b2026;
+  border-radius: 12px;
+  padding: 4px;
+  box-sizing: border-box;
+  display: flex;
+  flex-flow: row;
+  position: relative;
+}
+
+.socialField .icon {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  height: 100%;
+  margin-right: 4px;
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.socialField .icon img {
+  height: 28px;
+}
+
+.socialField input {
+  width: 100%;
+  text-align: center;
+  font-family: "Poppins", Arial, Helvetica, sans-serif;
+  font-size: 12.2pt;
+  font-weight: 500;
+  background: transparent;
+  border-radius: 8px;
+  border: 0;
+  color: #eee;
+}
+
+.socialField input:focus,
+.socialField input:focus-visible {
+  outline: 0;
+  border: 0;
+}
+
+.socialField .about {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  right: -25px;
+  height: 100%;
+  color: #cee0f6;
+}
+
+/* COLORS */
+
+.socialField.discord {
+  background-color: var(--social-discord-secondary);
+}
+
+.socialField .icon.discord {
+  background-color: var(--social-discord-main);
+}
+
+.socialField.discord input {
+  color: var(--social-discord-text);
+}
+
+.socialField.twitch {
+  background-color: var(--social-twitch-secondary);
+}
+
+.socialField .icon.twitch {
+  background-color: var(--social-twitch-main);
+}
+
+.socialField.twitch input {
+  color: var(--social-twitch-text);
+}
+
+.socialField.twitter {
+  background-color: var(--social-twitter-secondary);
+}
+
+.socialField .icon.twitter {
+  background-color: var(--social-twitter-main);
+}
+
+.socialField.twitter input {
+  color: var(--social-twitter-text);
+}
+
+.socialField.github {
+  background-color: var(--social-github-secondary);
+}
+
+.socialField .icon.github {
+  background-color: var(--social-github-main);
+}
+
+.socialField.github input {
+  color: var(--social-github-text);
+}
+
+.socialField.youtube {
+  background-color: var(--social-youtube-secondary);
+}
+
+.socialField .icon.youtube {
+  background-color: var(--social-youtube-main);
+}
+
+.socialField.youtube input {
+  color: var(--social-youtube-text);
+}
+
+.icon.twitch img {
+  padding-top: 2px;
+}
+
+.icon.discord img {
+  width: 68%;
+}
+
+.icon:is(.youtube, .twitter) img {
+  height: 90%;
+  border-radius: 8px;
+}

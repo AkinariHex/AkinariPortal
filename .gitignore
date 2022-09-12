@@ -36,7 +36,12 @@ yarn-error.log*
 
 # folder
 src/pages/schedule/
+src/pages/test/
 JSON Examples/
+
+# notifications
+src/components/NotificationsContainer
+src/styles/NotificationsContainer.css
 
 # images
 public/img/homepagebanner.jpg

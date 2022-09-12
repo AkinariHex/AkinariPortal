@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { getSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ReactTooltip from "react-tooltip";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -14,6 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "../../components/Modal/Modal";
 import AlertContainer from "../../components/Alert/AlertContainer";
+import LivestreamPlayer from "../../components/LivestreamPlayer/LivestreamPlayer";
 import supabase from "../../config/supabaseClient";
 
 function modifyDownloadCount(downloadCount, recordID) {
@@ -27,7 +28,7 @@ async function deleteSkinFromDB(recordID, userid) {
 }
 
 export default function User({ session, userData, skinsData }) {
-  const [skinView, setSkinView] = useState("list");
+  const [skinView, setSkinView] = useState(userData.skin_view.value);
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalSkinEdit, setModalSkinEdit] = useState();
@@ -44,17 +45,14 @@ export default function User({ session, userData, skinsData }) {
   return (
     <>
       <Head>
-        <link rel="icon" href="favicon.ico" />
-        {/* HTML */}
-        <title>Akinari Portal | {userData.username}'s Profile</title>
-        {/* DISCORD */}
+        <title>{userData.username}'s Profile | Akinari Portal</title>
         <meta
           property="og:title"
-          content={`Akinari Portal | ${userData.username}'s Profile`}
+          content={`${userData.username}'s Profile | Akinari Portal`}
         />
         <meta
           name="twitter:title"
-          content={`Akinari Portal | ${userData.username}'s Profile`}
+          content={`${userData.username}'s Profile | Akinari Portal`}
         />
       </Head>
       <div className="profileDivBackground">
@@ -103,6 +101,7 @@ export default function User({ session, userData, skinsData }) {
                       effect="solid"
                       className="badgeTooltip"
                       delayShow={300}
+                      delayHide={0}
                       arrowColor={"var(--site-background-users-page-color)"}
                     />
                   )}
@@ -110,6 +109,9 @@ export default function User({ session, userData, skinsData }) {
               </div>
             </div>
           </div>
+          {userData.twitch !== null && (
+            <LivestreamPlayer twitchName={userData.twitch} />
+          )}
           <div className="section" id="skins">
             <div className="header">
               <div className="title">Skins</div>
@@ -119,6 +121,7 @@ export default function User({ session, userData, skinsData }) {
                   id="list"
                   icon={faGripLines}
                   data-tip="List View"
+                  width={"13.2pt"}
                   onClick={() => setSkinView("list")}
                 />
                 <FontAwesomeIcon
@@ -126,6 +129,7 @@ export default function User({ session, userData, skinsData }) {
                   id="grid"
                   icon={faGrip}
                   data-tip="Grid View"
+                  width={"13.2pt"}
                   onClick={() => setSkinView("grid")}
                 />
                 <ReactTooltip
@@ -279,7 +283,7 @@ export default function User({ session, userData, skinsData }) {
                         )}
                         <div className="buttons">
                           <CopyToClipboard
-                            text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
+                            text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                             onCopy={showCopyAlert}
                           >
                             <FontAwesomeIcon
@@ -440,7 +444,7 @@ export default function User({ session, userData, skinsData }) {
                         )}
                         <div className="buttons">
                           <CopyToClipboard
-                            text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
+                            text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                             onCopy={showCopyAlert}
                           >
                             <FontAwesomeIcon
@@ -478,6 +482,7 @@ export default function User({ session, userData, skinsData }) {
                       <div
                         className="item"
                         key={index}
+                        id={skin.id}
                         style={{
                           backgroundImage: `url('${skin.Banner}')`,
                         }}
@@ -617,7 +622,7 @@ export default function User({ session, userData, skinsData }) {
                           )}
                           <div className="buttons">
                             <CopyToClipboard
-                              text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
+                              text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                               onCopy={showCopyAlert}
                             >
                               <FontAwesomeIcon
@@ -646,6 +651,7 @@ export default function User({ session, userData, skinsData }) {
                       <div
                         className="item"
                         key={index}
+                        id={skin.id}
                         style={{
                           backgroundImage: `url('${skin.Banner}')`,
                         }}
@@ -785,7 +791,7 @@ export default function User({ session, userData, skinsData }) {
                           )}
                           <div className="buttons">
                             <CopyToClipboard
-                              text={`https://akinariportal.vercel.app/users/${userData.id}#${skin.id}`}
+                              text={`${process.env.NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
                               onCopy={showCopyAlert}
                             >
                               <FontAwesomeIcon
@@ -840,7 +846,7 @@ export async function getServerSideProps(context) {
 
   var statusData = await supabase
     .from("users")
-    .select("id,username,badges,country,banner")
+    .select("id,username,badges,country,banner,skin_view,twitch")
     .eq("id", context.params.id);
 
   try {
@@ -852,7 +858,7 @@ export async function getServerSideProps(context) {
   } catch (error) {}
 
   const skinsData =
-    statusData.data !== null || statusData.data.length
+    statusData.data !== null
       ? await supabase
           .from("skins")
           .select(

@@ -1,0 +1,256 @@
+.settingsPageContainer {
+  width: 100%;
+  height: 100%;
+  padding-top: 4.2em;
+  color: #cee0f6;
+  font-family: "Poppins", Arial, Helvetica, sans-serif;
+}
+
+.settingsContainer {
+  width: 52em;
+  display: flex;
+  flex-flow: column;
+  padding: 10px;
+  margin: 0 auto;
+  gap: 10px;
+}
+
+.settingsContainer .header {
+  font-size: 20pt;
+  font-weight: 600;
+}
+
+.settingsContainer .section {
+  display: flex;
+  flex-flow: column;
+  gap: 6px;
+}
+
+.settingsContainer .section .main {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settingsContainer .section .title {
+  font-size: 14pt;
+  font-weight: 500;
+}
+
+.settingsContainer .section .subtitle {
+  font-size: 10pt;
+  font-weight: 300;
+}
+
+.settingsContainer .section .react-select__control {
+  width: 18em;
+  background-color: #1b2026;
+  border: 0;
+  border-radius: 6px;
+  color: #cee0f6;
+  text-align: center;
+  font-family: "Poppins", Arial, Helvetica, sans-serif;
+  font-size: 9.4pt;
+  font-weight: 400;
+}
+
+.react-select.saved::before {
+  content: "✓ Saved";
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  font-size: 9pt;
+  font-weight: 300;
+  top: 2px;
+  width: 100%;
+  opacity: 0;
+  color: #a5e44c;
+  animation: invoked 5s ease-in-out;
+}
+
+@keyframes invoked {
+  0% {
+    opacity: 0;
+    top: 2px;
+  }
+  20% {
+    opacity: 1;
+    top: -20px;
+  }
+  85% {
+    opacity: 1;
+    top: -20px;
+  }
+  100% {
+    opacity: 0;
+    top: 2px;
+  }
+}
+
+.react-select__single-value,
+.react-select__indicator {
+  color: #cee0f6 !important;
+}
+
+.react-select__indicator-separator {
+  background-color: #cee0f6 !important;
+}
+
+.react-select__menu {
+  background-color: #1b2026 !important;
+  color: #cee0f6 !important;
+  padding: 0 4px;
+}
+
+.react-select__option {
+  font-size: 10pt !important;
+  border-radius: 4px;
+}
+
+.react-select__option--is-selected {
+  background-color: #cee0f609 !important;
+}
+
+.react-select__option--is-focused {
+  background-color: #cee0f60c !important;
+}
+
+.react-select:focus-visible {
+  outline: 0;
+  border: 0;
+}
+
+.settingsContainer .section .connections-btns {
+  display: flex;
+  width: 50%;
+  opacity: 0;
+  flex-flow: row;
+  gap: 6px;
+  height: 0px;
+}
+
+.settingsContainer .section .connections-btns._active {
+  display: flex;
+  opacity: 1;
+  height: 2.1em;
+  animation: showConnectionsButtons 0.4s ease-in;
+}
+
+.settingsContainer .section .save-btn {
+  width: 100%;
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 2px 0;
+  color: #222;
+  background-color: var(--site-colorful-primary-color);
+  font-size: 11pt;
+  font-weight: 500;
+  text-align: center;
+  user-select: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s ease-in;
+}
+
+.settingsContainer .section .save-btn:hover {
+  background-color: #5885c2;
+  color: #111;
+}
+
+.settingsContainer .section .reset-btn {
+  width: 100%;
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 2px 0;
+  border: 1px solid transparent;
+  color: var(--site-colorful-primary-color);
+  font-size: 11pt;
+  font-weight: 400;
+  text-align: center;
+  user-select: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: border 0.2s ease-in;
+  animation: enableResetButton 0.2s ease-in;
+}
+
+.settingsContainer .section .reset-btn:hover {
+  border: 1px solid var(--site-colorful-primary-color);
+}
+
+.settingsContainer .section .reset-btn._disable {
+  width: 0px;
+  opacity: 0;
+  animation: disableResetButton 0.2s ease-in;
+}
+
+@keyframes showConnectionsButtons {
+  0% {
+    display: flex;
+    height: 0px;
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    display: flex;
+    height: 2.1em;
+    opacity: 1;
+  }
+}
+
+@keyframes hideConnectionsButtons {
+  0% {
+    display: flex;
+    height: 2.1em;
+    opacity: 1;
+  }
+  60% {
+    opacity: 0;
+  }
+  100% {
+    display: none;
+    height: 0px;
+    opacity: 0;
+  }
+}
+
+@keyframes disableResetButton {
+  0% {
+    width: 100%;
+    opacity: 1;
+  }
+  60% {
+    opacity: 0;
+  }
+  100% {
+    width: 0%;
+    opacity: 0;
+  }
+}
+
+@keyframes enableResetButton {
+  0% {
+    width: 0%;
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    width: 100%;
+    opacity: 1;
+  }
+}

@@ -16,6 +16,7 @@
   --site-primary-color: #323b46;
   --site-secondary-color: #282f38;
   --site-background-users-page-color: #1c2027;
+  --site-colorful-primary-color: #6ba2ed;
   --action-div-color: hsl(219, 40%, 16%);
   --action-div-color2: hsl(219, 40%, 14%);
   --action-div-hover-color: hsl(219, 40%, 18%);
@@ -51,6 +52,31 @@
   --mods-fm-bg: hsla(101, 38%, 63%, 0.2);
   --mods-tb-text: hsl(191, 26%, 57%);
   --mods-tb-bg: hsla(191, 26%, 57%, 0.2);
+
+  /* NOTIFICATIONS COLORS */
+  --notification-system-color: hsl(231, 94%, 69%);
+  --notification-system-background: linear-gradient(
+    90deg,
+    hsla(231, 94%, 69%, 0.1),
+    hsla(231, 94%, 69%, 0.04)
+  );
+
+  /* SOCIALS COLORS */
+  --social-twitch-main: #9146ff;
+  --social-twitch-secondary: hsla(264, 100%, 68%, 0.5);
+  --social-twitch-text: #dec8ff;
+  --social-youtube-main: #ff0000;
+  --social-youtube-secondary: hsla(358, 100%, 56%, 0.5);
+  --social-youtube-text: #ffcccc;
+  --social-discord-main: #5865f2;
+  --social-discord-secondary: hsla(235, 86%, 65%, 0.5);
+  --social-discord-text: #cdd1fb;
+  --social-twitter-main: #1d9bf0;
+  --social-twitter-secondary: rgba(29, 155, 240, 0.5);
+  --social-twitter-text: #bbe1fb;
+  --social-github-main: #171515;
+  --social-github-secondary: hsla(0, 5%, 9%, 0.5);
+  --social-github-text: #b9b9b9;
 }
 
 html,
@@ -59,7 +85,7 @@ body {
   width: 100vw;
   padding: 0px;
   margin: 0px;
-  font-family: "Poppins";
+  font-family: "Poppins", Arial, Helvetica, sans-serif;
   scrollbar-color: var(--scrollbar-color) transparent;
   overflow: hidden auto;
   background-color: var(--site-background-color);
@@ -119,6 +145,7 @@ a:visited {
   font-weight: 600;
   color: #eee;
   text-align: center;
+  user-select: none;
 }
 
 .homepageContainer .items {

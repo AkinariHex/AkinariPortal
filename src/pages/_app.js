@@ -1,11 +1,14 @@
 import { getSession } from "next-auth/react";
 import "../styles/styles.css";
+import "../styles/settings.css";
 import "../styles/scrollbars.css";
 import "../styles/tags.css";
 import "../styles/Navbar.css";
 import "../styles/MobileNavbar.css";
 import "../styles/RecentSkins.css";
 import "../styles/Users.css";
+import "../styles/Socials.css";
+import "../styles/NotificationsContainer.css";
 import Navbar from "../components/Navbar/Navbar";
 import Head from "next/head";
 import Router from "next/router";
@@ -27,7 +30,7 @@ function MyApp({ Component, pageProps, session }) {
   return (
     <>
       <Head>
-        <link rel="icon" type="image/ico" href="favicon.ico" />
+        <link rel="shortcut icon" href="favicon.ico" />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         {/* HTML */}

@@ -63,6 +63,7 @@
   border-radius: 50vh;
   border: 2px solid #6ba2ed;
   margin-top: -4.6em;
+  isolation: isolate;
   z-index: 2;
 }
 
@@ -143,10 +144,10 @@
   padding: 0 16px;
   border-radius: 6px;
   margin: 0 0 0 auto;
+  font-size: 13.2pt;
 }
 
 .section .header .styles .viewStyle {
-  font-size: 13.2pt;
   color: #636c76;
   cursor: pointer;
 }
@@ -163,6 +164,33 @@
 .section .header .styles .viewStyle:focus-visible {
   outline: 0;
   border: 0;
+}
+
+/* TWITCH PLAYER */
+
+.section.notlive#livestream,
+.section.notlive#livestream > .twitchPlayer {
+  display: none;
+  height: 0px;
+  opacity: 0;
+}
+
+.section.live#livestream,
+.section.live#livestream > .twitchPlayer {
+  animation: showLivestreamDiv 1s ease-out;
+}
+
+@keyframes showLivestreamDiv {
+  0% {
+    display: flex;
+    opacity: 0;
+    height: 0;
+  }
+  100% {
+    display: flex;
+    opacity: 1;
+    height: 437px;
+  }
 }
 
 /* LIST VIEW */
@@ -182,6 +210,10 @@
   display: flex;
   flex-flow: row;
   box-sizing: border-box;
+}
+
+.section#skins .list .item:target {
+  outline: 2px solid #6ba2ed;
 }
 
 .section#skins .list .item .about {
@@ -208,7 +240,6 @@
   color: #6ba2ed;
   font-size: 13pt;
   font-weight: 500;
-  cursor: pointer;
 }
 
 .section#skins .list .item .title .author {
@@ -216,7 +247,6 @@
   font-size: 9.6pt;
   font-weight: 400;
   padding: 3px 0 0 0;
-  cursor: pointer;
 }
 
 .section#skins .list .item .info {
@@ -331,8 +361,13 @@
   /* backdrop-filter: blur(1px); */
 }
 
+.section#skins .grid .item:target {
+  outline: 2px solid #6ba2ed;
+}
+
 .section#skins .grid .item .content {
-  background-color: var(--site-primary-color);
+  background-color: hsla(213, 17%, 24%, 0.5);
+  backdrop-filter: blur(3px);
   border-radius: 6px;
   z-index: 1;
 }
@@ -344,6 +379,7 @@
   flex-flow: column;
   align-items: center;
   user-select: none;
+  text-shadow: 0 0 6px #222;
 }
 
 .section#skins .grid .item .title .name {
@@ -495,6 +531,7 @@
 .gamemodes .skinMode {
   height: 21px;
   width: 21px;
+  user-select: none;
   filter: brightness(52%);
 }
 
@@ -511,5 +548,18 @@
 @media screen and (max-width: 1100px) {
   .profileDivBackground .mainDiv {
     width: 90vw;
+  }
+}
+
+@media screen and (max-width: 450px) {
+  .profileDivBackground .mainDiv {
+    width: 100vw;
+    margin: 20px 0px;
+  }
+
+  .section#skins .grid {
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
   }
 }

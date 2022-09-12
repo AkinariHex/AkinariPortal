@@ -4,8 +4,11 @@ import NavLink from "../NavLink/NavLink";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import { useClickOutside } from "react-haiku";
-import { Home2, Login, Logout, User } from "iconsax-react";
+import { Home2, Login, Logout, User, Setting2 } from "iconsax-react";
+/* import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBell } from "@fortawesome/free-solid-svg-icons"; */
 import { motion } from "framer-motion";
+/* import NotificationsContainer from "../NotificationsContainer/NotificationsContainer"; */
 
 export default function Navbar({ session }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -70,59 +73,65 @@ export default function Navbar({ session }) {
 
         <div className="userInfo">
           {session ? (
-            <div className="userInfoContent">
-              <div
-                onClick={() =>
-                  setIsDropdownOpen((isDropdownOpen) => !isDropdownOpen)
-                }
-              >
-                <a>
-                  <div className="userContent">
-                    <span className="userInfo_name">{session.username}</span>
-                    <img
-                      className="userInfo_image"
-                      src={session.avatar_url}
-                      alt="user image"
-                    />
-                  </div>
-                </a>
-              </div>
-              <motion.div
-                className="profileActions"
-                animate={isDropdownOpen ? "open" : "closed"}
-                variants={variants}
-                transition={{ duration: 0.2 }}
-                ref={ref}
-              >
-                <Link href={`/users/${session.id}`}>
-                  <div
-                    className="item"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    <User size="16" color="#d9e3f0" />
-                    Profile
-                  </div>
-                </Link>
-                {/* <Link href="/settings">
-                  <div
-                    className="item"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    <Setting2 size="16" color="#d9e3f0" />
-                    Settings
-                  </div>
-                </Link> */}
+            <>
+              {/* <div className="notificationSection">
+                <FontAwesomeIcon icon={faBell} className="notificationIcon" />
+                <NotificationsContainer />
+              </div> */}
+              <div className="userInfoContent">
                 <div
-                  className="item"
-                  onClick={() => {
-                    signOut(), setIsDropdownOpen(false);
-                  }}
+                  onClick={() =>
+                    setIsDropdownOpen((isDropdownOpen) => !isDropdownOpen)
+                  }
                 >
-                  <Logout size="16" color="#F47373" />
-                  Logout
+                  <a>
+                    <div className="userContent">
+                      <span className="userInfo_name">{session.username}</span>
+                      <img
+                        className="userInfo_image"
+                        src={session.avatar_url}
+                        alt="user image"
+                      />
+                    </div>
+                  </a>
                 </div>
-              </motion.div>
-            </div>
+                <motion.div
+                  className="profileActions"
+                  animate={isDropdownOpen ? "open" : "closed"}
+                  variants={variants}
+                  transition={{ duration: 0.2 }}
+                  ref={ref}
+                >
+                  <Link href={`/users/${session.id}`}>
+                    <div
+                      className="item"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <User size="16" color="#d9e3f0" />
+                      Profile
+                    </div>
+                  </Link>
+                  <Link href="/settings">
+                    <div
+                      className="item"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <Setting2 size="16" color="#d9e3f0" />
+                      Settings
+                    </div>
+                  </Link>
+                  <div
+                    className="item"
+                    onClick={() => {
+                      signOut(), setIsDropdownOpen(false);
+                    }}
+                  >
+                    <Logout size="16" color="#F47373" />
+                    Logout
+                  </div>
+                </motion.div>
+              </div>
+            </>
           ) : (
             <div className="userLogin">
               <button onClick={() => signIn("osu")}>

@@ -1,13 +1,6 @@
 import NextAuth from "next-auth";
 import supabase from "../../../config/supabaseClient";
 
-const playmodes = {
-  osu: 0,
-  mania: 1,
-  taiko: 2,
-  fruits: 3,
-};
-
 const postUserDBsupabase = async (profile) => {
   const { data, error } = await supabase.from("users").insert([
     {
@@ -96,6 +89,7 @@ export default NextAuth({
       if (userData.authentication === "basic") return {};
 
       userData.access_token = token?.access_token;
+      userData;
 
       return userData;
     },
