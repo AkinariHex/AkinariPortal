@@ -30,7 +30,7 @@ function MyApp({ Component, pageProps, session }) {
   return (
     <>
       <Head>
-        <link rel="shortcut icon" href="favicon.ico" />
+        <link rel="shortcut icon" href="/img/favicon.ico" />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         {/* HTML */}
