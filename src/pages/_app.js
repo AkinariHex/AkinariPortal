@@ -8,7 +8,7 @@ import "../styles/MobileNavbar.css";
 import "../styles/RecentSkins.css";
 import "../styles/Users.css";
 import "../styles/Socials.css";
-import "../styles/NotificationsContainer.css";
+/* import "../styles/NotificationsContainer.css"; */
 import Navbar from "../components/Navbar/Navbar";
 import Head from "next/head";
 import Router from "next/router";
