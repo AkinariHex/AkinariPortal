@@ -47,5 +47,18 @@ src/styles/NotificationsContainer.css
 public/img/homepagebanner.jpg
 public/img/osu!lazertexture.svg
 
+# manifest
+public/img/manifest
+public/img/manifest/manifesticon.png
+public/img/manifest/manifesticon.psd
+
 # sitemap
 src/pages/api/sitemap.js
+
+# Auto Generated PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map

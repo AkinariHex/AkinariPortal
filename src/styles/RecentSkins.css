@@ -63,7 +63,7 @@
 .item.skins .content .info .downloads {
   display: flex;
   flex-flow: row;
-  font-family: "Poppins";
+  font-family: var(--font-family-var);
   font-weight: 500;
   align-items: center;
   justify-content: flex-end;

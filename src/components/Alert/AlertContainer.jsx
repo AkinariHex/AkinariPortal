@@ -1,8 +1,13 @@
 import React from "react";
 import styles from "./AlertContainer.module.css";
 
-function AlertContainer() {
-  return <div className={styles.alertContainer}>Link Copied!</div>;
+const alertType = {
+  skinLink: "Link Copied!",
+  discordID: "Username Copied!",
+};
+
+function AlertContainer({ type }) {
+  return <div className={styles.alertContainer}>{alertType[type]}</div>;
 }
 
 export default AlertContainer;

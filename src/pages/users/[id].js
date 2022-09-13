@@ -33,9 +33,11 @@ export default function User({ session, userData, skinsData }) {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalSkinEdit, setModalSkinEdit] = useState();
 
+  const [typeOfCopy, setTypeOfCopy] = useState("");
   const [isLinkCopied, setIsLinkCopied] = useState(false);
 
-  function showCopyAlert() {
+  function showCopyAlert(type) {
+    setTypeOfCopy(type);
     setIsLinkCopied(true);
     setTimeout(() => {
       setIsLinkCopied(false);
@@ -104,6 +106,70 @@ export default function User({ session, userData, skinsData }) {
                       delayHide={0}
                       arrowColor={"var(--site-background-users-page-color)"}
                     />
+                  )}
+                </div>
+                <div className="socials">
+                  {userData.twitch !== null && userData.twitch !== "" && (
+                    <div className="social" id="twitch">
+                      <i
+                        className="bx bxl-twitch"
+                        onClick={() =>
+                          window.open(
+                            `https://twitch.tv/${userData.twitch}`,
+                            "_blank"
+                          )
+                        }
+                      ></i>
+                    </div>
+                  )}
+                  {userData.twitter !== null && userData.twitter !== "" && (
+                    <div className="social" id="twitter">
+                      <i
+                        className="bx bxl-twitter"
+                        onClick={() =>
+                          window.open(
+                            `https://twitter.com/${userData.twitter}`,
+                            "_blank"
+                          )
+                        }
+                      ></i>
+                    </div>
+                  )}
+                  {userData.youtube !== null && userData.youtube !== "" && (
+                    <div className="social" id="youtube">
+                      <i
+                        className="bx bxl-youtube"
+                        onClick={() =>
+                          window.open(
+                            `https://youtube.com/${userData.youtube}`,
+                            "_blank"
+                          )
+                        }
+                      ></i>
+                    </div>
+                  )}
+                  {userData.github !== null && userData.github !== "" && (
+                    <div className="social" id="github">
+                      <i
+                        className="bx bxl-github"
+                        onClick={() =>
+                          window.open(
+                            `https://github.com/${userData.github}`,
+                            "_blank"
+                          )
+                        }
+                      ></i>
+                    </div>
+                  )}
+                  {userData.discord !== null && userData.discord !== "" && (
+                    <div className="social" id="discord">
+                      <CopyToClipboard
+                        text={`${userData.discord}`}
+                        onCopy={() => showCopyAlert("discordID")}
+                      >
+                        <i className="bx bxl-discord-alt"></i>
+                      </CopyToClipboard>
+                    </div>
                   )}
                 </div>
               </div>
@@ -284,7 +350,7 @@ export default function User({ session, userData, skinsData }) {
                         <div className="buttons">
                           <CopyToClipboard
                             text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                            onCopy={showCopyAlert}
+                            onCopy={() => showCopyAlert("skinLink")}
                           >
                             <FontAwesomeIcon
                               className="button"
@@ -445,7 +511,7 @@ export default function User({ session, userData, skinsData }) {
                         <div className="buttons">
                           <CopyToClipboard
                             text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                            onCopy={showCopyAlert}
+                            onCopy={() => showCopyAlert("skinLink")}
                           >
                             <FontAwesomeIcon
                               className="button"
@@ -623,7 +689,7 @@ export default function User({ session, userData, skinsData }) {
                           <div className="buttons">
                             <CopyToClipboard
                               text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                              onCopy={showCopyAlert}
+                              onCopy={() => showCopyAlert("skinLink")}
                             >
                               <FontAwesomeIcon
                                 className="button"
@@ -792,7 +858,7 @@ export default function User({ session, userData, skinsData }) {
                           <div className="buttons">
                             <CopyToClipboard
                               text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                              onCopy={showCopyAlert}
+                              onCopy={() => showCopyAlert("skinLink")}
                             >
                               <FontAwesomeIcon
                                 className="button"
@@ -835,7 +901,7 @@ export default function User({ session, userData, skinsData }) {
           />
         )}
       </div>
-      {isLinkCopied && <AlertContainer />}
+      {isLinkCopied && <AlertContainer type={typeOfCopy} />}
     </>
   );
 }
@@ -846,7 +912,9 @@ export async function getServerSideProps(context) {
 
   var statusData = await supabase
     .from("users")
-    .select("id,username,badges,country,banner,skin_view,twitch")
+    .select(
+      "id,username,badges,country,banner,skin_view,twitch,twitter,youtube,github,discord"
+    )
     .eq("id", context.params.id);
 
   try {

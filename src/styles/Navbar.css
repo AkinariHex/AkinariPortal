@@ -15,6 +15,7 @@ header {
 }
 
 .logoNavbar {
+  height: 3.1em;
   display: flex;
   align-content: center;
   cursor: pointer;

@@ -23,6 +23,7 @@
     "iconsax-react": "0.0.4",
     "next": "^12.0.7",
     "next-auth": "^4.10.0",
+    "next-pwa": "^5.6.0",
     "next-transpile-modules": "^9.0.0",
     "react": "^17.0.2",
     "react-accessible-accordion": "^4.0.0",
@@ -39,8 +40,6 @@
     "react-select": "^5.4.0",
     "react-tippy": "^1.4.0",
     "react-tooltip": "^4.2.21",
-    "socket.io": "^4.2.0",
-    "socket.io-client": "^4.2.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

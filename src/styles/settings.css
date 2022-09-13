@@ -254,3 +254,31 @@
     opacity: 1;
   }
 }
+
+@media screen and (max-width: 1100px) {
+  .settingsContainer {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 20px;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .socialField {
+    width: 100% !important;
+  }
+
+  .socialField .about {
+    display: none !important;
+  }
+
+  .settingsContainer .section .main {
+    flex-flow: column;
+    align-items: flex-start;
+  }
+
+  .settingsContainer .section .react-select__control,
+  .settingsContainer .section .react-select {
+    width: 100% !important;
+  }
+}

@@ -33,7 +33,7 @@ export default function Navbar({ session }) {
               filter: "brightness(1.1)",
             }}
             type="image/webp"
-            data="/img/logoFull@0.25x.webp"
+            data="/img/logoFull.webp"
             className="logoNavbar"
           />
         </Link>
@@ -183,11 +183,22 @@ export default function Navbar({ session }) {
             </div>
           </NavLink> */}
           {session ? (
-            <Link href={`/users/${session.id}`} passHref>
-              <div className="item">
-                <img src={session.avatar_url} alt="user propic" />
-              </div>
-            </Link>
+            <>
+              <NavLink
+                activeClassName="active"
+                aria-current="page"
+                href={"/settings"}
+              >
+                <div className="item">
+                  <Setting2 color="#d9e3f0" />
+                </div>
+              </NavLink>
+              <Link href={`/users/${session.id}`} passHref>
+                <div className="item">
+                  <img src={session.avatar_url} alt="user propic" />
+                </div>
+              </Link>
+            </>
           ) : (
             <div className="item" onClick={() => signIn("osu")}>
               <Login color="#d9e3f0" />

@@ -48,6 +48,25 @@
   flex-flow: column;
   background-color: var(--site-primary-color);
   box-shadow: 0px 1px 6px 0px rgba(0, 0, 0, 0.1);
+  font-family: var(--font-family-var);
+}
+
+.mainDiv .userInfo .content .socials {
+  height: 28px;
+  width: 100%;
+  background: linear-gradient(0deg, #2e3640, transparent 80%);
+  /* background-color: #2e3640; */
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  align-items: center;
+  font-size: 14pt;
+  gap: 14px;
+  color: #afbed1;
+}
+
+.mainDiv .userInfo .content .socials .social {
+  cursor: pointer;
 }
 
 .mainDiv .userInfo .content .head {
@@ -76,7 +95,6 @@
 
 .mainDiv .userInfo .content .info .name {
   font-size: 20pt;
-  font-family: "Poppins";
   font-weight: 500;
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }

@@ -1,13 +1,6 @@
-import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import ReactTooltip from "react-tooltip";
-
-async function saveChange(value, social) {
-  var data = await fetch(`/api/settings/${social}?value=${value}`);
-  data = await data.json();
-  console.log(data);
-}
 
 function ConnectionField({
   social,
@@ -63,7 +56,6 @@ function ConnectionField({
         placeholder={socials[social].placeholder}
         onChange={(e) => {
           e.preventDefault();
-          console.log(e.target.value);
           setInputValue(e.target.value);
         }}
         readOnly={readOnly}

@@ -1,4 +1,9 @@
-const withTM = require("next-transpile-modules")(["react-haiku"]);
+/* const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+}); */
+const withTM = require("next-transpile-modules")(["react-haiku", "next-pwa"]);
 const path = require("path");
 const { parsed: localEnv } = require("dotenv-safe").config({
   allowEmptyValues: false,
@@ -12,4 +17,9 @@ module.exports = withTM({
     formats: ["image/avif", "image/webp"],
   },
   env: localEnv,
+  pwa: {
+    dest: "public",
+    register: true,
+    skipWaiting: true,
+  },
 });
