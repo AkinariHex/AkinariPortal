@@ -2,11 +2,24 @@ import Head from "next/head";
 import { getSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Select from "react-select";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFileUpload, faXmark } from "@fortawesome/free-solid-svg-icons";
+import ReactTooltip from "react-tooltip";
 import ConnectionField from "../../components/ConnectionField/ConnectionField";
 import LoadingIcon from "../../components/LoadingIcon/LoadingIcon";
+import moment from "moment/moment";
 import supabase from "../../config/supabaseClient";
 
+moment.locale("en");
+
 export default function Settings({ session, userData }) {
+  const [tabletSettingsInfo, setTabletSettingsInfo] = useState(
+    userData.tabletFileUploadInfo !== null
+      ? userData.tabletFileUploadInfo
+      : { file: "", date: "" }
+  );
+  const [tabletUploadError, setTabletUploadError] = useState(false);
+
   const [skinview, setSkinview] = useState(userData.skin_view);
 
   const [prevTwitchData, setPrevTwitchData] = useState(userData.twitch);
@@ -29,6 +42,52 @@ export default function Settings({ session, userData }) {
     { value: "list", label: "List" },
     { value: "grid", label: "Grid" },
   ];
+
+  const uploadTabletSettings = async (tabletFile) => {
+    var reader = new FileReader();
+    reader.onload = async function (e) {
+      const dataNow = Date.now();
+      const uploadInfo = {
+        file: tabletFile.name,
+        date: dataNow,
+      };
+      const jsonFile = JSON.parse(e.target.result);
+      const tabletName = jsonFile.Profiles[0].Tablet;
+      // parse string to json
+      setTabletSettingsInfo(uploadInfo);
+
+      const { data, error } = await supabase
+        .from("users")
+        .update({
+          tablet: tabletName,
+          tabletSettingsFile: jsonFile,
+          tabletFileUploadInfo: uploadInfo,
+        })
+        .eq("id", session.id);
+
+      if (error) {
+        setTabletUploadError(true);
+      } else {
+        setTabletUploadError(false);
+      }
+    };
+    reader.readAsText(tabletFile);
+  };
+
+  const deleteTabletSettings = async () => {
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        tablet: null,
+        tabletSettingsFile: null,
+        tabletFileUploadInfo: null,
+      })
+      .eq("id", session.id);
+
+    if (error) return;
+
+    setTabletSettingsInfo({ file: "", date: "" });
+  };
 
   const saveSkinView = async (changedView) => {
     const saving = {
@@ -91,6 +150,69 @@ export default function Settings({ session, userData }) {
       <div className="settingsPageContainer">
         <div className="settingsContainer">
           <div className="header">Settings</div>
+          <div className="section" id="tabletSettings">
+            <div className="title">
+              Tablet Settings <span className="betaSection">BETA</span>
+            </div>
+            <div className="fileInfo">
+              <div
+                className={`currentFile ${tabletUploadError ? "error" : ""}`}
+              >
+                <span id="tabletSettingsName">
+                  {tabletSettingsInfo.file === ""
+                    ? "No settings uploaded"
+                    : tabletSettingsInfo.file}
+                </span>
+                {tabletSettingsInfo.date && (
+                  <span id="uploadDate">
+                    {moment(tabletSettingsInfo.date).format(
+                      "DD MMM YYYY, kk:mm"
+                    )}
+                  </span>
+                )}
+              </div>
+              {tabletSettingsInfo.file !== "" &&
+                tabletSettingsInfo.date !== "" && (
+                  <div
+                    className="deleteTabletSettings"
+                    data-tip={"Delete Tablet Settings"}
+                    onClick={() => deleteTabletSettings()}
+                  >
+                    <FontAwesomeIcon icon={faXmark} />
+                  </div>
+                )}
+            </div>
+            <div className="tabletUploadBTN">
+              <FontAwesomeIcon icon={faFileUpload} /> Import Tablet Settings
+              <input
+                type="file"
+                name="tabletSettingsJSON"
+                id="tabletSettingsJSON"
+                onChange={(e) => uploadTabletSettings(e.target.files[0])}
+              />
+            </div>
+            <div className="subtitle">
+              Show on your profile the tablet area you are currently using!
+              Upload the exported .json file.
+              <br />
+              It supports only the .json file made by{" "}
+              <a href="https://opentabletdriver.net/" target={"_blank"}>
+                OpenTabletDriver
+              </a>
+              .{" "}
+              <span
+                data-tip={`
+                <div class="exportExample">
+                <span>To export the settings on OpenTabletDriver go to<br /><b>File</b> > <b>Save settings as...</b></span>
+                <img src="https://akinariosu.s-ul.eu/KUl8xGrI" />
+                </div>
+                `}
+                data-html={true}
+              >
+                How to export the tablet settings?
+              </span>
+            </div>
+          </div>
           <div className="section" id="skinview">
             <div className="main">
               <div className="title">Skin View</div>
@@ -187,7 +309,9 @@ export async function getServerSideProps(context) {
     session !== null
       ? await supabase
           .from("users")
-          .select("skin_view,twitch,youtube,github,twitter,discord")
+          .select(
+            "skin_view,twitch,youtube,github,twitter,discord,tabletSettingsFile,tabletFileUploadInfo"
+          )
           .eq("id", session.id)
       : [{}];
 

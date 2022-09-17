@@ -15,7 +15,10 @@ import {
 import Modal from "../../components/Modal/Modal";
 import AlertContainer from "../../components/Alert/AlertContainer";
 import LivestreamPlayer from "../../components/LivestreamPlayer/LivestreamPlayer";
+import PlaystyleSection from "../../components/PlaystyleSection/PlaystyleSection";
 import supabase from "../../config/supabaseClient";
+
+var jsDownload = require("js-file-download");
 
 function modifyDownloadCount(downloadCount, recordID) {
   fetch(`/api/skins/modifydownload?c=${downloadCount + 1}&id=${recordID}`);
@@ -178,6 +181,32 @@ export default function User({ session, userData, skinsData }) {
           {userData.twitch !== null && (
             <LivestreamPlayer twitchName={userData.twitch} />
           )}
+          {userData.tablet &&
+            userData.tabletSettingsFile &&
+            userData.tabletFileUploadInfo && (
+              <div className="section" id="tabletarea">
+                <div className="header">
+                  <div className="title">Tablet Area</div>
+                  {session && (
+                    <div
+                      className="downloadTabletSettingsBTN"
+                      onClick={() =>
+                        jsDownload(
+                          JSON.stringify(userData.tabletSettingsFile),
+                          userData.tabletFileUploadInfo.file
+                        )
+                      }
+                    >
+                      <FontAwesomeIcon icon={faDownload} /> Download Settings
+                    </div>
+                  )}
+                </div>
+                <PlaystyleSection
+                  tabletInfo={userData.tablet}
+                  tabletSettings={userData.tabletSettingsFile}
+                />
+              </div>
+            )}
           <div className="section" id="skins">
             <div className="header">
               <div className="title">Skins</div>
@@ -913,7 +942,7 @@ export async function getServerSideProps(context) {
   var statusData = await supabase
     .from("users")
     .select(
-      "id,username,badges,country,banner,skin_view,twitch,twitter,youtube,github,discord"
+      "id,username,badges,country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo"
     )
     .eq("id", context.params.id);
 
