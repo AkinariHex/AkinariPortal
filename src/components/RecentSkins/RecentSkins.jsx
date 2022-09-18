@@ -17,7 +17,7 @@ function RecentSkins({ rSkins }) {
               <div className="content">
                 <div
                   className="name"
-                  onClick={() => window.open(skin.URL, "_blank")}
+                  onClick={() => window.open(skin.URL, "_self")}
                 >
                   {skin.Name}
                 </div>
@@ -26,10 +26,14 @@ function RecentSkins({ rSkins }) {
                     <img
                       src={`http://s.ppy.sh/a/${skin.Player.id}`}
                       alt={skin.Player.id}
-                      onClick={() => window.open(`/users/${skin.Player.id}`)}
+                      onClick={() =>
+                        window.open(`/users/${skin.Player.id}`, "_self")
+                      }
                     />{" "}
                     <span
-                      onClick={() => window.open(`/users/${skin.Player.id}`)}
+                      onClick={() =>
+                        window.open(`/users/${skin.Player.id}`, "_self")
+                      }
                     >
                       {skin.Player.username}
                     </span>
