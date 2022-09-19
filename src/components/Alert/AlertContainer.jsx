@@ -4,6 +4,7 @@ import styles from "./AlertContainer.module.css";
 const alertType = {
   skinLink: "Link Copied!",
   discordID: "Username Copied!",
+  secret_key: "Secret Key Copied!",
 };
 
 function AlertContainer({ type }) {

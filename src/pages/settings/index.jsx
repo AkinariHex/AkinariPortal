@@ -4,15 +4,26 @@ import { useEffect, useState } from "react";
 import Select from "react-select";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileUpload, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { Copy, Eye, EyeSlash } from "iconsax-react";
 import ReactTooltip from "react-tooltip";
 import ConnectionField from "../../components/ConnectionField/ConnectionField";
 import LoadingIcon from "../../components/LoadingIcon/LoadingIcon";
+import AlertContainer from "../../components/Alert/AlertContainer";
 import moment from "moment/moment";
 import supabase from "../../config/supabaseClient";
 
 moment.locale("en");
 
 export default function Settings({ session, userData }) {
+  const [hideAPI, setHideAPI] = useState(true);
+  const [apikey, setApikey] = useState(
+    userData.secret_key === null
+      ? ""
+      : userData.secret_key === undefined
+      ? ""
+      : userData.secret_key
+  );
+
   const [tabletSettingsInfo, setTabletSettingsInfo] = useState(
     userData.tabletFileUploadInfo !== null
       ? userData.tabletFileUploadInfo
@@ -37,6 +48,17 @@ export default function Settings({ session, userData }) {
   const [hasSkinViewSaved, setHasSkinViewSaved] = useState(false);
   /* isSaving refer to Socials saving */
   const [isSaving, setIsSaving] = useState(false);
+
+  const [typeOfCopy, setTypeOfCopy] = useState("");
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
+
+  function showCopyAlert(type) {
+    setTypeOfCopy(type);
+    setIsLinkCopied(true);
+    setTimeout(() => {
+      setIsLinkCopied(false);
+    }, 5000);
+  }
 
   const select_options = [
     { value: "list", label: "List" },
@@ -142,6 +164,26 @@ export default function Settings({ session, userData }) {
     setYoutubeData(userData.youtube);
   };
 
+  function copyToClipboard() {
+    navigator.clipboard.writeText(apikey);
+    showCopyAlert("secret_key");
+  }
+
+  async function createApikey() {
+    let data = await fetch(`/api/generate`).then((res) => res.json());
+    if (data.status === "success") {
+      setApikey(data.secret_key);
+    }
+  }
+
+  async function destroyApikey() {
+    let data = await fetch(`/api/destroy`).then((res) => res.json());
+    if (data.status === "success") {
+      setApikey("You haven't generated any secret key!");
+      setHideAPI(false);
+    }
+  }
+
   return (
     <>
       <Head>
@@ -150,6 +192,71 @@ export default function Settings({ session, userData }) {
       <div className="settingsPageContainer">
         <div className="settingsContainer">
           <div className="header">Settings</div>
+          <div className="section" id="secretkey">
+            <div className="title">Secret Key</div>
+            <div className="field">
+              <input
+                type="text"
+                placeholder="You haven't generated any secret key!"
+                value={
+                  apikey !== "" && hideAPI
+                    ? "*********************************************"
+                    : apikey
+                }
+                disabled
+              />
+              {apikey !== "" &&
+              apikey !== "You haven't generated any secret key!" ? (
+                hideAPI ? (
+                  <>
+                    <button
+                      onClick={() =>
+                        setHideAPI((prev) => (prev ? false : true))
+                      }
+                    >
+                      <Eye size="18" color="#dadada" />
+                    </button>
+                    {/* <Tooltip
+                      title="Copied!"
+                      position="right"
+                      trigger="click"
+                      arrow={false}
+                    > */}
+                    <button onClick={() => copyToClipboard()}>
+                      <Copy size="18" color="#dadada" />
+                    </button>
+                    {/* </Tooltip> */}
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() =>
+                        setHideAPI((prev) => (prev ? false : true))
+                      }
+                    >
+                      <EyeSlash size="18" color="#dadada" />
+                    </button>
+                    {/* <Tooltip
+                      title="Copied!"
+                      position="right"
+                      trigger="click"
+                      arrow={false}
+                    > */}
+                    <button onClick={() => copyToClipboard()}>
+                      <Copy size="18" color="#dadada" />
+                    </button>
+                    {/* </Tooltip> */}
+                  </>
+                )
+              ) : (
+                ""
+              )}
+            </div>
+            <div className="buttons">
+              <button onClick={() => createApikey()}>Generate Apikey</button>
+              <button onClick={() => destroyApikey()}>Destroy Apikey</button>
+            </div>
+          </div>
           <div className="section" id="tabletSettings">
             <div className="title">
               Tablet Settings <span className="betaSection">BETA</span>
@@ -297,6 +404,7 @@ export default function Settings({ session, userData }) {
           </div>
         </div>
       </div>
+      {isLinkCopied && <AlertContainer type={typeOfCopy} />}
     </>
   );
 }
@@ -310,7 +418,7 @@ export async function getServerSideProps(context) {
       ? await supabase
           .from("users")
           .select(
-            "skin_view,twitch,youtube,github,twitter,discord,tabletSettingsFile,tabletFileUploadInfo"
+            "skin_view,twitch,youtube,github,twitter,discord,tabletSettingsFile,tabletFileUploadInfo,secret_key"
           )
           .eq("id", session.id)
       : [{}];

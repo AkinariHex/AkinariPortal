@@ -324,6 +324,92 @@
   animation: disableResetButton 0.2s ease-in;
 }
 
+/* APIKEY */
+.settingsContainer .section .field,
+.settingsContainer .section .buttons {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.settingsContainer .section .field input {
+  width: 27em;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11.4pt;
+  border: 0;
+  color: #aab9cb;
+  background-color: #1b2026;
+  font-family: "Poppins";
+  font-weight: 300;
+}
+
+.settingsContainer .section .field input::placeholder {
+  color: #ddd;
+}
+
+.settingsContainer .section .field span {
+  font-size: 12pt;
+  font-weight: 300;
+  color: #ddd;
+  padding: 0 0 0 2px;
+}
+
+.settingsContainer .section .field button {
+  min-width: 40px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  color: #dadada;
+  background-color: hsl(219, 40%, 46%, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+
+.settingsContainer .section .field button:hover {
+  background-color: hsl(219, 40%, 46%, 0.8);
+  color: #eee;
+  transition: all 0.2s ease-in;
+}
+
+.settingsContainer .section .buttons button {
+  width: 19.4em;
+  height: 35px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: #dadada;
+  font-family: "Poppins";
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+}
+
+.settingsContainer .section .buttons button:first-of-type {
+  background-color: hsl(219, 40%, 46%, 0.6);
+  font-weight: 400;
+}
+
+.settingsContainer .section .buttons button:first-of-type:hover {
+  background-color: hsl(219, 40%, 46%, 0.8);
+  color: #eee;
+  transition: all 0.2s ease-in;
+}
+
+.settingsContainer .section .buttons button:last-of-type {
+  background-color: rgba(164, 70, 70, 0.6);
+  font-weight: 400;
+}
+
+.settingsContainer .section .buttons button:last-of-type:hover {
+  background-color: rgba(164, 70, 70, 0.8);
+  font-weight: 400;
+  transition: all 0.2s ease-in;
+}
+
 @keyframes showConnectionsButtons {
   0% {
     display: flex;
