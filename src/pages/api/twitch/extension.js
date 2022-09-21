@@ -1,4 +1,23 @@
 import supabase from "../../../config/supabaseClient";
+import Cors from "cors";
+
+const cors = Cors({
+  methods: ["POST", "GET"],
+});
+
+// Helper method to wait for a middleware to execute before continuing
+// And to throw an error when an error happens in a middleware
+function runMiddleware(req, res, fn) {
+  return new Promise((resolve, reject) => {
+    fn((req, res) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+
+      return resolve(result);
+    });
+  });
+}
 
 async function getSkins(supabase, userid) {
   const { data, error } = await supabase
@@ -15,6 +34,9 @@ async function getSkins(supabase, userid) {
 }
 
 export default async function handler(req, res) {
+  // Run the middleware
+  await runMiddleware(req, res, cors);
+
   if (req.method === "GET") {
     if (req.query.twitchid && req.query.type === "check") {
       const { data, error } = await supabase
