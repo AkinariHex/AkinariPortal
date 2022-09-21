@@ -3,6 +3,7 @@ import Cors from "cors";
 
 const cors = Cors({
   methods: ["POST", "GET"],
+  origin: "https://sga5d92fjov4s3rycmv4q5cr7xf85u.ext-twitch.tv",
 });
 
 // Helper method to wait for a middleware to execute before continuing
