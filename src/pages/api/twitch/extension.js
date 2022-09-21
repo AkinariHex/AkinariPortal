@@ -2,15 +2,12 @@ import supabase from "../../../config/supabaseClient";
 import Cors from "cors";
 
 const cors = Cors({
-  methods: ["POST", "GET"],
-  origin: "https://sga5d92fjov4s3rycmv4q5cr7xf85u.ext-twitch.tv",
+  methods: ["GET", "POST"],
 });
 
-// Helper method to wait for a middleware to execute before continuing
-// And to throw an error when an error happens in a middleware
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
-    fn((req, res) => {
+    fn(req, res, (result) => {
       if (result instanceof Error) {
         return reject(result);
       }
