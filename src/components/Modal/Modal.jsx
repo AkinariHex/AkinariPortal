@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useClickOutside } from "react-haiku";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import styles from "./Modal.module.css";
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import React, { useEffect, useRef, useState } from 'react';
+import { useClickOutside } from 'react-haiku';
+import styles from './Modal.module.css';
 
 function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   const [inputNameError, setInputNameError] = useState(false);
@@ -12,64 +12,65 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
   const [inputBgURLNot, setInputBgURLNot] = useState(false);
 
   const [skinName, setSkinName] = useState(
-    skinToEdit != null ? skinToEdit?.Name : ""
+    skinToEdit != null ? skinToEdit?.Name : ''
   );
   const [skinNameLength, setSkinNameLength] = useState(
     skinToEdit != null ? skinToEdit?.Name.length : 0
   );
   const [skinAuthor, setSkinAuthor] = useState(
-    skinToEdit != null ? skinToEdit?.Creator : ""
+    skinToEdit != null ? skinToEdit?.Creator : ''
   );
   const [skinAuthorLength, setSkinAuthorLength] = useState(
     skinToEdit != null ? skinToEdit?.Creator.length : 0
   );
   const [skinURL, setSkinURL] = useState(
-    skinToEdit != null ? skinToEdit?.URL : ""
+    skinToEdit != null ? skinToEdit?.URL : ''
   );
   const [skinBgURL, setSkinBgURL] = useState(
-    skinToEdit != null ? skinToEdit?.Banner : ""
+    skinToEdit != null ? skinToEdit?.Banner : ''
   );
 
   const [selectedTags, setSelectedTags] = useState(
     skinToEdit != null ? JSON.parse(skinToEdit?.Tags) : []
   );
   const [availableTags, setAvailableTags] = useState([
-    "current",
-    "tournaments",
-    "casual",
-    "old",
-    "aim",
-    "stream",
-    "tech",
-    "reading",
-    "speed",
-    "highAR",
-    "lowAR",
-    "highCS",
-    "lowCS",
-    "troll",
-    "NM",
-    "HD",
-    "HR",
-    "DT",
-    "EZ",
-    "FL",
+    'lazer',
+    'current',
+    'tournaments',
+    'casual',
+    'old',
+    'aim',
+    'stream',
+    'tech',
+    'reading',
+    'speed',
+    'highAR',
+    'lowAR',
+    'highCS',
+    'lowCS',
+    'troll',
+    'NM',
+    'HD',
+    'HR',
+    'DT',
+    'EZ',
+    'FL',
   ]);
 
   const [selectedModes, setSelectedModes] = useState(
     skinToEdit != null ? JSON.parse(skinToEdit?.Modes) : []
   );
   const [availableModes, setAvailableModes] = useState([
-    "osu!standard",
-    "osu!mania",
-    "osu!taiko",
-    "osu!ctb",
+    'osu!standard',
+    'osu!mania',
+    'osu!taiko',
+    'osu!ctb',
   ]);
 
   async function postSkinToDB() {
-    skinName === "" ? setInputNameError(true) : setInputNameError(false);
-    skinAuthor === "" ? setInputAuthorError(true) : setInputAuthorError(false);
-    skinURL === "" ? setInputURLError(true) : setInputURLError(false);
+    skinName === '' ? setInputNameError(true) : setInputNameError(false);
+    skinAuthor === '' ? setInputAuthorError(true) : setInputAuthorError(false);
+    skinURL === '' ? setInputURLError(true) : setInputURLError(false);
 
     const matchURL = skinURL.match(
       /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/
@@ -78,11 +79,11 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
     !matchURL ? setInputURLNot(true) : setInputURLNot(false);
 
     if (
-      skinName !== "" &&
+      skinName !== '' &&
       skinNameLength <= 45 &&
-      skinAuthor !== "" &&
+      skinAuthor !== '' &&
       skinAuthorLength <= 25 &&
-      skinURL !== "" &&
+      skinURL !== '' &&
       matchURL &&
       selectedModes !== []
     ) {
@@ -94,23 +95,23 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
         modes: JSON.stringify(selectedModes),
         tags: JSON.stringify(selectedTags.sort()),
         url: skinURL,
-        id: skinToEdit != null ? skinToEdit.id : "",
+        id: skinToEdit != null ? skinToEdit.id : '',
       };
 
       let submit = await fetch(
-        `/api/skins/${skinToEdit != null ? "update" : "create"}`,
+        `/api/skins/${skinToEdit != null ? 'update' : 'create'}`,
         {
-          method: "POST",
+          method: 'POST',
           headers: new Headers({
-            Accept: "application/json",
-            "Content-Type": "application/json",
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
           }),
           body: JSON.stringify(values),
         }
       );
       submit = await submit.json();
 
-      submit.status === "done" && window.location.reload();
+      submit.status === 'done' && window.location.reload();
     } else {
       return;
     }
@@ -137,10 +138,10 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
     <div className={styles.modal}>
       <div className={styles.modalMainDiv} ref={ref}>
         <div className={styles.modalHeader}>
-          <span>{skinToEdit != null ? "Edit skin" : "Add a new skin"}</span>
+          <span>{skinToEdit != null ? 'Edit skin' : 'Add a new skin'}</span>
           <FontAwesomeIcon
             icon={faXmark}
-            style={{ cursor: "pointer" }}
+            style={{ cursor: 'pointer' }}
             onClick={() => {
               openModal(false);
               skinToEditStatus();
@@ -161,7 +162,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
           <div className={styles.row}>
             <div className={styles.field}>
               <label htmlFor="skinName">
-                Name *{" "}
+                Name *{' '}
                 {inputNameError && (
                   <span className={styles.error}>Cannot be empty</span>
                 )}
@@ -179,7 +180,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                 />
                 <div className={styles.counter}>
                   {skinNameLength > 45 ? (
-                    <div id="actualCount" style={{ color: "#ffbedc" }}>
+                    <div id="actualCount" style={{ color: '#ffbedc' }}>
                       {skinNameLength}
                     </div>
                   ) : (
@@ -191,7 +192,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
             </div>
             <div className={styles.field}>
               <label htmlFor="skinAuthor">
-                Author *{" "}
+                Author *{' '}
                 {inputAuthorError && (
                   <span className={styles.error}>Cannot be empty</span>
                 )}
@@ -209,7 +210,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                 />
                 <div className={styles.counter}>
                   {skinAuthorLength > 25 ? (
-                    <div id="actualCount" style={{ color: "#ffbedc" }}>
+                    <div id="actualCount" style={{ color: '#ffbedc' }}>
                       {skinAuthorLength}
                     </div>
                   ) : (
@@ -223,7 +224,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
           <div className={styles.row}>
             <div className={styles.field}>
               <label htmlFor="skinURL">
-                Download URL *{" "}
+                Download URL *{' '}
                 {inputURLError && (
                   <span className={styles.error}>Cannot be empty</span>
                 )}
@@ -241,7 +242,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
             </div>
             <div className={styles.field}>
               <label htmlFor="skinBgURL">
-                Background Image URL{" "}
+                Background Image URL{' '}
                 <span className={styles.advice}>
                   &#x0028;Preferably in-game screen&#x0029;
                 </span>
@@ -261,11 +262,11 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
           <div className={styles.row}>
             <div className={styles.field}>
               <label htmlFor="skinTags">
-                Tags{" "}
+                Tags{' '}
                 <span className={styles.advice}>
                   &#x0028;Make sure to use &#x0022;Currently Using&#x0022; tag
                   only with one skin&#x0029;
-                </span>{" "}
+                </span>{' '}
               </label>
               <div className={styles.tagsSelection}>
                 <div id={styles.skinTags} name="skinTags">
@@ -274,10 +275,10 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                       <div
                         className={`tag ${tag}`}
                         style={{
-                          display: "flex",
-                          flexFlow: "row",
-                          gap: "8px",
-                          cursor: "pointer",
+                          display: 'flex',
+                          flexFlow: 'row',
+                          gap: '8px',
+                          cursor: 'pointer',
                         }}
                         onClick={() => {
                           setAvailableTags((prev) => [...prev, tag]);
@@ -286,10 +287,10 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                           );
                         }}
                       >
-                        {tag === "current"
-                          ? "Currently Using"
-                          : tag === "tournaments"
-                          ? "Using in Tournaments"
+                        {tag === 'current'
+                          ? 'Currently Using'
+                          : tag === 'tournaments'
+                          ? 'Using in Tournaments'
                           : tag[0].toUpperCase() + tag.substring(1)}
                         <FontAwesomeIcon icon={faXmark} />
                       </div>
@@ -301,7 +302,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                     return (
                       <div
                         className={`tag ${tag}`}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: 'pointer' }}
                         onClick={() => {
                           setSelectedTags((prev) => [...prev, tag]);
                           setAvailableTags(
@@ -309,10 +310,10 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                           );
                         }}
                       >
-                        {tag === "current"
-                          ? "Currently Using"
-                          : tag === "tournaments"
-                          ? "Using in Tournaments"
+                        {tag === 'current'
+                          ? 'Currently Using'
+                          : tag === 'tournaments'
+                          ? 'Using in Tournaments'
                           : tag[0].toUpperCase() + tag.substring(1)}
                       </div>
                     );
@@ -330,7 +331,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                     return (
                       <div
                         className={`tag skinMode`}
-                        style={{ cursor: "pointer", gap: "5px" }}
+                        style={{ cursor: 'pointer', gap: '5px' }}
                         onClick={() => {
                           setAvailableModes((prev) => [...prev, tag]);
                           setSelectedModes(
@@ -338,31 +339,31 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                           );
                         }}
                       >
-                        {tag === "osu!standard" && (
+                        {tag === 'osu!standard' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px" }}
+                            style={{ width: '18px' }}
                             src="/img/modes/mode-osu.png"
                           />
                         )}
-                        {tag === "osu!mania" && (
+                        {tag === 'osu!mania' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px" }}
+                            style={{ width: '18px' }}
                             src="/img/modes/mode-mania.png"
                           />
                         )}
-                        {tag === "osu!taiko" && (
+                        {tag === 'osu!taiko' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px" }}
+                            style={{ width: '18px' }}
                             src="/img/modes/mode-taiko.png"
                           />
                         )}
-                        {tag === "osu!ctb" && (
+                        {tag === 'osu!ctb' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px", rotate: "-90deg" }}
+                            style={{ width: '18px', rotate: '-90deg' }}
                             src="/img/modes/mode-fruits.png"
                           />
                         )}
@@ -377,7 +378,7 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                     return (
                       <div
                         className={`tag skinMode`}
-                        style={{ cursor: "pointer", gap: "5px" }}
+                        style={{ cursor: 'pointer', gap: '5px' }}
                         onClick={() => {
                           setSelectedModes((prev) => [...prev, tag]);
                           setAvailableModes(
@@ -385,31 +386,31 @@ function Modal({ openModal, skinToEdit, skinToEditStatus, sessionUser }) {
                           );
                         }}
                       >
-                        {tag === "osu!standard" && (
+                        {tag === 'osu!standard' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px" }}
+                            style={{ width: '18px' }}
                             src="/img/modes/mode-osu.png"
                           />
                         )}
-                        {tag === "osu!mania" && (
+                        {tag === 'osu!mania' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px" }}
+                            style={{ width: '18px' }}
                             src="/img/modes/mode-mania.png"
                           />
                         )}
-                        {tag === "osu!taiko" && (
+                        {tag === 'osu!taiko' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px" }}
+                            style={{ width: '18px' }}
                             src="/img/modes/mode-taiko.png"
                           />
                         )}
-                        {tag === "osu!ctb" && (
+                        {tag === 'osu!ctb' && (
                           <img
                             className={`skinMode active`}
-                            style={{ width: "18px", rotate: "-90deg" }}
+                            style={{ width: '18px', rotate: '-90deg' }}
                             src="/img/modes/mode-fruits.png"
                           />
                         )}

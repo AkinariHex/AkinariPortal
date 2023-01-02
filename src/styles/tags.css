@@ -16,7 +16,21 @@
   color: #ddefff;
 }
 
-.tag:is(.current, .stream, .tech, .aim, .reading, .speed, .highAR, .lowAR, .tournaments, .highCS, .lowCS, .casual, .old) {
+.tag:is(
+    .current,
+    .stream,
+    .tech,
+    .aim,
+    .reading,
+    .speed,
+    .highAR,
+    .lowAR,
+    .tournaments,
+    .highCS,
+    .lowCS,
+    .casual,
+    .old
+  ) {
   background-color: rgba(79, 93, 107, 1);
   color: #ddefff;
 }
@@ -80,4 +94,14 @@
 
 .tag:is(.FL, .troll).gridTag {
   background-color: var(--mods-fl-bg-grid);
+}
+
+.tag.lazer {
+  background-color: var(--tags-lazer-bg);
+  color: var(--tags-lazer-text);
+  font-weight: 500;
+}
+
+.tag.lazer.gridTag {
+  background-color: var(--tags-lazer-bg-grid);
 }

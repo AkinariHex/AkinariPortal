@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import ReactPlayer from "react-player/twitch";
+import { useEffect, useState } from 'react';
+import ReactPlayer from 'react-player/twitch';
 
 async function generateToken(channel) {
-  var response = await fetch("/api/twitch/generate");
+  var response = await fetch('/api/twitch/generate');
   response = await response.json();
 
-  if (response.message === "token created") {
+  if (response.message === 'token created') {
     return checkUserLivestream(channel);
   }
 }
@@ -15,11 +15,11 @@ async function checkUserLivestream(channel, setIsUserLive) {
     `/api/twitch/checklivestream?channel=${channel}&secret=${process.env.NEXT_PUBLIC_TWITCH_DB_SECRET}`
   );
   checkResponse = await checkResponse.json();
-  if (!checkResponse.status === 401) {
+  if (checkResponse?.status === 401) {
     return generateToken(channel);
   }
 
-  if (checkResponse.is_live === true) {
+  if (checkResponse?.is_live === true) {
     setIsUserLive(true);
   }
 }
@@ -35,7 +35,7 @@ function LivestreamPlayer({ twitchName }) {
     <>
       {isUserLive && (
         <div
-          className={`section ${isUserLive ? "live" : "notlive"}`}
+          className={`section ${isUserLive ? 'live' : 'notlive'}`}
           id="livestream"
         >
           <div className="header">

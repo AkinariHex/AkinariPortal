@@ -1,24 +1,24 @@
-import Head from "next/head";
-import { getSession } from "next-auth/react";
-import { useState } from "react";
-import ReactTooltip from "react-tooltip";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 import {
-  faGrip,
   faDownload,
+  faGrip,
   faGripLines,
+  faPen,
   faShare,
   faTrash,
-  faPen,
-} from "@fortawesome/free-solid-svg-icons";
-import Modal from "../../components/Modal/Modal";
-import AlertContainer from "../../components/Alert/AlertContainer";
-import LivestreamPlayer from "../../components/LivestreamPlayer/LivestreamPlayer";
-import PlaystyleSection from "../../components/PlaystyleSection/PlaystyleSection";
-import supabase from "../../config/supabaseClient";
+} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { getSession } from 'next-auth/react';
+import Head from 'next/head';
+import { useState } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import ReactTooltip from 'react-tooltip';
+import AlertContainer from '../../components/Alert/AlertContainer';
+import LivestreamPlayer from '../../components/LivestreamPlayer/LivestreamPlayer';
+import Modal from '../../components/Modal/Modal';
+import PlaystyleSection from '../../components/PlaystyleSection/PlaystyleSection';
+import supabase from '../../config/supabaseClient';
 
-var jsDownload = require("js-file-download");
+var jsDownload = require('js-file-download');
 
 function modifyDownloadCount(downloadCount, recordID) {
   fetch(`/api/skins/modifydownload?c=${downloadCount + 1}&id=${recordID}`);
@@ -27,7 +27,7 @@ function modifyDownloadCount(downloadCount, recordID) {
 async function deleteSkinFromDB(recordID, userid) {
   var data = await fetch(`/api/skins/delete?id=${recordID}&user=${userid}`);
   data = await data.json();
-  data.status === "done" && window.location.reload();
+  data.status === 'done' && window.location.reload();
 }
 
 export default function User({ session, userData, skinsData }) {
@@ -36,7 +36,7 @@ export default function User({ session, userData, skinsData }) {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalSkinEdit, setModalSkinEdit] = useState();
 
-  const [typeOfCopy, setTypeOfCopy] = useState("");
+  const [typeOfCopy, setTypeOfCopy] = useState('');
   const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   function showCopyAlert(type) {
@@ -84,7 +84,7 @@ export default function User({ session, userData, skinsData }) {
                       alt={userData.country?.name}
                       className="flag"
                     />
-                    <span>{userData.country?.name}</span>{" "}
+                    <span>{userData.country?.name}</span>{' '}
                   </div>
                 </div>
                 <div className="badges">
@@ -107,68 +107,68 @@ export default function User({ session, userData, skinsData }) {
                       className="badgeTooltip"
                       delayShow={300}
                       delayHide={0}
-                      arrowColor={"var(--site-background-users-page-color)"}
+                      arrowColor={'var(--site-background-users-page-color)'}
                     />
                   )}
                 </div>
                 <div className="socials">
-                  {userData.twitch !== null && userData.twitch !== "" && (
+                  {userData.twitch !== null && userData.twitch !== '' && (
                     <div className="social" id="twitch">
                       <i
                         className="bx bxl-twitch"
                         onClick={() =>
                           window.open(
                             `https://twitch.tv/${userData.twitch}`,
-                            "_blank"
+                            '_blank'
                           )
                         }
                       ></i>
                     </div>
                   )}
-                  {userData.twitter !== null && userData.twitter !== "" && (
+                  {userData.twitter !== null && userData.twitter !== '' && (
                     <div className="social" id="twitter">
                       <i
                         className="bx bxl-twitter"
                         onClick={() =>
                           window.open(
                             `https://twitter.com/${userData.twitter}`,
-                            "_blank"
+                            '_blank'
                           )
                         }
                       ></i>
                     </div>
                   )}
-                  {userData.youtube !== null && userData.youtube !== "" && (
+                  {userData.youtube !== null && userData.youtube !== '' && (
                     <div className="social" id="youtube">
                       <i
                         className="bx bxl-youtube"
                         onClick={() =>
                           window.open(
                             `https://youtube.com/${userData.youtube}`,
-                            "_blank"
+                            '_blank'
                           )
                         }
                       ></i>
                     </div>
                   )}
-                  {userData.github !== null && userData.github !== "" && (
+                  {userData.github !== null && userData.github !== '' && (
                     <div className="social" id="github">
                       <i
                         className="bx bxl-github"
                         onClick={() =>
                           window.open(
                             `https://github.com/${userData.github}`,
-                            "_blank"
+                            '_blank'
                           )
                         }
                       ></i>
                     </div>
                   )}
-                  {userData.discord !== null && userData.discord !== "" && (
+                  {userData.discord !== null && userData.discord !== '' && (
                     <div className="social" id="discord">
                       <CopyToClipboard
                         text={`${userData.discord}`}
-                        onCopy={() => showCopyAlert("discordID")}
+                        onCopy={() => showCopyAlert('discordID')}
                       >
                         <i className="bx bxl-discord-alt"></i>
                       </CopyToClipboard>
@@ -212,34 +212,34 @@ export default function User({ session, userData, skinsData }) {
               <div className="title">Skins</div>
               <div className="styles">
                 <FontAwesomeIcon
-                  className={`viewStyle ${skinView === "list" && "active"}`}
+                  className={`viewStyle ${skinView === 'list' && 'active'}`}
                   id="list"
                   icon={faGripLines}
                   data-tip="List View"
-                  width={"13.2pt"}
-                  onClick={() => setSkinView("list")}
+                  width={'13.2pt'}
+                  onClick={() => setSkinView('list')}
                 />
                 <FontAwesomeIcon
-                  className={`viewStyle ${skinView === "grid" && "active"}`}
+                  className={`viewStyle ${skinView === 'grid' && 'active'}`}
                   id="grid"
                   icon={faGrip}
                   data-tip="Grid View"
-                  width={"13.2pt"}
-                  onClick={() => setSkinView("grid")}
+                  width={'13.2pt'}
+                  onClick={() => setSkinView('grid')}
                 />
                 <ReactTooltip
                   place="top"
                   effect="solid"
                   className="viewStyleTooltip"
                   delayShow={300}
-                  arrowColor={"var(--site-background-users-page-color)"}
+                  arrowColor={'var(--site-background-users-page-color)'}
                 />
               </div>
             </div>
-            {skinView === "list" ? (
+            {skinView === 'list' ? (
               <div className="list">
                 {skinsData.map((skin, index) => {
-                  if (skin.Tags.includes("current")) {
+                  if (skin.Tags.includes('current')) {
                     return (
                       <div className="item" key={index} id={skin.id}>
                         <div className="about">
@@ -251,34 +251,34 @@ export default function User({ session, userData, skinsData }) {
                             <div className="gamemodes">
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!standard")
-                                    ? "active"
-                                    : ""
+                                  skin.Modes.includes('osu!standard')
+                                    ? 'active'
+                                    : ''
                                 }`}
                                 src="/img/modes/mode-osu.png"
                               />
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!mania")
-                                    ? "active"
-                                    : ""
+                                  skin.Modes.includes('osu!mania')
+                                    ? 'active'
+                                    : ''
                                 }`}
                                 src="/img/modes/mode-mania.png"
                               />
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!taiko")
-                                    ? "active"
-                                    : ""
+                                  skin.Modes.includes('osu!taiko')
+                                    ? 'active'
+                                    : ''
                                 }`}
                                 src="/img/modes/mode-taiko.png"
                               />
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!ctb") ? "active" : ""
+                                  skin.Modes.includes('osu!ctb') ? 'active' : ''
                                 }`}
                                 src="/img/modes/mode-fruits.png"
-                                style={{ rotate: "-90deg" }}
+                                style={{ rotate: '-90deg' }}
                               />
                             </div>
                             <div className="downloads">
@@ -287,68 +287,71 @@ export default function User({ session, userData, skinsData }) {
                             </div>
                             {skin.Tags && (
                               <div className="tags">
-                                {skin.Tags.includes("current") && (
+                                {skin.Tags.includes('lazer') && (
+                                  <div className="tag lazer">Lazer</div>
+                                )}
+                                {skin.Tags.includes('current') && (
                                   <div className="tag current">
                                     Currently Using
                                   </div>
                                 )}
-                                {skin.Tags.includes("tournaments") && (
+                                {skin.Tags.includes('tournaments') && (
                                   <div className="tag tournaments">
                                     Using in Tournaments
                                   </div>
                                 )}
-                                {skin.Tags.includes("casual") && (
+                                {skin.Tags.includes('casual') && (
                                   <div className="tag casual">Casual</div>
                                 )}
-                                {skin.Tags.includes("old") && (
+                                {skin.Tags.includes('old') && (
                                   <div className="tag old">Old</div>
                                 )}
-                                {skin.Tags.includes("aim") && (
+                                {skin.Tags.includes('aim') && (
                                   <div className="tag aim">Aim</div>
                                 )}
-                                {skin.Tags.includes("stream") && (
+                                {skin.Tags.includes('stream') && (
                                   <div className="tag stream">Stream</div>
                                 )}
-                                {skin.Tags.includes("tech") && (
+                                {skin.Tags.includes('tech') && (
                                   <div className="tag tech">Tech</div>
                                 )}
-                                {skin.Tags.includes("reading") && (
+                                {skin.Tags.includes('reading') && (
                                   <div className="tag reading">Reading</div>
                                 )}
-                                {skin.Tags.includes("speed") && (
+                                {skin.Tags.includes('speed') && (
                                   <div className="tag speed">Speed</div>
                                 )}
-                                {skin.Tags.includes("highAR") && (
+                                {skin.Tags.includes('highAR') && (
                                   <div className="tag highAR">HighAR</div>
                                 )}
-                                {skin.Tags.includes("lowAR") && (
+                                {skin.Tags.includes('lowAR') && (
                                   <div className="tag lowAR">LowAR</div>
                                 )}
-                                {skin.Tags.includes("highCS") && (
+                                {skin.Tags.includes('highCS') && (
                                   <div className="tag highCS">HighCS</div>
                                 )}
-                                {skin.Tags.includes("lowCS") && (
+                                {skin.Tags.includes('lowCS') && (
                                   <div className="tag lowCS">LowCS</div>
                                 )}
-                                {skin.Tags.includes("troll") && (
+                                {skin.Tags.includes('troll') && (
                                   <div className="tag troll">Troll</div>
                                 )}
-                                {skin.Tags.includes("NM") && (
+                                {skin.Tags.includes('NM') && (
                                   <div className="tag NM">NM</div>
                                 )}
-                                {skin.Tags.includes("HD") && (
+                                {skin.Tags.includes('HD') && (
                                   <div className="tag HD">HD</div>
                                 )}
-                                {skin.Tags.includes("HR") && (
+                                {skin.Tags.includes('HR') && (
                                   <div className="tag HR">HR</div>
                                 )}
-                                {skin.Tags.includes("DT") && (
+                                {skin.Tags.includes('DT') && (
                                   <div className="tag DT">DT</div>
                                 )}
-                                {skin.Tags.includes("EZ") && (
+                                {skin.Tags.includes('EZ') && (
                                   <div className="tag EZ">EZ</div>
                                 )}
-                                {skin.Tags.includes("FL") && (
+                                {skin.Tags.includes('FL') && (
                                   <div className="tag FL">FL</div>
                                 )}
                               </div>
@@ -360,7 +363,7 @@ export default function User({ session, userData, skinsData }) {
                             <FontAwesomeIcon
                               className="button"
                               icon={faPen}
-                              style={{ color: "#fee7ad" }}
+                              style={{ color: '#fee7ad' }}
                               onClick={() => {
                                 setModalIsOpen(true);
                                 setModalSkinEdit(skin);
@@ -369,7 +372,7 @@ export default function User({ session, userData, skinsData }) {
                             <FontAwesomeIcon
                               className="button"
                               icon={faTrash}
-                              style={{ color: "#ffb2b2" }}
+                              style={{ color: '#ffb2b2' }}
                               onClick={() =>
                                 deleteSkinFromDB(skin.id, skin.Player.id)
                               }
@@ -379,7 +382,7 @@ export default function User({ session, userData, skinsData }) {
                         <div className="buttons">
                           <CopyToClipboard
                             text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                            onCopy={() => showCopyAlert("skinLink")}
+                            onCopy={() => showCopyAlert('skinLink')}
                           >
                             <FontAwesomeIcon
                               className="button"
@@ -391,7 +394,7 @@ export default function User({ session, userData, skinsData }) {
                             icon={faDownload}
                             onClick={() => {
                               modifyDownloadCount(skin.Downloads, skin.id);
-                              window.open(skin.URL, "_blank");
+                              window.open(skin.URL, '_blank');
                             }}
                           />
                         </div>
@@ -400,7 +403,7 @@ export default function User({ session, userData, skinsData }) {
                   }
                 })}
                 {skinsData.map((skin, index) => {
-                  if (!skin.Tags.includes("current")) {
+                  if (!skin.Tags.includes('current')) {
                     return (
                       <div className="item" key={index} id={skin.id}>
                         <div className="about">
@@ -412,34 +415,34 @@ export default function User({ session, userData, skinsData }) {
                             <div className="gamemodes">
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!standard")
-                                    ? "active"
-                                    : ""
+                                  skin.Modes.includes('osu!standard')
+                                    ? 'active'
+                                    : ''
                                 }`}
                                 src="/img/modes/mode-osu.png"
                               />
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!mania")
-                                    ? "active"
-                                    : ""
+                                  skin.Modes.includes('osu!mania')
+                                    ? 'active'
+                                    : ''
                                 }`}
                                 src="/img/modes/mode-mania.png"
                               />
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!taiko")
-                                    ? "active"
-                                    : ""
+                                  skin.Modes.includes('osu!taiko')
+                                    ? 'active'
+                                    : ''
                                 }`}
                                 src="/img/modes/mode-taiko.png"
                               />
                               <img
                                 className={`skinMode ${
-                                  skin.Modes.includes("osu!ctb") ? "active" : ""
+                                  skin.Modes.includes('osu!ctb') ? 'active' : ''
                                 }`}
                                 src="/img/modes/mode-fruits.png"
-                                style={{ rotate: "-90deg" }}
+                                style={{ rotate: '-90deg' }}
                               />
                             </div>
                             <div className="downloads">
@@ -448,68 +451,71 @@ export default function User({ session, userData, skinsData }) {
                             </div>
                             {skin.Tags && (
                               <div className="tags">
-                                {skin.Tags.includes("current") && (
+                                {skin.Tags.includes('lazer') && (
+                                  <div className="tag lazer">Lazer</div>
+                                )}
+                                {skin.Tags.includes('current') && (
                                   <div className="tag current">
                                     Currently Using
                                   </div>
                                 )}
-                                {skin.Tags.includes("tournaments") && (
+                                {skin.Tags.includes('tournaments') && (
                                   <div className="tag tournaments">
                                     Using in Tournaments
                                   </div>
                                 )}
-                                {skin.Tags.includes("casual") && (
+                                {skin.Tags.includes('casual') && (
                                   <div className="tag casual">Casual</div>
                                 )}
-                                {skin.Tags.includes("old") && (
+                                {skin.Tags.includes('old') && (
                                   <div className="tag old">Old</div>
                                 )}
-                                {skin.Tags.includes("aim") && (
+                                {skin.Tags.includes('aim') && (
                                   <div className="tag aim">Aim</div>
                                 )}
-                                {skin.Tags.includes("stream") && (
+                                {skin.Tags.includes('stream') && (
                                   <div className="tag stream">Stream</div>
                                 )}
-                                {skin.Tags.includes("tech") && (
+                                {skin.Tags.includes('tech') && (
                                   <div className="tag tech">Tech</div>
                                 )}
-                                {skin.Tags.includes("reading") && (
+                                {skin.Tags.includes('reading') && (
                                   <div className="tag reading">Reading</div>
                                 )}
-                                {skin.Tags.includes("speed") && (
+                                {skin.Tags.includes('speed') && (
                                   <div className="tag speed">Speed</div>
                                 )}
-                                {skin.Tags.includes("highAR") && (
+                                {skin.Tags.includes('highAR') && (
                                   <div className="tag highAR">HighAR</div>
                                 )}
-                                {skin.Tags.includes("lowAR") && (
+                                {skin.Tags.includes('lowAR') && (
                                   <div className="tag lowAR">LowAR</div>
                                 )}
-                                {skin.Tags.includes("highCS") && (
+                                {skin.Tags.includes('highCS') && (
                                   <div className="tag highCS">HighCS</div>
                                 )}
-                                {skin.Tags.includes("lowCS") && (
+                                {skin.Tags.includes('lowCS') && (
                                   <div className="tag lowCS">LowCS</div>
                                 )}
-                                {skin.Tags.includes("troll") && (
+                                {skin.Tags.includes('troll') && (
                                   <div className="tag troll">Troll</div>
                                 )}
-                                {skin.Tags.includes("NM") && (
+                                {skin.Tags.includes('NM') && (
                                   <div className="tag NM">NM</div>
                                 )}
-                                {skin.Tags.includes("HD") && (
+                                {skin.Tags.includes('HD') && (
                                   <div className="tag HD">HD</div>
                                 )}
-                                {skin.Tags.includes("HR") && (
+                                {skin.Tags.includes('HR') && (
                                   <div className="tag HR">HR</div>
                                 )}
-                                {skin.Tags.includes("DT") && (
+                                {skin.Tags.includes('DT') && (
                                   <div className="tag DT">DT</div>
                                 )}
-                                {skin.Tags.includes("EZ") && (
+                                {skin.Tags.includes('EZ') && (
                                   <div className="tag EZ">EZ</div>
                                 )}
-                                {skin.Tags.includes("FL") && (
+                                {skin.Tags.includes('FL') && (
                                   <div className="tag FL">FL</div>
                                 )}
                               </div>
@@ -521,7 +527,7 @@ export default function User({ session, userData, skinsData }) {
                             <FontAwesomeIcon
                               className="button"
                               icon={faPen}
-                              style={{ color: "#fee7ad" }}
+                              style={{ color: '#fee7ad' }}
                               onClick={() => {
                                 setModalIsOpen(true);
                                 setModalSkinEdit(skin);
@@ -530,7 +536,7 @@ export default function User({ session, userData, skinsData }) {
                             <FontAwesomeIcon
                               className="button"
                               icon={faTrash}
-                              style={{ color: "#ffb2b2" }}
+                              style={{ color: '#ffb2b2' }}
                               onClick={() =>
                                 deleteSkinFromDB(skin.id, skin.Player.id)
                               }
@@ -540,7 +546,7 @@ export default function User({ session, userData, skinsData }) {
                         <div className="buttons">
                           <CopyToClipboard
                             text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                            onCopy={() => showCopyAlert("skinLink")}
+                            onCopy={() => showCopyAlert('skinLink')}
                           >
                             <FontAwesomeIcon
                               className="button"
@@ -552,7 +558,7 @@ export default function User({ session, userData, skinsData }) {
                             icon={faDownload}
                             onClick={() => {
                               modifyDownloadCount(skin.Downloads, skin.id);
-                              window.open(skin.URL, "_blank");
+                              window.open(skin.URL, '_blank');
                             }}
                           />
                         </div>
@@ -572,7 +578,7 @@ export default function User({ session, userData, skinsData }) {
             ) : (
               <div className="grid">
                 {skinsData.map((skin, index) => {
-                  if (skin.Tags.includes("current")) {
+                  if (skin.Tags.includes('current')) {
                     return (
                       <div
                         className="item"
@@ -584,66 +590,69 @@ export default function User({ session, userData, skinsData }) {
                       >
                         {skin.Tags && (
                           <div className="tags">
-                            {skin.Tags.includes("current") && (
+                            {skin.Tags.includes('lazer') && (
+                              <div className="tag lazer gridTag">Lazer</div>
+                            )}
+                            {skin.Tags.includes('current') && (
                               <div className="tag current">Currently Using</div>
                             )}
-                            {skin.Tags.includes("tournaments") && (
+                            {skin.Tags.includes('tournaments') && (
                               <div className="tag tournaments">
                                 Using in Tournaments
                               </div>
                             )}
-                            {skin.Tags.includes("casual") && (
+                            {skin.Tags.includes('casual') && (
                               <div className="tag casual">Casual</div>
                             )}
-                            {skin.Tags.includes("old") && (
+                            {skin.Tags.includes('old') && (
                               <div className="tag old">Old</div>
                             )}
-                            {skin.Tags.includes("aim") && (
+                            {skin.Tags.includes('aim') && (
                               <div className="tag aim">Aim</div>
                             )}
-                            {skin.Tags.includes("stream") && (
+                            {skin.Tags.includes('stream') && (
                               <div className="tag stream">Stream</div>
                             )}
-                            {skin.Tags.includes("tech") && (
+                            {skin.Tags.includes('tech') && (
                               <div className="tag tech">Tech</div>
                             )}
-                            {skin.Tags.includes("reading") && (
+                            {skin.Tags.includes('reading') && (
                               <div className="tag reading">Reading</div>
                             )}
-                            {skin.Tags.includes("speed") && (
+                            {skin.Tags.includes('speed') && (
                               <div className="tag speed">Speed</div>
                             )}
-                            {skin.Tags.includes("highAR") && (
+                            {skin.Tags.includes('highAR') && (
                               <div className="tag highAR">HighAR</div>
                             )}
-                            {skin.Tags.includes("lowAR") && (
+                            {skin.Tags.includes('lowAR') && (
                               <div className="tag lowAR">LowAR</div>
                             )}
-                            {skin.Tags.includes("highCS") && (
+                            {skin.Tags.includes('highCS') && (
                               <div className="tag highCS">HighCS</div>
                             )}
-                            {skin.Tags.includes("lowCS") && (
+                            {skin.Tags.includes('lowCS') && (
                               <div className="tag lowCS">LowCS</div>
                             )}
-                            {skin.Tags.includes("troll") && (
+                            {skin.Tags.includes('troll') && (
                               <div className="tag troll">Troll</div>
                             )}
-                            {skin.Tags.includes("NM") && (
+                            {skin.Tags.includes('NM') && (
                               <div className="tag NM gridTag">NM</div>
                             )}
-                            {skin.Tags.includes("HD") && (
+                            {skin.Tags.includes('HD') && (
                               <div className="tag HD gridTag">HD</div>
                             )}
-                            {skin.Tags.includes("HR") && (
+                            {skin.Tags.includes('HR') && (
                               <div className="tag HR gridTag">HR</div>
                             )}
-                            {skin.Tags.includes("DT") && (
+                            {skin.Tags.includes('DT') && (
                               <div className="tag DT gridTag">DT</div>
                             )}
-                            {skin.Tags.includes("EZ") && (
+                            {skin.Tags.includes('EZ') && (
                               <div className="tag EZ gridTag">EZ</div>
                             )}
-                            {skin.Tags.includes("FL") && (
+                            {skin.Tags.includes('FL') && (
                               <div className="tag FL gridTag">FL</div>
                             )}
                           </div>
@@ -658,36 +667,36 @@ export default function User({ session, userData, skinsData }) {
                               <div className="gamemodes">
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!standard")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!standard')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-osu.png"
                                 />
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!mania")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!mania')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-mania.png"
                                 />
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!taiko")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!taiko')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-taiko.png"
                                 />
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!ctb")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!ctb')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-fruits.png"
-                                  style={{ rotate: "-90deg" }}
+                                  style={{ rotate: '-90deg' }}
                                 />
                               </div>
                               <div className="downloads">
@@ -701,7 +710,7 @@ export default function User({ session, userData, skinsData }) {
                               <FontAwesomeIcon
                                 className="button"
                                 icon={faPen}
-                                style={{ color: "#fee7ad" }}
+                                style={{ color: '#fee7ad' }}
                                 onClick={() => {
                                   setModalIsOpen(true);
                                   setModalSkinEdit(skin);
@@ -710,7 +719,7 @@ export default function User({ session, userData, skinsData }) {
                               <FontAwesomeIcon
                                 className="button"
                                 icon={faTrash}
-                                style={{ color: "#ffb2b2" }}
+                                style={{ color: '#ffb2b2' }}
                                 onClick={() => deleteSkinFromDB(skin.id)}
                               />
                             </div>
@@ -718,7 +727,7 @@ export default function User({ session, userData, skinsData }) {
                           <div className="buttons">
                             <CopyToClipboard
                               text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                              onCopy={() => showCopyAlert("skinLink")}
+                              onCopy={() => showCopyAlert('skinLink')}
                             >
                               <FontAwesomeIcon
                                 className="button"
@@ -729,7 +738,7 @@ export default function User({ session, userData, skinsData }) {
                               className="button"
                               icon={faDownload}
                               onClick={() => {
-                                window.open(skin.URL, "_blank");
+                                window.open(skin.URL, '_blank');
                                 modifyDownloadCount(skin.Downloads, skin.id);
                               }}
                             />
@@ -741,7 +750,7 @@ export default function User({ session, userData, skinsData }) {
                 })}
 
                 {skinsData.map((skin, index) => {
-                  if (!skin.Tags.includes("current")) {
+                  if (!skin.Tags.includes('current')) {
                     return (
                       <div
                         className="item"
@@ -753,66 +762,69 @@ export default function User({ session, userData, skinsData }) {
                       >
                         {skin.Tags && (
                           <div className="tags">
-                            {skin.Tags.includes("current") && (
+                            {skin.Tags.includes('lazer') && (
+                              <div className="tag lazer gridTag">Lazer</div>
+                            )}
+                            {skin.Tags.includes('current') && (
                               <div className="tag current">Currently Using</div>
                             )}
-                            {skin.Tags.includes("tournaments") && (
+                            {skin.Tags.includes('tournaments') && (
                               <div className="tag tournaments">
                                 Using in Tournaments
                               </div>
                             )}
-                            {skin.Tags.includes("casual") && (
+                            {skin.Tags.includes('casual') && (
                               <div className="tag casual">Casual</div>
                             )}
-                            {skin.Tags.includes("old") && (
+                            {skin.Tags.includes('old') && (
                               <div className="tag old">Old</div>
                             )}
-                            {skin.Tags.includes("aim") && (
+                            {skin.Tags.includes('aim') && (
                               <div className="tag aim">Aim</div>
                             )}
-                            {skin.Tags.includes("stream") && (
+                            {skin.Tags.includes('stream') && (
                               <div className="tag stream">Stream</div>
                             )}
-                            {skin.Tags.includes("tech") && (
+                            {skin.Tags.includes('tech') && (
                               <div className="tag tech">Tech</div>
                             )}
-                            {skin.Tags.includes("reading") && (
+                            {skin.Tags.includes('reading') && (
                               <div className="tag reading">Reading</div>
                             )}
-                            {skin.Tags.includes("speed") && (
+                            {skin.Tags.includes('speed') && (
                               <div className="tag speed">Speed</div>
                             )}
-                            {skin.Tags.includes("highAR") && (
+                            {skin.Tags.includes('highAR') && (
                               <div className="tag highAR">HighAR</div>
                             )}
-                            {skin.Tags.includes("lowAR") && (
+                            {skin.Tags.includes('lowAR') && (
                               <div className="tag lowAR">LowAR</div>
                             )}
-                            {skin.Tags.includes("highCS") && (
+                            {skin.Tags.includes('highCS') && (
                               <div className="tag highCS">HighCS</div>
                             )}
-                            {skin.Tags.includes("lowCS") && (
+                            {skin.Tags.includes('lowCS') && (
                               <div className="tag lowCS">LowCS</div>
                             )}
-                            {skin.Tags.includes("troll") && (
+                            {skin.Tags.includes('troll') && (
                               <div className="tag troll">Troll</div>
                             )}
-                            {skin.Tags.includes("NM") && (
+                            {skin.Tags.includes('NM') && (
                               <div className="tag NM gridTag">NM</div>
                             )}
-                            {skin.Tags.includes("HD") && (
+                            {skin.Tags.includes('HD') && (
                               <div className="tag HD gridTag">HD</div>
                             )}
-                            {skin.Tags.includes("HR") && (
+                            {skin.Tags.includes('HR') && (
                               <div className="tag HR gridTag">HR</div>
                             )}
-                            {skin.Tags.includes("DT") && (
+                            {skin.Tags.includes('DT') && (
                               <div className="tag DT gridTag">DT</div>
                             )}
-                            {skin.Tags.includes("EZ") && (
+                            {skin.Tags.includes('EZ') && (
                               <div className="tag EZ gridTag">EZ</div>
                             )}
-                            {skin.Tags.includes("FL") && (
+                            {skin.Tags.includes('FL') && (
                               <div className="tag FL gridTag">FL</div>
                             )}
                           </div>
@@ -827,36 +839,36 @@ export default function User({ session, userData, skinsData }) {
                               <div className="gamemodes">
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!standard")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!standard')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-osu.png"
                                 />
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!mania")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!mania')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-mania.png"
                                 />
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!taiko")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!taiko')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-taiko.png"
                                 />
                                 <img
                                   className={`skinMode ${
-                                    skin.Modes.includes("osu!ctb")
-                                      ? "active"
-                                      : ""
+                                    skin.Modes.includes('osu!ctb')
+                                      ? 'active'
+                                      : ''
                                   }`}
                                   src="/img/modes/mode-fruits.png"
-                                  style={{ rotate: "-90deg" }}
+                                  style={{ rotate: '-90deg' }}
                                 />
                               </div>
                               <div className="downloads">
@@ -870,7 +882,7 @@ export default function User({ session, userData, skinsData }) {
                               <FontAwesomeIcon
                                 className="button"
                                 icon={faPen}
-                                style={{ color: "#fee7ad" }}
+                                style={{ color: '#fee7ad' }}
                                 onClick={() => {
                                   setModalIsOpen(true);
                                   setModalSkinEdit(skin);
@@ -879,7 +891,7 @@ export default function User({ session, userData, skinsData }) {
                               <FontAwesomeIcon
                                 className="button"
                                 icon={faTrash}
-                                style={{ color: "#ffb2b2" }}
+                                style={{ color: '#ffb2b2' }}
                                 onClick={() => deleteSkinFromDB(skin.id)}
                               />
                             </div>
@@ -887,7 +899,7 @@ export default function User({ session, userData, skinsData }) {
                           <div className="buttons">
                             <CopyToClipboard
                               text={`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/users/${userData.id}#${skin.id}`}
-                              onCopy={() => showCopyAlert("skinLink")}
+                              onCopy={() => showCopyAlert('skinLink')}
                             >
                               <FontAwesomeIcon
                                 className="button"
@@ -898,7 +910,7 @@ export default function User({ session, userData, skinsData }) {
                               className="button"
                               icon={faDownload}
                               onClick={() => {
-                                window.open(skin.URL, "_blank");
+                                window.open(skin.URL, '_blank');
                                 modifyDownloadCount(skin.Downloads, skin.id);
                               }}
                             />
@@ -940,11 +952,11 @@ export async function getServerSideProps(context) {
   const session = await getSession(context);
 
   var statusData = await supabase
-    .from("users")
+    .from('users')
     .select(
-      "id,username,badges,country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo"
+      'id,username,badges,country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo'
     )
-    .eq("id", context.params.id);
+    .eq('id', context.params.id);
 
   try {
     statusData.data[0].badges = JSON.parse(statusData.data[0].badges);
@@ -957,19 +969,19 @@ export async function getServerSideProps(context) {
   const skinsData =
     statusData.data !== null
       ? await supabase
-          .from("skins")
+          .from('skins')
           .select(
-            "id,Name,Creator,Player(id,username),Banner,Modes,Tags,URL,Downloads"
+            'id,Name,Creator,Player(id,username),Banner,Modes,Tags,URL,Downloads'
           )
-          .eq("Player(id)", context.params.id)
-          .order("created_at", { ascending: false })
+          .eq('Player(id)', context.params.id)
+          .order('created_at', { ascending: false })
       : [{}];
 
   const returnProps =
     statusData.data === null || !statusData.data.length
       ? {
           redirect: {
-            destination: "/",
+            destination: '/',
             permanent: false,
           },
         }
