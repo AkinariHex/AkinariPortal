@@ -954,9 +954,7 @@ export async function getServerSideProps(context) {
   var statusData = await supabase
     .from('users')
     .select(
-      `id,username,badges:users_badges (created_at,
-      badge:badges(*)
-    ),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo`
+      `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo`
     )
     .eq('id', context.params.id)
     .single();
@@ -967,7 +965,6 @@ export async function getServerSideProps(context) {
         created_at: entry.created_at,
         ...entry.badge,
       }));
-      console.log(statusData.data.badges);
     }
   } catch (error) {
     console.log(error);
