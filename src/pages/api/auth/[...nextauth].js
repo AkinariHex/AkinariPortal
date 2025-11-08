@@ -1,15 +1,35 @@
-import NextAuth from "next-auth";
-import supabase from "../../../config/supabaseClient";
+import NextAuth from 'next-auth';
+import supabase from '../../../config/supabaseClient';
+
+const addPendingBadges = async (userId) => {
+  const { data: pendingBadges } = await supabase
+    .from('pending_badges')
+    .select('badge_id')
+    .eq('user_id', userId);
+
+  if (pendingBadges && pendingBadges.length > 0) {
+    for (const badge of pendingBadges) {
+      await supabase
+        .from('users_badges')
+        .upsert(
+          { user_id: userId, badge_id: badge.badge_id },
+          { onConflict: 'user_id,badge_id' }
+        );
+    }
+
+    await supabase.from('pending_badges').delete().eq('user_id', userId);
+  }
+  return;
+};
 
 const postUserDBsupabase = async (profile) => {
-  const { data, error } = await supabase.from("users").insert([
+  const { data, error } = await supabase.from('users').insert([
     {
       id: profile.id,
       username: profile.username,
       banner: profile.cover_url,
       country: JSON.stringify(profile.country),
       playmode: profile.playmode,
-      badges: "[]",
       discord: profile.discord,
       twitter: profile.twitter,
     },
@@ -19,26 +39,32 @@ const postUserDBsupabase = async (profile) => {
     console.log(error);
     return;
   }
+
+  await addPendingBadges(profile.id);
+
   return;
 };
 
 const checkUserDBsupabase = async (profile) => {
-  const player = await supabase.from("users").select("*").eq("id", profile.id);
+  const player = await supabase.from('users').select('*').eq('id', profile.id);
 
   if (player.data && player.data.length > 0) {
     const { data, error } = await supabase
-      .from("users")
+      .from('users')
       .update({
         username: profile.username,
         banner: profile.cover_url,
         country: JSON.stringify(profile.country),
       })
-      .eq("id", profile.id);
+      .eq('id', profile.id);
 
     if (error) {
       console.log(error);
       return;
     }
+
+    await addPendingBadges(profile.id);
+
     return;
   }
   if (!player.data.length) {
@@ -49,17 +75,17 @@ const checkUserDBsupabase = async (profile) => {
 export default NextAuth({
   providers: [
     {
-      id: "osu",
-      name: "Osu!",
-      type: "oauth",
-      token: "https://osu.ppy.sh/oauth/token",
+      id: 'osu',
+      name: 'Osu!',
+      type: 'oauth',
+      token: 'https://osu.ppy.sh/oauth/token',
       authorization: {
-        url: "https://osu.ppy.sh/oauth/authorize",
+        url: 'https://osu.ppy.sh/oauth/authorize',
         params: {
-          scope: "identify public",
+          scope: 'identify public',
         },
       },
-      userinfo: "https://osu.ppy.sh/api/v2/me",
+      userinfo: 'https://osu.ppy.sh/api/v2/me',
       profile(profile) {
         return {
           id: profile.id,
@@ -74,7 +100,7 @@ export default NextAuth({
   ],
 
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
 
   callbacks: {
@@ -86,7 +112,7 @@ export default NextAuth({
         },
       }).then((res) => res.json());
 
-      if (userData.authentication === "basic") return {};
+      if (userData.authentication === 'basic') return {};
 
       userData.access_token = token?.access_token;
       userData;

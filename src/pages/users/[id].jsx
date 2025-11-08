@@ -93,10 +93,10 @@ export default function User({ session, userData, skinsData }) {
                       return (
                         <img
                           key={index}
-                          data-tip={badge.desc}
+                          data-tip={badge.title}
                           className="badge"
-                          src={`/img/badges/${badge.code}.webp`}
-                          alt={badge.desc}
+                          src={`/img/badges/${badge.id}.webp`}
+                          alt={badge.title}
                         />
                       );
                     })}
@@ -954,16 +954,24 @@ export async function getServerSideProps(context) {
   var statusData = await supabase
     .from('users')
     .select(
-      'id,username,badges,country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo'
+      `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo`
     )
-    .eq('id', context.params.id);
+    .eq('id', context.params.id)
+    .single();
 
   try {
-    statusData.data[0].badges = JSON.parse(statusData.data[0].badges);
-  } catch (error) {}
+    if (statusData.data && statusData.data.badges) {
+      statusData.data.badges = statusData.data.badges.map((entry) => ({
+        created_at: entry.created_at,
+        ...entry.badge,
+      }));
+    }
+  } catch (error) {
+    console.log(error);
+  }
 
   try {
-    statusData.data[0].country = JSON.parse(statusData.data[0].country);
+    statusData.data.country = JSON.parse(statusData.data.country);
   } catch (error) {}
 
   const skinsData =
@@ -977,21 +985,20 @@ export async function getServerSideProps(context) {
           .order('created_at', { ascending: false })
       : [{}];
 
-  const returnProps =
-    statusData.data === null || !statusData.data.length
-      ? {
-          redirect: {
-            destination: '/',
-            permanent: false,
-          },
-        }
-      : {
-          props: {
-            session: session,
-            userData: !statusData.data.length ? null : statusData.data[0],
-            skinsData: !skinsData.data.length ? [] : skinsData.data,
-          },
-        };
+  const returnProps = !statusData.data
+    ? {
+        redirect: {
+          destination: '/',
+          permanent: false,
+        },
+      }
+    : {
+        props: {
+          session: session,
+          userData: statusData.data,
+          skinsData: !skinsData.data.length ? [] : skinsData.data,
+        },
+      };
 
   return { ...returnProps };
 }
