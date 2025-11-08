@@ -37,7 +37,7 @@
 
 .tabletUsedArea {
   position: absolute;
-  border: 1px dashed var(--site-colorful-primary-color);
+  outline: 1px dashed var(--site-colorful-primary-color);
   background-color: hsla(215, 78%, 67%, 0.2);
   color: var(--site-colorful-primary-color);
   font-family: var(--font-family-var);

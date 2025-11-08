@@ -1,30 +1,26 @@
 export default function PlaystyleSection({ tabletInfo, tabletSettings }) {
+  console.log(tabletSettings);
+
   const tabletMaxWidth = tabletInfo.width; /* 152 */
   const tabletMaxHeight = tabletInfo.height; /* 95 */
 
-  const tabletUsedWidth =
-    tabletSettings.Profiles[0].AbsoluteModeSettings.Tablet.Width; /* 110 */
-  const tabletUsedHeight =
-    tabletSettings.Profiles[0].AbsoluteModeSettings.Tablet.Height; /* 70 */
+  const profile = tabletSettings.Profiles[0].AbsoluteModeSettings.Tablet;
 
-  const widthDifference = tabletMaxWidth - tabletUsedWidth;
-  const heightDifference = tabletMaxHeight - tabletUsedHeight;
+  const tabletUsedWidth = profile.Width; /* 110 */
+  const tabletUsedHeight = profile.Height; /* 70 */
 
-  const tabletX =
-    tabletSettings.Profiles[0].AbsoluteModeSettings.Tablet.X; /* 76 */
-  const tabletY =
-    tabletSettings.Profiles[0].AbsoluteModeSettings.Tablet.Y; /* 47.5 */
-  const tabletRotation =
-    tabletSettings.Profiles[0].AbsoluteModeSettings.Tablet.Rotation;
+  const tabletX = profile.X; /* 76 */
+  const tabletY = profile.Y; /* 47.5 */
+  const tabletRotation = profile.Rotation || 0;
 
-  const top0 = tabletUsedHeight / 2;
-  const left0 = tabletUsedWidth / 2;
+  const top = ((tabletY - tabletUsedHeight / 2) / tabletMaxHeight) * 100;
+  const left = ((tabletX - tabletUsedWidth / 2) / tabletMaxWidth) * 100;
 
   const aspectRatio = `${tabletMaxWidth}/${tabletMaxHeight}`;
   const aspectRatioUsed = `${tabletUsedWidth}/${tabletUsedHeight}`;
 
-  const areaTop = (tabletY - top0) * 2.2;
-  const areaLeft = (tabletX - left0) * 2.2;
+  const width = (tabletUsedWidth / tabletMaxWidth) * 100;
+  const height = (tabletUsedHeight / tabletMaxHeight) * 100;
 
   return (
     <div className="playstyleContainer">
@@ -40,12 +36,11 @@ export default function PlaystyleSection({ tabletInfo, tabletSettings }) {
           <div
             className="tabletUsedArea"
             style={{
-              width: `calc( 100% - (${widthDifference}px * 2.2))`,
-              height: `calc( 100% - (${heightDifference}px * 2.2))`,
-              top: `${Math.abs(areaTop)}px`,
-              left: `${Math.abs(areaLeft)}px`,
-              rotate: `${tabletRotation}deg`,
-              aspectRatio: aspectRatioUsed,
+              width: `${width}%`,
+              height: `${height}%`,
+              top: `${top}%`,
+              left: `${left}%`,
+              transform: `rotate(${tabletRotation}deg)`,
             }}
           >
             <div className="height">{tabletUsedHeight}mm</div>
@@ -58,22 +53,6 @@ export default function PlaystyleSection({ tabletInfo, tabletSettings }) {
           </div>
         </div>
       </div>
-      {/* <div className="info">
-        <div className="item" id="firstPenButton">
-          <div className="button">
-            <div className="key">Z</div>
-            <div className="action">Quick Restart Map</div>
-          </div>
-          <div className="type">Pen Button 1</div>
-        </div>
-        <div className="item" id="secondPenButton">
-          <div className="button">
-            <div className="key">Z</div>
-            <div className="action">Quick Restart Map</div>
-          </div>
-          <div className="type">Pen Button 2</div>
-        </div>
-      </div> */}
     </div>
   );
 }

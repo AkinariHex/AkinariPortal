@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 function RecentUsers({ rUsers }) {
   return (
@@ -10,12 +10,7 @@ function RecentUsers({ rUsers }) {
             <div
               key={index}
               className="item users"
-              onClick={() =>
-                window.open(
-                  `https://akinariportal.vercel.app/users/${user.id}`,
-                  "_self"
-                )
-              }
+              onClick={() => window.open(`/users/${user.id}`, '_self')}
             >
               <div
                 className="header"
