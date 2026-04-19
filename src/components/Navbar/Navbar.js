@@ -4,7 +4,7 @@ import NavLink from "../NavLink/NavLink";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import { useClickOutside } from "react-haiku";
-import { Home2, Login, Logout, User, Setting2 } from "iconsax-react";
+import { Home2, Login, Logout, User, Setting2, Cup } from "iconsax-react";
 /* import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBell } from "@fortawesome/free-solid-svg-icons"; */
 import { motion } from "framer-motion";
@@ -47,6 +47,15 @@ export default function Navbar({ session }) {
                   href={"/"}
                 >
                   <a className="navLinks_link">Home</a>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  activeClassName="active"
+                  aria-current="page"
+                  href={"/games"}
+                >
+                  <a className="navLinks_link">Games</a>
                 </NavLink>
               </li>
               {/* <li>
@@ -162,6 +171,11 @@ export default function Navbar({ session }) {
           <NavLink activeClassName="active" aria-current="page" href={"/"}>
             <div className="item">
               <Home2 color="#D9E3F0" />
+            </div>
+          </NavLink>
+          <NavLink activeClassName="active" aria-current="page" href={"/games"}>
+            <div className="item">
+              <Cup color="#D9E3F0" />
             </div>
           </NavLink>
           {/* <NavLink
