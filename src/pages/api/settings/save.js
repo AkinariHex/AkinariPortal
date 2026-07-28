@@ -23,6 +23,23 @@ export default async function handler(req, res) {
         return res.status(200).json({ message: "done" });
       }
 
+      if (req.query.m === "tablet") {
+        const { error } = await supabase
+          .from("users")
+          .update({
+            tablet: body.tablet ?? null,
+            tabletSettingsFile: body.tabletSettingsFile ?? null,
+            tabletFileUploadInfo: body.tabletFileUploadInfo ?? null,
+          })
+          .eq("id", session.id);
+
+        if (error) {
+          console.log(error);
+          return res.status(500).json({ message: "error" });
+        }
+        return res.status(200).json({ message: "done" });
+      }
+
       if (
         req.query.m === "socials" &&
         body.twitter &&

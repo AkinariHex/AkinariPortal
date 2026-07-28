@@ -78,35 +78,33 @@ export default function Settings({ session, userData }) {
       // parse string to json
       setTabletSettingsInfo(uploadInfo);
 
-      const { data, error } = await supabase
-        .from("users")
-        .update({
+      const response = await fetch("/api/settings/save?m=tablet", {
+        method: "POST",
+        body: JSON.stringify({
           tablet: tabletName,
           tabletSettingsFile: jsonFile,
           tabletFileUploadInfo: uploadInfo,
-        })
-        .eq("id", session.id);
+        }),
+      });
+      const result = await response.json();
 
-      if (error) {
-        setTabletUploadError(true);
-      } else {
-        setTabletUploadError(false);
-      }
+      setTabletUploadError(result.message !== "done");
     };
     reader.readAsText(tabletFile);
   };
 
   const deleteTabletSettings = async () => {
-    const { data, error } = await supabase
-      .from("users")
-      .update({
+    const response = await fetch("/api/settings/save?m=tablet", {
+      method: "POST",
+      body: JSON.stringify({
         tablet: null,
         tabletSettingsFile: null,
         tabletFileUploadInfo: null,
-      })
-      .eq("id", session.id);
+      }),
+    });
+    const result = await response.json();
 
-    if (error) return;
+    if (result.message !== "done") return;
 
     setTabletSettingsInfo({ file: "", date: "" });
   };

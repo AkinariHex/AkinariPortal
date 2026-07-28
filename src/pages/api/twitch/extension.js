@@ -1,8 +1,22 @@
 import supabase from "../../../config/supabaseClient";
 import Cors from "cors";
 
+// Twitch extension frontends are served from *.ext-twitch.tv. Only allow those
+// origins instead of the previous wildcard CORS.
 const cors = Cors({
   methods: ["GET", "POST"],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, false);
+    try {
+      const host = new URL(origin).host;
+      if (host === "ext-twitch.tv" || host.endsWith(".ext-twitch.tv")) {
+        return callback(null, true);
+      }
+    } catch (error) {
+      return callback(null, false);
+    }
+    return callback(null, false);
+  },
 });
 
 function runMiddleware(req, res, fn) {

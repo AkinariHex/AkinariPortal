@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         .eq("id", session.id);
 
       if (error) {
-        console.error(err);
+        console.error(error);
         return res.status(500).json({ status: "error" });
       }
 
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       });
 
       var update = await updateAPIKEY(supabase, session.id, newAPI);
-      if (update.status === error) {
+      if (update.status === "error") {
         return res.status(500).json({ status: "error" });
       }
       return res.status(200).json({ status: "success", secret_key: newAPI });

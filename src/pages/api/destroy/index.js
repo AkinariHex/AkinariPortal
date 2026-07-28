@@ -12,7 +12,7 @@ export default async function handler(req, res) {
         .eq("id", session.id);
 
       if (error) {
-        console.error(err);
+        console.error(error);
         return res.status(500).json({ status: "error" });
       }
 

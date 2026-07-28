@@ -124,8 +124,8 @@ export default NextAuth({
         token.access_token = account.access_token;
         token.refresh_token = account.refresh_token;
 
-        // Write user in database
-        checkUserDBsupabase(profile);
+        // Write user in database (badges pending -> assigned on login)
+        await checkUserDBsupabase(profile);
       }
 
       return token;
