@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getUserProfile, getUserSkins } from "./data";
+import { getUserProfile, getUserSkins, resolveUserId } from "./data";
 import ProfileClient from "./ProfileClient";
 
 export const revalidate = 86400;
@@ -12,7 +12,10 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const userData: any = await getUserProfile(id);
+  const canonicalId = await resolveUserId(id);
+  if (!canonicalId) return {};
+
+  const userData: any = await getUserProfile(canonicalId);
   if (!userData) return {};
 
   const title = `${userData.username}'s Profile | Akinari Portal`;
@@ -30,16 +33,23 @@ export default async function UserPage({
 }) {
   const { id } = await params;
 
+  // [id] accepts a numeric osu! id, a current username, or a previous
+  // username - resolve to the canonical numeric id and redirect there so
+  // every profile has one stable URL.
+  const canonicalId = await resolveUserId(id);
+  if (!canonicalId) notFound();
+  if (canonicalId !== id) redirect(`/users/${canonicalId}`);
+
   const [userData, skinsData, session] = await Promise.all([
-    getUserProfile(id),
-    getUserSkins(id),
+    getUserProfile(canonicalId),
+    getUserSkins(canonicalId),
     auth(),
   ]);
 
   if (!userData) notFound();
 
   const sessionId = (session as any)?.id ?? null;
-  const isOwner = String(sessionId) === String(id);
+  const isOwner = String(sessionId) === String(canonicalId);
 
   return (
     <ProfileClient

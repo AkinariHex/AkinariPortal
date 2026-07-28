@@ -28,8 +28,9 @@ export async function searchSite(query: string): Promise<SearchResults> {
 
   try {
     const skinSelect = "id,Name,Creator,Banner,URL,Player(id,username)";
+    const isUserId = /^\d+$/.test(q);
 
-    const [byName, byCreator, byUser] = await Promise.all([
+    const [byName, byCreator, byUsername, byId] = await Promise.all([
       supabase.from("skins").select(skinSelect).ilike("Name", `%${q}%`).limit(8),
       supabase.from("skins").select(skinSelect).ilike("Creator", `%${q}%`).limit(8),
       supabase
@@ -37,6 +38,9 @@ export async function searchSite(query: string): Promise<SearchResults> {
         .select("id,username,banner")
         .ilike("username", `%${q}%`)
         .limit(8),
+      isUserId
+        ? supabase.from("users").select("id,username,banner").eq("id", q).limit(1)
+        : Promise.resolve({ data: [] as SearchUser[] }),
     ]);
 
     const mergedSkins: any[] = [
@@ -56,7 +60,19 @@ export async function searchSite(query: string): Promise<SearchResults> {
       if (skins.length >= 8) break;
     }
 
-    const users: SearchUser[] = (byUser.data ?? []) as SearchUser[];
+    const mergedUsers: SearchUser[] = [
+      ...((byId.data ?? []) as SearchUser[]),
+      ...((byUsername.data ?? []) as SearchUser[]),
+    ];
+
+    const seenUsers = new Set<any>();
+    const users: SearchUser[] = [];
+    for (const u of mergedUsers) {
+      if (seenUsers.has(u.id)) continue;
+      seenUsers.add(u.id);
+      users.push(u);
+      if (users.length >= 8) break;
+    }
 
     return { skins, users };
   } catch (err) {

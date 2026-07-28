@@ -1,6 +1,51 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import supabase from "@/lib/supabaseServer";
+import { osuApiFetch } from "@/lib/osu";
+
+// Resolves a /users/[id] route param that may be a numeric osu! id, a current
+// username, or a previous username, to the canonical numeric id used
+// everywhere else in the app. osu!'s username lookup transparently resolves
+// previous usernames too, so a single API fallback covers both cases.
+// Returns null if it can't be resolved to a user this site actually tracks.
+export function resolveUserId(idParam: string) {
+  return unstable_cache(
+    async () => {
+      const raw = decodeURIComponent(idParam).trim();
+      if (!raw) return null;
+      if (/^\d+$/.test(raw)) return raw;
+
+      const escaped = raw.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+      const { data: localMatch } = await supabase
+        .from("users")
+        .select("id")
+        .ilike("username", escaped)
+        .limit(1)
+        .maybeSingle();
+      if (localMatch?.id) return String(localMatch.id);
+
+      try {
+        const osuUser: any = await osuApiFetch(
+          `users/${encodeURIComponent(raw)}?key=username`
+        );
+        if (osuUser?.id) {
+          const { data: knownUser } = await supabase
+            .from("users")
+            .select("id")
+            .eq("id", osuUser.id)
+            .maybeSingle();
+          if (knownUser?.id) return String(knownUser.id);
+        }
+      } catch {
+        // Unknown osu! username, or the osu! API is unreachable.
+      }
+
+      return null;
+    },
+    ["resolve-user-id", idParam],
+    { tags: [`resolve-user:${idParam}`], revalidate: 300 }
+  )();
+}
 
 // Cached per-user reads. Served from cache for up to 1 day; invalidated on demand
 // by revalidateTag(`user:${id}`) / revalidateTag(`skins:user:${id}`) from the
