@@ -1,4 +1,4 @@
-import supabase from "../config/supabaseClient";
+import supabase from "./supabaseServer";
 
 // Fetch a fresh Twitch app-access token (client_credentials). Server-only:
 // reads TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET from the environment.

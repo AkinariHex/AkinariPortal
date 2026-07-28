@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import ReactPlayer from 'react-player/twitch';
+import ReactPlayer from 'react-player';
 
 async function checkUserLivestream(channel, setIsUserLive) {
   const response = await fetch(
@@ -32,7 +32,7 @@ function LivestreamPlayer({ twitchName }) {
           <ReactPlayer
             className="twitchPlayer"
             width="100%"
-            url={`https://twitch.tv/${twitchName}`}
+            src={`https://twitch.tv/${twitchName}`}
           />
         </div>
       )}
