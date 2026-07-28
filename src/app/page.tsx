@@ -1,13 +1,26 @@
 import RecentSkins from "@/components/RecentSkins/RecentSkins";
 import RecentUsers from "@/components/RecentUsers/RecentUsers";
-import { getRecentSkins, getRecentUsers } from "@/lib/data";
+import HomeStats from "@/components/HomeStats/HomeStats";
+import SkinCard from "@/components/SkinCard/SkinCard";
+import {
+  getRecentSkins,
+  getRecentUsers,
+  getMostDownloadedSkins,
+  getSiteStats,
+} from "@/lib/data";
 
 export const revalidate = 86400;
 
+export const metadata = {
+  title: "Home",
+};
+
 export default async function Home() {
-  const [dbUsers, dbSkins] = await Promise.all([
+  const [dbUsers, dbSkins, mostDownloaded, stats] = await Promise.all([
     getRecentUsers(),
     getRecentSkins(),
+    getMostDownloadedSkins(),
+    getSiteStats(),
   ]);
 
   return (
@@ -17,6 +30,15 @@ export default async function Home() {
         type="image/webp"
         data="/img/logoFull.webp"
       />
+      <HomeStats skins={stats.skins} users={stats.users} />
+      <div className="homepageContainer" id="mostDownloaded">
+        <div className="title">Most Downloaded</div>
+        <div className="items">
+          {mostDownloaded.map((skin: any, index: number) => (
+            <SkinCard key={skin.id ?? index} skin={skin} />
+          ))}
+        </div>
+      </div>
       <RecentSkins rSkins={dbSkins} />
       <RecentUsers rUsers={dbUsers} />
     </div>

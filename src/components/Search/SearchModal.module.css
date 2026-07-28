@@ -1,0 +1,149 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12vh 16px 16px;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.command {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-flow: column;
+  background-color: var(--site-primary-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px 4px rgba(0, 0, 0, 0.45);
+  max-height: 70vh;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--site-secondary-color);
+}
+
+.searchGlyph {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: #8a97a8;
+}
+
+.input {
+  flex: 1 1 auto;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #d9e3f0;
+  font-size: 15pt;
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.input::placeholder {
+  color: #7c8797;
+}
+
+.list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px;
+  max-height: calc(70vh - 60px);
+}
+
+.group {
+  padding: 4px 0;
+}
+
+.group [cmdk-group-heading] {
+  padding: 8px 10px 4px;
+  font-size: 9.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a97a8;
+  user-select: none;
+}
+
+.item {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #d9e3f0;
+  user-select: none;
+}
+
+.item[data-selected="true"] {
+  background-color: var(--site-secondary-color);
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--site-background-users-page-color);
+}
+
+.thumb {
+  width: 54px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  object-fit: cover;
+  background-color: var(--site-background-users-page-color);
+}
+
+.itemText {
+  display: flex;
+  flex-flow: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.itemTitle {
+  font-size: 11.5pt;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemSub {
+  font-size: 9pt;
+  color: #8a97a8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemSub b {
+  color: var(--site-colorful-primary-color);
+  font-weight: 500;
+}
+
+.state {
+  padding: 26px 16px;
+  text-align: center;
+  color: #8a97a8;
+  font-size: 11pt;
+  user-select: none;
+}

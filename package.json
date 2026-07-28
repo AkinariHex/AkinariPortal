@@ -6,18 +6,19 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 4444",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@badrap/bar-of-progress": "^0.3.0",
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-regular-svg-icons": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
+    "@number-flow/react": "^0.6.2",
     "@supabase/supabase-js": "^2.110.9",
+    "cmdk": "^1.1.1",
     "cors": "^2.8.6",
     "generate-api-key": "^1.0.2",
     "iconsax-react": "^0.0.8",
@@ -27,6 +28,7 @@
     "next": "^16.2.12",
     "next-auth": "5.0.0-beta.32",
     "next-seo": "^7.2.0",
+    "nextjs-toploader": "^3.9.17",
     "react": "^19.2.8",
     "react-copy-to-clipboard": "^5.1.1",
     "react-countdown": "^2.3.6",

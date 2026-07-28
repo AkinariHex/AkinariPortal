@@ -107,17 +107,64 @@ header {
   color: var(--navbar-text-hover-color);
 }
 
-.userInfo .userInfoContent .profileActions .item:last-child {
+.userInfo .userInfoContent .profileActions .item.logout {
   color: var(--navbar-logout-text-color);
 }
 
-.userInfo .userInfoContent .profileActions .item:last-child:hover {
+.userInfo .userInfoContent .profileActions .item.logout:hover {
   background-color: var(--navbar-logout-bg-color);
   color: var(--navbar-logout-text-color);
 }
 
 .userBackground {
   border-radius: 20px;
+}
+
+.navSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 18px;
+  padding: 7px 12px;
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  background-color: var(--site-secondary-color);
+  color: var(--navbar-text-color);
+  font-family: var(--font-family-var);
+  font-size: 10.5pt;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.navSearch:hover {
+  background-color: #3f4a58;
+}
+
+.navSearch_label {
+  opacity: 0.85;
+}
+
+.navSearch_kbd {
+  font-family: var(--font-family-var);
+  font-size: 8.5pt;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background-color: var(--site-background-color);
+  color: #92a9c6;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 655px) {
+  .navSearch_label,
+  .navSearch_kbd {
+    display: none;
+  }
+
+  .navSearch {
+    margin-left: 10px;
+    padding: 7px;
+  }
 }
 
 .userContent {

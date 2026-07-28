@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import NextTopLoader from "nextjs-toploader";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
+import { isAdmin } from "@/lib/authz";
 import Navbar from "@/components/Navbar/Navbar";
+import SearchProvider from "@/components/Search/SearchProvider";
 
 import "@/styles/styles.css";
 import "@/styles/settings.css";
@@ -52,7 +55,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const [session, admin] = await Promise.all([auth(), isAdmin()]);
 
   return (
     <html lang="en">
@@ -73,9 +76,12 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <NextTopLoader color="#6ba2ed" showSpinner={false} height={3} />
         <SessionProvider session={session}>
-          <Navbar session={session} />
-          {children}
+          <SearchProvider>
+            <Navbar session={session} isAdmin={admin} />
+            {children}
+          </SearchProvider>
         </SessionProvider>
 
         <Script

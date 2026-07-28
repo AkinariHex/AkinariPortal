@@ -21,11 +21,49 @@ export const getRecentSkins = unstable_cache(
   async () => {
     const { data, error } = await supabase
       .from("skins")
-      .select("Banner,URL,Modes,Name,Player(id,username),Downloads")
+      .select("id,Banner,URL,Modes,Name,Player(id,username),Downloads")
       .order("created_at", { ascending: false })
       .limit(4);
     return error ? [] : data;
   },
   ["recent-skins"],
   { tags: ["skins"], revalidate: 86400 }
+);
+
+export const getMostDownloadedSkins = unstable_cache(
+  async () => {
+    const { data, error } = await supabase
+      .from("skins")
+      .select("id,Banner,URL,Modes,Name,Player(id,username),Downloads")
+      .order("Downloads", { ascending: false })
+      .limit(4);
+    return error ? [] : data;
+  },
+  ["most-downloaded-skins"],
+  { tags: ["skins"], revalidate: 86400 }
+);
+
+export const getSiteStats = unstable_cache(
+  async () => {
+    const [skins, users] = await Promise.all([
+      supabase.from("skins").select("*", { count: "exact", head: true }),
+      supabase.from("users").select("*", { count: "exact", head: true }),
+    ]);
+    return { skins: skins.count ?? 0, users: users.count ?? 0 };
+  },
+  ["site-stats"],
+  { tags: ["skins", "users"], revalidate: 86400 }
+);
+
+// All badge definitions, for the admin page and any badge picker.
+export const getAllBadges = unstable_cache(
+  async () => {
+    const { data, error } = await supabase
+      .from("badges")
+      .select("*")
+      .order("id", { ascending: true });
+    return error ? [] : data;
+  },
+  ["all-badges"],
+  { tags: ["badges"], revalidate: 86400 }
 );

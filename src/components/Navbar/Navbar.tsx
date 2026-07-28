@@ -4,13 +4,34 @@ import { signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import NavLink from "@/components/NavLink/NavLink";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useClickOutside } from "react-haiku";
-import { Home2, Login, Logout, User, Setting2, Cup } from "iconsax-react";
+import {
+  Home2,
+  Login,
+  Logout,
+  User,
+  Setting2,
+  Cup,
+  SearchNormal1,
+  ShieldTick,
+} from "iconsax-react";
 import { motion } from "motion/react";
+import { useSearch } from "@/components/Search/SearchProvider";
 
-export default function Navbar({ session }: { session: any }) {
+export default function Navbar({
+  session,
+  isAdmin,
+}: {
+  session: any;
+  isAdmin?: boolean;
+}) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { openSearch } = useSearch();
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad/.test(navigator.userAgent));
+  }, []);
   const pathname = usePathname();
   const variants = {
     open: { opacity: 1, y: 0, display: "block" },
@@ -35,6 +56,16 @@ export default function Navbar({ session }: { session: any }) {
             className="logoNavbar"
           />
         </Link>
+        <button
+          type="button"
+          className="navSearch"
+          onClick={openSearch}
+          aria-label="Search skins and players"
+        >
+          <SearchNormal1 size="18" color="#d9e3f0" />
+          <span className="navSearch_label">Search</span>
+          <kbd className="navSearch_kbd">{isMac ? "⌘" : "Ctrl"} K</kbd>
+        </button>
         {!pathname.startsWith("/users/") && (
           <nav className="navbar">
             <ul className="navLinks">
@@ -98,8 +129,19 @@ export default function Navbar({ session }: { session: any }) {
                     Settings
                   </div>
                 </Link>
+                {isAdmin && (
+                  <Link href="/admin">
+                    <div
+                      className="item"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <ShieldTick size="16" color="#d9e3f0" />
+                      Admin
+                    </div>
+                  </Link>
+                )}
                 <div
-                  className="item"
+                  className="item logout"
                   onClick={() => {
                     signOut();
                     setIsDropdownOpen(false);
