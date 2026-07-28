@@ -58,12 +58,21 @@ export const getSiteStats = unstable_cache(
 // All badge definitions, for the admin page and any badge picker.
 export const getAllBadges = unstable_cache(
   async () => {
-    const { data, error } = await supabase
+    // Order by the admin-controlled sort_order. If that column doesn't exist yet
+    // (migration not run), the query errors — fall back to id order so the admin
+    // page still lists badges.
+    let res = await supabase
       .from("badges")
       .select("*")
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("id", { ascending: true });
-    return error ? [] : data;
+    if (res.error) {
+      res = await supabase
+        .from("badges")
+        .select("*")
+        .order("id", { ascending: true });
+    }
+    return res.error ? [] : res.data;
   },
   ["all-badges"],
   { tags: ["badges"], revalidate: 86400 }
