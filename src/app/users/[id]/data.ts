@@ -12,13 +12,27 @@ export function getUserProfile(id: string) {
       const statusData = await supabase
         .from("users")
         .select(
-          `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo`
+          `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo,keyboard,keyboard_keys`
         )
         .eq("id", id)
         .single();
 
       const data: any = statusData.data;
       if (!data) return null;
+
+      // Resolve the chosen keyboard/keypad device (no FK, so fetch it directly).
+      try {
+        if (data.keyboard) {
+          const { data: device } = await supabase
+            .from("keyboards")
+            .select("*")
+            .eq("id", data.keyboard)
+            .maybeSingle();
+          data.keyboardDevice = device ?? null;
+        }
+      } catch (error) {
+        console.log(error);
+      }
 
       try {
         if (data.badges) {

@@ -31,7 +31,12 @@ export default async function Home() {
         className="my-6 hidden h-[150px] brightness-110 md:block"
       />
 
-      <HomeStats skins={stats.skins} users={stats.users} />
+      <HomeStats
+        skins={stats.skins}
+        users={stats.users}
+        tablet={stats.tablet}
+        keyboard={stats.keyboard}
+      />
 
       <section
         id="mostDownloaded"

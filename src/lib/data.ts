@@ -43,16 +43,75 @@ export const getMostDownloadedSkins = unstable_cache(
   { tags: ["skins"], revalidate: 86400 }
 );
 
+// Most frequent non-null value of a `users` column. Returns null if the column
+// doesn't exist (query errors) or there's no data.
+async function mostUsedUserValue(column: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select(column)
+    .not(column, "is", null);
+  if (error || !data) return null;
+
+  const counts: Record<string, number> = {};
+  for (const row of data as any[]) {
+    const v = row[column];
+    if (typeof v === "string" && v.trim()) counts[v] = (counts[v] ?? 0) + 1;
+  }
+
+  let best: string | null = null;
+  let bestN = 0;
+  for (const [k, n] of Object.entries(counts)) {
+    if (n > bestN) {
+      best = k;
+      bestN = n;
+    }
+  }
+  return best;
+}
+
 export const getSiteStats = unstable_cache(
   async () => {
-    const [skins, users] = await Promise.all([
+    const [skins, users, tablet, keyboardId] = await Promise.all([
       supabase.from("skins").select("*", { count: "exact", head: true }),
       supabase.from("users").select("*", { count: "exact", head: true }),
+      mostUsedUserValue("tablet"),
+      mostUsedUserValue("keyboard"),
     ]);
-    return { skins: skins.count ?? 0, users: users.count ?? 0 };
+
+    // `keyboard` stores a device id; resolve it to a display name.
+    let keyboard: string | null = keyboardId;
+    if (keyboardId) {
+      const { data } = await supabase
+        .from("keyboards")
+        .select("name")
+        .eq("id", keyboardId)
+        .maybeSingle();
+      keyboard = data?.name ?? keyboardId;
+    }
+
+    return {
+      skins: skins.count ?? 0,
+      users: users.count ?? 0,
+      tablet,
+      keyboard,
+    };
   },
   ["site-stats"],
-  { tags: ["skins", "users"], revalidate: 86400 }
+  { tags: ["skins", "users", "keyboards"], revalidate: 86400 }
+);
+
+// All keyboard/keypad devices, for the settings picker + admin.
+export const getAllKeyboards = unstable_cache(
+  async () => {
+    const { data, error } = await supabase
+      .from("keyboards")
+      .select("*")
+      .order("brand", { ascending: true, nullsFirst: false })
+      .order("name", { ascending: true });
+    return error ? [] : data;
+  },
+  ["all-keyboards"],
+  { tags: ["keyboards"], revalidate: 86400 }
 );
 
 // All badge definitions, for the admin page and any badge picker.

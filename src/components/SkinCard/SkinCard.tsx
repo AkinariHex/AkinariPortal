@@ -47,8 +47,7 @@ function SkinCard({ skin }: { skin: Skin | any }) {
       </div>
       <div className="flex h-[60%] w-full flex-col">
         <Link
-          href={skin.URL}
-          target="_blank"
+          href={`/users/${skin.Player.id}#${skin.id}`}
           className="flex flex-1 items-center justify-center break-words px-2 text-center text-[13pt] font-semibold leading-tight text-accent-blue"
         >
           {skin.Name}

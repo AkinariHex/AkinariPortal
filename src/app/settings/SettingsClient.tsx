@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Copy, Upload, X } from "lucide-react";
+import { Eye, EyeOff, Copy, Upload, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import moment from "moment/moment";
 import ConnectionField from "@/components/ConnectionField/ConnectionField";
 import LoadingIcon from "@/components/LoadingIcon/LoadingIcon";
+import KeyboardView, {
+  type KeyboardDevice,
+} from "@/components/KeyboardView/KeyboardView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -28,6 +33,7 @@ import {
   saveSkinView as saveSkinViewAction,
   saveSocials,
   saveTablet,
+  saveKeyboard,
 } from "@/app/settings/actions";
 
 moment.locale("en");
@@ -42,9 +48,11 @@ const select_options = [
 export default function SettingsClient({
   session,
   userData,
+  keyboards = [],
 }: {
   session: any;
   userData: any;
+  keyboards?: KeyboardDevice[];
 }) {
   const router = useRouter();
   const data: any = userData ?? {};
@@ -79,6 +87,84 @@ export default function SettingsClient({
 
   /* isSaving refer to Socials saving */
   const [isSaving, setIsSaving] = useState(false);
+
+  const [keyboardId, setKeyboardId] = useState<string>(
+    data.keyboard ? String(data.keyboard) : ""
+  );
+  const [tapKeys, setTapKeys] = useState<string[]>(
+    Array.isArray(data.keyboard_keys) ? data.keyboard_keys : []
+  );
+  const [keyInput, setKeyInput] = useState("");
+  const [savingKeyboard, setSavingKeyboard] = useState(false);
+
+  const selectedDevice = useMemo(
+    () => keyboards.find((k) => String(k.id) === keyboardId) ?? null,
+    [keyboards, keyboardId]
+  );
+  const hasLayout = !!selectedDevice?.layout?.rows?.length;
+
+  const keypads = useMemo(
+    () => keyboards.filter((k) => k.type === "keypad"),
+    [keyboards]
+  );
+  const fullKeyboards = useMemo(
+    () => keyboards.filter((k) => k.type !== "keypad"),
+    [keyboards]
+  );
+
+  const deviceLabel = (k: KeyboardDevice) =>
+    k.brand ? `${k.brand} - ${k.name}` : k.name;
+
+  const toggleTapKey = (label: string) => {
+    setTapKeys((prev) =>
+      prev.some((k) => k.toLowerCase() === label.toLowerCase())
+        ? prev.filter((k) => k.toLowerCase() !== label.toLowerCase())
+        : [...prev, label]
+    );
+  };
+
+  const addTapKey = () => {
+    const label = keyInput.trim();
+    if (!label) return;
+    if (tapKeys.some((k) => k.toLowerCase() === label.toLowerCase())) {
+      toast.error(`"${label}" is already added.`);
+      setKeyInput("");
+      return;
+    }
+    setTapKeys((prev) => [...prev, label]);
+    setKeyInput("");
+  };
+
+  const removeTapKey = (label: string) => {
+    setTapKeys((prev) => prev.filter((k) => k !== label));
+  };
+
+  const onSelectKeyboard = (value: string) => {
+    setKeyboardId(value);
+    setTapKeys([]);
+    setKeyInput("");
+  };
+
+  const saveKeyboardSettings = async () => {
+    if (savingKeyboard) return;
+    setSavingKeyboard(true);
+    try {
+      const result = await saveKeyboard({
+        keyboard: keyboardId || null,
+        keyboard_keys: tapKeys,
+      });
+      if (result.message === "done") {
+        toast.success("Keyboard saved.");
+        router.refresh();
+      } else {
+        toast.error("Failed to save keyboard.");
+      }
+    } catch {
+      toast.error("Failed to save keyboard.");
+    } finally {
+      setSavingKeyboard(false);
+    }
+  };
 
   const uploadTabletSettings = async (tabletFile: File) => {
     const reader = new FileReader();
@@ -371,6 +457,136 @@ export default function SettingsClient({
                 </div>
               </TooltipContent>
             </Tooltip>
+          </p>
+        </section>
+
+        {/* Keyboard */}
+        <section
+          id="keyboard"
+          className="flex flex-col gap-4 rounded-xl border border-border bg-site-secondary p-6"
+        >
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            Keyboard
+            <Badge variant="secondary" className="text-accent-blue">
+              BETA
+            </Badge>
+          </h2>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={keyboardId} onValueChange={onSelectKeyboard}>
+              <SelectTrigger className="w-full sm:w-80">
+                <SelectValue placeholder="Select your keyboard or keypad" />
+              </SelectTrigger>
+              <SelectContent>
+                {keypads.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Keypads</SelectLabel>
+                    {keypads.map((k) => (
+                      <SelectItem key={String(k.id)} value={String(k.id)}>
+                        {deviceLabel(k)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+                {fullKeyboards.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Keyboards</SelectLabel>
+                    {fullKeyboards.map((k) => (
+                      <SelectItem key={String(k.id)} value={String(k.id)}>
+                        {deviceLabel(k)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+              </SelectContent>
+            </Select>
+            {keyboardId && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => onSelectKeyboard("")}
+                aria-label="Clear keyboard"
+              >
+                <X />
+              </Button>
+            )}
+          </div>
+
+          {selectedDevice && (
+            <>
+              {hasLayout ? (
+                <p className="text-sm text-muted-foreground">
+                  Click the keys you tap on to highlight them.
+                </p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addTapKey();
+                      }
+                    }}
+                    placeholder="Add a key (e.g. Z)"
+                    maxLength={12}
+                    className="w-full sm:w-56"
+                  />
+                  <Button type="button" variant="secondary" onClick={addTapKey}>
+                    <Plus />
+                    Add
+                  </Button>
+                </div>
+              )}
+
+              {!hasLayout && tapKeys.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {tapKeys.map((k) => (
+                    <Badge
+                      key={k}
+                      variant="secondary"
+                      className="flex items-center gap-1 bg-site-primary"
+                    >
+                      {k}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${k}`}
+                        onClick={() => removeTapKey(k)}
+                        className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="rounded-md border border-border bg-site-primary p-6">
+                <KeyboardView
+                  device={selectedDevice}
+                  tapKeys={tapKeys}
+                  interactive={hasLayout}
+                  onToggleKey={toggleTapKey}
+                />
+              </div>
+            </>
+          )}
+
+          <div>
+            <Button
+              type="button"
+              onClick={saveKeyboardSettings}
+              disabled={savingKeyboard}
+            >
+              {savingKeyboard ? <LoadingIcon /> : "Save Keyboard"}
+            </Button>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            Show the keyboard or keypad you play on, and the keys you tap with, on
+            your profile.
           </p>
         </section>
 

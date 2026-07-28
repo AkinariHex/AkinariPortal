@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { osuApiFetch } from "@/lib/osu";
 
 export const revalidate = 300;
@@ -9,7 +10,8 @@ export async function generateMetadata({
 }) {
   const { id } = await params;
   try {
-    const room: any = await osuApiFetch(`rooms/${id}`);
+    const session: any = await auth();
+    const room: any = await osuApiFetch(`rooms/${id}`, session?.access_token);
     return { title: `${room.name} - Game Details` };
   } catch {
     return { title: "Game Details" };
@@ -22,14 +24,18 @@ export default async function GameDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session: any = await auth();
 
   let room: any = null;
   let events: any[] = [];
   let error: string | null = null;
 
   try {
-    room = await osuApiFetch(`rooms/${id}`);
-    const eventsData: any = await osuApiFetch(`rooms/${id}/events`);
+    room = await osuApiFetch(`rooms/${id}`, session?.access_token);
+    const eventsData: any = await osuApiFetch(
+      `rooms/${id}/events`,
+      session?.access_token
+    );
     events = eventsData.events || [];
   } catch (err: any) {
     console.error(`Error fetching room ${id}:`, err);
@@ -38,7 +44,7 @@ export default async function GameDetailsPage({
 
   if (error) {
     return (
-      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 -mt-[4.2em] pt-[4.2em] pb-24 md:pb-10">
         <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary p-5 text-foreground">
           <h1 className="text-2xl font-bold">Error loading game details</h1>
           <p className="mt-2 text-destructive">{error}</p>
@@ -48,7 +54,7 @@ export default async function GameDetailsPage({
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+    <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 -mt-[4.2em] pt-[4.2em] pb-24 md:pb-10">
       <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary">
         <div className="p-5 md:p-6">
           <div className="mb-3 flex items-center">

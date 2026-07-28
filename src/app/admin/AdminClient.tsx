@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createBadge,
@@ -11,8 +11,14 @@ import {
   grantBadgeBatch,
   revokeBadge,
   getUserBadges,
+  createKeyboard,
+  updateKeyboard,
+  deleteKeyboard,
 } from "./actions";
 import type { BadgeHoldersMap } from "./data";
+import KeyboardView, {
+  type KeyboardDevice,
+} from "@/components/KeyboardView/KeyboardView";
 import {
   DndContext,
   PointerSensor,
@@ -61,9 +67,11 @@ const pendingBadgeClass = "border-transparent bg-amber-400/20 text-amber-400";
 export default function AdminClient({
   badges,
   holders,
+  keyboards = [],
 }: {
   badges: Badge[];
   holders: BadgeHoldersMap;
+  keyboards?: KeyboardDevice[];
 }) {
   const router = useRouter();
 
@@ -77,6 +85,7 @@ export default function AdminClient({
       />
       <GrantModify badges={badges} />
       <BatchGrant badges={badges} onChanged={() => router.refresh()} />
+      <Keyboards keyboards={keyboards} onChanged={() => router.refresh()} />
     </div>
   );
 }
@@ -589,6 +598,310 @@ function GrantModify({ badges }: { badges: Badge[] }) {
           </ul>
         </>
       )}
+    </Section>
+  );
+}
+
+const keyboardTypeClass = "border-transparent bg-accent-blue/20 text-accent-blue";
+const keypadTypeClass = "border-transparent bg-amber-400/20 text-amber-400";
+
+function parseLayout(raw: string): { ok: true; value: unknown } | { ok: false } {
+  const text = raw.trim();
+  if (!text) return { ok: true, value: null };
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch {
+    return { ok: false };
+  }
+}
+
+function KeyboardRow({
+  device,
+  pending,
+  onSave,
+  onDelete,
+}: {
+  device: KeyboardDevice;
+  pending: boolean;
+  onSave: (input: {
+    id: string;
+    name: string;
+    brand: string;
+    type: string;
+    layout: unknown;
+    model_url: string;
+  }) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(device.name ?? "");
+  const [brand, setBrand] = useState(device.brand ?? "");
+  const [type, setType] = useState(device.type === "keypad" ? "keypad" : "keyboard");
+  const [layout, setLayout] = useState(
+    device.layout ? JSON.stringify(device.layout, null, 2) : ""
+  );
+  const [modelUrl, setModelUrl] = useState(device.model_url ?? "");
+
+  const handleSave = () => {
+    if (!name.trim()) {
+      toast.error("Name is required.");
+      return;
+    }
+    const parsed = parseLayout(layout);
+    if (!parsed.ok) {
+      toast.error("Invalid layout JSON");
+      return;
+    }
+    onSave({
+      id: String(device.id),
+      name: name.trim(),
+      brand: brand.trim(),
+      type,
+      layout: parsed.value,
+      model_url: modelUrl.trim(),
+    });
+    setEditing(false);
+  };
+
+  return (
+    <li className="flex flex-col gap-3 rounded-lg bg-site-secondary px-3 py-2.5">
+      <div className="flex flex-row flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-base font-medium">
+            {device.brand ? `${device.brand} - ${device.name}` : device.name}
+          </span>
+          <span className="text-xs text-muted-foreground">#{device.id}</span>
+        </div>
+        <Badge
+          variant="secondary"
+          className={device.type === "keypad" ? keypadTypeClass : keyboardTypeClass}
+        >
+          {device.type === "keypad" ? "keypad" : "keyboard"}
+        </Badge>
+        <Button
+          variant="secondary"
+          onClick={() => setEditing((s) => !s)}
+          disabled={pending}
+        >
+          {editing ? "Cancel" : "Edit"}
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={() => onDelete(String(device.id))}
+          disabled={pending}
+        >
+          Delete
+        </Button>
+      </div>
+
+      {editing && (
+        <div className="flex flex-col gap-2.5 border-t border-white/5 pt-3">
+          <div className="flex flex-row flex-wrap items-center gap-2.5">
+            <Input
+              className="flex-1 basis-40 bg-site-primary"
+              placeholder="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <Input
+              className="flex-1 basis-40 bg-site-primary"
+              placeholder="brand"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+            />
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="keyboard">keyboard</SelectItem>
+                <SelectItem value="keypad">keypad</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Input
+            className="bg-site-primary"
+            placeholder="model_url (image)"
+            value={modelUrl}
+            onChange={(e) => setModelUrl(e.target.value)}
+          />
+          <Textarea
+            className="resize-y bg-site-primary font-mono text-xs"
+            placeholder='layout JSON, e.g. {"rows":[[{"label":"Z"},{"label":"X"}]]}'
+            rows={4}
+            value={layout}
+            onChange={(e) => setLayout(e.target.value)}
+          />
+          <div className="flex flex-row flex-wrap items-center gap-2.5">
+            <Button onClick={handleSave} disabled={pending}>
+              Save changes
+            </Button>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function Keyboards({
+  keyboards,
+  onChanged,
+}: {
+  keyboards: KeyboardDevice[];
+  onChanged: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [id, setId] = useState("");
+  const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [type, setType] = useState("keyboard");
+  const [layout, setLayout] = useState("");
+  const [modelUrl, setModelUrl] = useState("");
+
+  const previewLayout = useMemo(() => {
+    const parsed = parseLayout(layout);
+    if (!parsed.ok || !parsed.value) return null;
+    return parsed.value as KeyboardDevice["layout"];
+  }, [layout]);
+
+  const handleCreate = () => {
+    if (!id.trim() || !name.trim()) {
+      toast.error("Both id and name are required.");
+      return;
+    }
+    const parsed = parseLayout(layout);
+    if (!parsed.ok) {
+      toast.error("Invalid layout JSON");
+      return;
+    }
+    startTransition(async () => {
+      const res = await createKeyboard({
+        id: id.trim(),
+        name: name.trim(),
+        brand: brand.trim(),
+        type,
+        layout: parsed.value,
+        model_url: modelUrl.trim(),
+      });
+      if (res.status === "done") {
+        toast.success(`Keyboard "${name.trim()}" created.`);
+        setId("");
+        setName("");
+        setBrand("");
+        setType("keyboard");
+        setLayout("");
+        setModelUrl("");
+        onChanged();
+      } else {
+        toast.error(`Create failed (${res.status}).`);
+      }
+    });
+  };
+
+  const handleUpdate = (input: {
+    id: string;
+    name: string;
+    brand: string;
+    type: string;
+    layout: unknown;
+    model_url: string;
+  }) => {
+    startTransition(async () => {
+      const res = await updateKeyboard(input);
+      if (res.status === "done") {
+        toast.success(`Keyboard #${input.id} updated.`);
+        onChanged();
+      } else {
+        toast.error(`Update failed (${res.status}).`);
+      }
+    });
+  };
+
+  const handleDelete = (deviceId: string) => {
+    startTransition(async () => {
+      const res = await deleteKeyboard(deviceId);
+      if (res.status === "done") {
+        toast.success(`Keyboard #${deviceId} deleted.`);
+        onChanged();
+      } else {
+        toast.error(`Delete failed (${res.status}).`);
+      }
+    });
+  };
+
+  return (
+    <Section title="Keyboards">
+      <div className="flex flex-col gap-2.5 rounded-lg bg-site-secondary p-3">
+        <div className="flex flex-row flex-wrap items-center gap-2.5">
+          <Input
+            className="flex-1 basis-32 bg-site-primary"
+            placeholder="id (unique)"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+          />
+          <Input
+            className="flex-1 basis-40 bg-site-primary"
+            placeholder="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            className="flex-1 basis-40 bg-site-primary"
+            placeholder="brand"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+          />
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="keyboard">keyboard</SelectItem>
+              <SelectItem value="keypad">keypad</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Input
+          className="bg-site-primary"
+          placeholder="model_url (image, optional)"
+          value={modelUrl}
+          onChange={(e) => setModelUrl(e.target.value)}
+        />
+        <Textarea
+          className="resize-y bg-site-primary font-mono text-xs"
+          placeholder='layout JSON (optional), e.g. {"rows":[[{"label":"Z"},{"label":"X"}]]}'
+          rows={4}
+          value={layout}
+          onChange={(e) => setLayout(e.target.value)}
+        />
+        {previewLayout && (
+          <div className="rounded-md bg-site-primary p-4">
+            <KeyboardView device={{ id: "preview", name, layout: previewLayout }} />
+          </div>
+        )}
+        <div>
+          <Button onClick={handleCreate} disabled={pending}>
+            Create keyboard
+          </Button>
+        </div>
+      </div>
+
+      <ul className="flex list-none flex-col gap-2 p-0">
+        {keyboards.map((k) => (
+          <KeyboardRow
+            key={String(k.id)}
+            device={k}
+            pending={pending}
+            onSave={handleUpdate}
+            onDelete={handleDelete}
+          />
+        ))}
+        {keyboards.length === 0 && (
+          <li className="px-0.5 py-2 text-sm text-muted-foreground">
+            No keyboards yet.
+          </li>
+        )}
+      </ul>
     </Section>
   );
 }

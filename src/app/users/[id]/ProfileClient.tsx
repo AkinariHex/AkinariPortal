@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { toast } from "sonner";
+import KeyboardView from "@/components/KeyboardView/KeyboardView";
 import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
 import Modal from "@/components/Modal/Modal";
 import PlaystyleSection from "@/components/PlaystyleSection/PlaystyleSection";
@@ -268,7 +269,7 @@ export default function ProfileClient({
 
   return (
     <>
-      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-site-users box-border px-2.5 pt-[4.2em] pb-2.5">
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-site-users box-border px-2.5 -mt-[4.2em] pt-[4.2em] pb-2.5">
         <div className="my-[50px] w-[60em] bg-site-secondary box-border rounded-[20px] max-[1100px]:w-[90vw] max-[450px]:my-5 max-[450px]:w-screen">
           {/* HERO */}
           <div className="flex flex-row flex-wrap rounded-t-[20px]">
@@ -389,6 +390,30 @@ export default function ProfileClient({
                 />
               </div>
             )}
+
+          {/* KEYBOARD */}
+          {userData.keyboard && (
+            <div className="flex w-full flex-col gap-3.5 box-border p-3.5">
+              <div className="flex w-full flex-row">
+                <div className="text-[1.4em] font-medium text-[#cee0f6]">
+                  {userData.keyboardDevice
+                    ? [
+                        userData.keyboardDevice.brand,
+                        userData.keyboardDevice.name,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")
+                    : "Keyboard"}
+                </div>
+              </div>
+              <div className="flex w-full justify-center rounded-md bg-site-primary box-border p-6">
+                <KeyboardView
+                  device={userData.keyboardDevice}
+                  tapKeys={userData.keyboard_keys ?? []}
+                />
+              </div>
+            </div>
+          )}
 
           {/* SKINS */}
           <div className="flex w-full flex-col gap-3.5 box-border p-3.5">

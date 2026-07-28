@@ -118,6 +118,36 @@ export async function saveSocials(input: unknown) {
   return { message: "done" as const };
 }
 
+export async function saveKeyboard(input: unknown) {
+  const session: any = await auth();
+  if (!session?.id) return { message: "error" as const };
+
+  const parsed = z
+    .object({
+      keyboard: z.string().nullable(),
+      keyboard_keys: z.array(z.string()).default([]),
+    })
+    .safeParse(input);
+  if (!parsed.success) return { message: "error" as const };
+
+  const { error } = await supabase
+    .from("users")
+    .update({
+      keyboard: parsed.data.keyboard,
+      keyboard_keys: parsed.data.keyboard_keys,
+    })
+    .eq("id", session.id);
+
+  if (error) {
+    console.error(error);
+    return { message: "error" as const };
+  }
+
+  updateTag(`user:${session.id}`);
+  updateTag("keyboards");
+  return { message: "done" as const };
+}
+
 export async function saveTablet(input: unknown) {
   const session: any = await auth();
   if (!session?.id) return { message: "error" as const };

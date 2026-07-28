@@ -51,7 +51,7 @@ export default function Navbar({
           />
         </Link>
 
-        <nav className="mx-auto">
+        <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <ul className="flex list-none gap-8 p-0 font-medium">
             <li>
               <NavLink

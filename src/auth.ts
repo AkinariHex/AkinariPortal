@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import { revalidateTag } from "next/cache";
 import { syncUserOnLogin } from "@/lib/users";
 
 // osu! stores everything we need in the userinfo (/api/v2/me) response, which
@@ -45,8 +46,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           playmode: profile.playmode,
         };
 
-        // Upsert the user + move pending badges to assigned (login flow).
+        // Update username/banner/country + move pending badges to assigned,
+        // on every login.
         await syncUserOnLogin(profile);
+
+        // Bust that user's cached profile so the refreshed username/country show
+        // immediately instead of waiting out the 1-day cache.
+        try {
+          revalidateTag(`user:${profile.id}`, "max");
+        } catch {}
       }
       return token;
     },

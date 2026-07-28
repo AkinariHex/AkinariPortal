@@ -11,7 +11,7 @@ export default async function GamesListPage() {
 
   if (!session) {
     return (
-      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 -mt-[4.2em] pt-[4.2em] pb-24 md:pb-10">
         <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary p-10 text-center text-foreground">
           <h1 className="text-2xl font-bold">Login Required</h1>
           <p className="mt-2 text-muted-foreground">
@@ -26,7 +26,10 @@ export default async function GamesListPage() {
   let error: string | null = null;
 
   try {
-    const data = await osuApiFetch(`/rooms?type=ranked_play`);
+    const data = await osuApiFetch(
+      "rooms?type=ranked_play",
+      session.access_token
+    );
     rooms = (data || []).filter((room: any) => room.status === "ended");
   } catch (err: any) {
     console.error("Error fetching user rooms:", err);
@@ -35,7 +38,7 @@ export default async function GamesListPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 -mt-[4.2em] pt-[4.2em] pb-24 md:pb-10">
         <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary p-5 text-foreground">
           <h1 className="text-2xl font-bold">Error loading games</h1>
           <p className="mt-2 text-destructive">{error}</p>
@@ -53,7 +56,7 @@ export default async function GamesListPage() {
   }, {});
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+    <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 -mt-[4.2em] pt-[4.2em] pb-24 md:pb-10">
       <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary">
         <div className="p-5 md:p-6">
           <div className="mb-3 flex items-center">

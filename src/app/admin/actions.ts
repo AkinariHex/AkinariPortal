@@ -257,6 +257,101 @@ export async function revokeBadge(osuId: BadgeId, badgeId: BadgeId) {
   }
 }
 
+// ---- Keyboards / keypads ----
+
+type KeyboardInput = {
+  id: string;
+  name: string;
+  brand?: string;
+  type?: string;
+  layout?: unknown; // object | null (jsonb)
+  model_url?: string;
+};
+
+export async function createKeyboard(input: KeyboardInput) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+
+  const id = String(input?.id ?? "").trim();
+  const name = String(input?.name ?? "").trim();
+  if (!id || !name) return { status: "invalid" as const };
+
+  try {
+    const { error } = await supabase.from("keyboards").insert({
+      id,
+      name,
+      brand: input.brand?.trim() || null,
+      type: input.type === "keypad" ? "keypad" : "keyboard",
+      layout: input.layout ?? null,
+      model_url: input.model_url?.trim() || null,
+    });
+    if (error) {
+      console.error(error);
+      return { status: "error" as const };
+    }
+    updateTag("keyboards");
+    return { status: "done" as const };
+  } catch (err) {
+    console.error(err);
+    return { status: "error" as const };
+  }
+}
+
+export async function updateKeyboard(input: KeyboardInput) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+
+  const id = String(input?.id ?? "").trim();
+  if (!id) return { status: "invalid" as const };
+
+  try {
+    const { error } = await supabase
+      .from("keyboards")
+      .update({
+        name: String(input.name ?? "").trim(),
+        brand: input.brand?.trim() || null,
+        type: input.type === "keypad" ? "keypad" : "keyboard",
+        layout: input.layout ?? null,
+        model_url: input.model_url?.trim() || null,
+      })
+      .eq("id", id);
+    if (error) {
+      console.error(error);
+      return { status: "error" as const };
+    }
+    updateTag("keyboards");
+    return { status: "done" as const };
+  } catch (err) {
+    console.error(err);
+    return { status: "error" as const };
+  }
+}
+
+export async function deleteKeyboard(id: string) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+  if (!id) return { status: "invalid" as const };
+
+  try {
+    // Clear it from any user that had it selected.
+    await supabase
+      .from("users")
+      .update({ keyboard: null, keyboard_keys: null })
+      .eq("keyboard", id);
+
+    const { error } = await supabase.from("keyboards").delete().eq("id", id);
+    if (error) {
+      console.error(error);
+      return { status: "error" as const };
+    }
+    updateTag("keyboards");
+    return { status: "done" as const };
+  } catch (err) {
+    console.error(err);
+    return { status: "error" as const };
+  }
+}
+
 export async function getUserBadges(osuId: BadgeId) {
   const session = await getAdminSession();
   if (!session) return { status: "unauthorized" as const };

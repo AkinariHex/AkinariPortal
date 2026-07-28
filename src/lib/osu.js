@@ -34,9 +34,12 @@ export async function getAccessToken() {
   return cachedToken;
 }
 
-export async function osuApiFetch(endpoint) {
-  const token = await getAccessToken();
-  const response = await fetch(`https://osu.ppy.sh/api/v2/${endpoint}`, {
+// Pass a user access token to call user-scoped endpoints (e.g. /rooms); omit it
+// to use the app client-credentials token for public data.
+export async function osuApiFetch(endpoint, userToken) {
+  const token = userToken || (await getAccessToken());
+  const cleanEndpoint = String(endpoint).replace(/^\/+/, "");
+  const response = await fetch(`https://osu.ppy.sh/api/v2/${cleanEndpoint}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
