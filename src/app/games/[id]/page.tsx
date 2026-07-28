@@ -1,13 +1,21 @@
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { osuApiFetch } from "@/lib/osu";
 
 export const revalidate = 300;
+
+// Feature incomplete - hidden and inaccessible for now.
+const GAMES_FEATURE_ENABLED = false;
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!GAMES_FEATURE_ENABLED) {
+    return { title: "Game Details" };
+  }
+
   const { id } = await params;
   try {
     const session: any = await auth();
@@ -23,6 +31,10 @@ export default async function GameDetailsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!GAMES_FEATURE_ENABLED) {
+    notFound();
+  }
+
   const { id } = await params;
   const session: any = await auth();
 

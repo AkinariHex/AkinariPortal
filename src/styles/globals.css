@@ -67,6 +67,16 @@
   --color-social-twitter-text: #bbe1fb;
   --color-social-github: #171515;
   --color-social-github-text: #b9b9b9;
+
+  /* wooting brand (Wootility-style key preview card) */
+  --color-wooting-purple: #8a2fe0;
+  --color-wooting-magenta: #d92696;
+  --color-wooting-teal: #22d9c4;
+  --color-wooting-card-bg: #131417;
+  --color-wooting-key-bg: #1c6f64;
+  --color-wooting-key-border: #2f9484;
+  --color-wooting-key-text: #eafffa;
+  --color-wooting-warn: #f2b90c;
 }
 
 /* shadcn/ui semantic tokens, mapped to the dark site palette. */

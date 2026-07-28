@@ -1,7 +1,7 @@
 "use client";
 
 import jsDownload from "js-file-download";
-import { Download, LayoutGrid, List, Pencil, Share2, Trash2 } from "lucide-react";
+import { Download, LayoutGrid, List, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -63,6 +63,11 @@ export default function ProfileClient({
   function openEdit(skin: any) {
     setModalIsOpen(true);
     setModalSkinEdit(skin);
+  }
+
+  function openAdd() {
+    setModalSkinEdit(undefined);
+    setModalIsOpen(true);
   }
 
   const shareText = (skinId: any) =>
@@ -180,7 +185,7 @@ export default function ProfileClient({
       <div
         key={skin.id}
         id={skin.id}
-        className="group relative flex h-[14em] w-[18.8em] flex-col justify-end rounded-md bg-cover bg-center box-border target:[outline:2px_solid_#6ba2ed] max-[450px]:w-full"
+        className="group relative flex h-[14em] w-[18.8em] flex-col justify-end rounded-md bg-cover bg-center box-border target:[outline:2px_solid_#6ba2ed] max-sm:w-full"
         style={{ backgroundImage: `url('${skin.Banner}')` }}
       >
         <div
@@ -270,7 +275,7 @@ export default function ProfileClient({
   return (
     <>
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-site-users box-border px-2.5 -mt-[4.2em] pt-[4.2em] pb-2.5">
-        <div className="my-[50px] w-[60em] bg-site-secondary box-border rounded-[20px] max-[1100px]:w-[90vw] max-[450px]:my-5 max-[450px]:w-screen">
+        <div className="my-[50px] w-[60em] bg-site-secondary box-border rounded-[20px] max-[1100px]:w-[90vw] max-[450px]:my-5 max-[450px]:w-full">
           {/* HERO */}
           <div className="flex flex-row flex-wrap rounded-t-[20px]">
             <div
@@ -417,11 +422,21 @@ export default function ProfileClient({
 
           {/* SKINS */}
           <div className="flex w-full flex-col gap-3.5 box-border p-3.5">
-            <div className="flex w-full flex-row">
+            <div className="flex w-full flex-row flex-wrap items-center gap-2.5">
               <div className="text-[1.4em] font-medium text-[#cee0f6]">
                 Skins
               </div>
-              <div className="ml-auto flex flex-row items-center justify-center gap-3.5 rounded-md bg-[#1f242b] px-4">
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={openAdd}
+                  className="flex cursor-pointer select-none flex-row items-center justify-center gap-1.5 rounded-md bg-[#5683c1] px-2.5 py-1 text-[11.2pt] font-normal transition-colors duration-200 hover:bg-accent-blue active:scale-[0.98]"
+                >
+                  <Plus className="size-4" />
+                  Add Skin
+                </button>
+              )}
+              <div className="ml-auto flex flex-row items-center justify-center gap-3.5 rounded-md bg-[#1f242b] px-4 py-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -471,17 +486,9 @@ export default function ProfileClient({
                   (skin: any) =>
                     !skin.Tags.includes("current") && renderListItem(skin)
                 )}
-                {isOwner && (
-                  <div
-                    className="flex min-h-[60px] cursor-pointer select-none flex-row items-center justify-center rounded-md border-2 border-dashed border-[#414a55] bg-transparent text-[11pt] font-medium uppercase text-[#76818d] transition-colors hover:border-[#545c66] hover:text-[#8b97a6]"
-                    onClick={() => setModalIsOpen(true)}
-                  >
-                    <span>Add Skin</span>
-                  </div>
-                )}
               </div>
             ) : (
-              <div className="flex w-full flex-row flex-wrap justify-between gap-x-0.5 gap-y-3.5 max-[450px]:flex-col max-[450px]:items-center max-[450px]:justify-center">
+              <div className="flex w-full flex-row flex-wrap justify-start gap-3.5 max-sm:flex-col max-sm:items-center max-sm:justify-center">
                 {skinsData.map(
                   (skin: any) =>
                     skin.Tags.includes("current") && renderGridItem(skin)
@@ -489,14 +496,6 @@ export default function ProfileClient({
                 {skinsData.map(
                   (skin: any) =>
                     !skin.Tags.includes("current") && renderGridItem(skin)
-                )}
-                {isOwner && (
-                  <div
-                    className="flex h-[calc(14em-4px)] w-[calc(18.8em-4px)] cursor-pointer select-none flex-row items-center justify-center rounded-md border-2 border-dashed border-[#414a55] bg-transparent font-medium uppercase text-[#76818d] transition-colors hover:border-[#545c66] hover:text-[#8b97a6] max-[450px]:w-full"
-                    onClick={() => setModalIsOpen(true)}
-                  >
-                    <span>Add Skin</span>
-                  </div>
                 )}
               </div>
             )}

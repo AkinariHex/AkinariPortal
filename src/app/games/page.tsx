@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { osuApiFetch } from "@/lib/osu";
 
@@ -6,7 +7,14 @@ export const revalidate = 300;
 
 export const metadata = { title: "My Ranked Matches" };
 
+// Feature incomplete - hidden and inaccessible for now.
+const GAMES_FEATURE_ENABLED = false;
+
 export default async function GamesListPage() {
+  if (!GAMES_FEATURE_ENABLED) {
+    notFound();
+  }
+
   const session: any = await auth();
 
   if (!session) {

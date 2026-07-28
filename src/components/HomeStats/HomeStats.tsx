@@ -42,7 +42,7 @@ function HomeStats({ skins, users, tablet, keyboard }: Props) {
   ];
 
   return (
-    <div className="box-border grid w-[92%] grid-cols-2 gap-3 md:w-[70%] md:grid-cols-4 md:gap-[18px]">
+    <div className="box-border grid w-[92%] grid-cols-1 gap-3 sm:grid-cols-2 md:w-[70%] md:grid-cols-4 md:gap-[18px]">
       {tiles.map(({ key, label, Icon, value, text }, index) => (
         <motion.div
           key={key}
@@ -57,12 +57,12 @@ function HomeStats({ skins, users, tablet, keyboard }: Props) {
           <div className="flex min-w-0 flex-col items-start gap-0.5">
             {value !== null ? (
               <NumberFlow
-                className="text-[18pt] font-bold leading-tight tabular-nums text-[#eee] md:text-[22pt]"
+                className="-mb-1 text-[18pt] font-bold leading-none tabular-nums text-[#eee] md:text-[22pt]"
                 value={value}
               />
             ) : (
               <span
-                className="max-w-full truncate text-[14pt] font-bold leading-tight text-[#eee] md:text-[15pt]"
+                className="line-clamp-2 max-w-full text-[14pt] font-bold leading-tight text-[#eee] md:text-[15pt]"
                 title={text ?? undefined}
               >
                 {text && text.trim() ? text : "—"}

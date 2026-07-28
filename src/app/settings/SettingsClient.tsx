@@ -13,6 +13,8 @@ import {
   ChevronsUpDown,
   ScanLine,
   Send,
+  Keyboard as KeyboardIcon,
+  Square,
 } from "lucide-react";
 import { toast } from "sonner";
 import moment from "moment/moment";
@@ -104,6 +106,10 @@ export default function SettingsClient({
       : { file: "", date: "" }
   );
   const [tabletUploadError, setTabletUploadError] = useState(false);
+  const [pendingTabletFile, setPendingTabletFile] = useState<{
+    file: File;
+    json: any;
+  } | null>(null);
 
   const [skinview, setSkinview] = useState<any>(data.skin_view);
 
@@ -130,6 +136,7 @@ export default function SettingsClient({
   );
   const [keyInput, setKeyInput] = useState("");
   const [savingKeyboard, setSavingKeyboard] = useState(false);
+  const [capturingKeys, setCapturingKeys] = useState(false);
 
   const [comboOpen, setComboOpen] = useState(false);
   const [hidSupported, setHidSupported] = useState(false);
@@ -148,6 +155,41 @@ export default function SettingsClient({
       typeof navigator !== "undefined" && "hid" in navigator
     );
   }, []);
+
+  useEffect(() => {
+    if (!capturingKeys) return;
+
+    const ignoredKeys = new Set([
+      "Shift",
+      "Control",
+      "Alt",
+      "AltGraph",
+      "Meta",
+      "CapsLock",
+      "Tab",
+    ]);
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setCapturingKeys(false);
+        return;
+      }
+      const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
+      if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+      if (ignoredKeys.has(e.key)) return;
+
+      e.preventDefault();
+      const label = e.key === " " ? "Space" : e.key.length === 1 ? e.key.toUpperCase() : e.key;
+      setTapKeys((prev) =>
+        prev.some((k) => k.toLowerCase() === label.toLowerCase())
+          ? prev
+          : [...prev, label]
+      );
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [capturingKeys]);
 
   const selectedDevice = useMemo(
     () => keyboards.find((k) => String(k.id) === keyboardId) ?? null,
@@ -196,6 +238,7 @@ export default function SettingsClient({
     setTapKeys([]);
     setKeyInput("");
     setComboOpen(false);
+    setCapturingKeys(false);
   };
 
   const openRequestDialog = (vendorId?: number, productId?: number) => {
@@ -292,39 +335,68 @@ export default function SettingsClient({
     }
   };
 
+  const finalizeTabletUpload = async (
+    tabletFile: File,
+    jsonFile: any,
+    profileIndex: number
+  ) => {
+    const uploadInfo = {
+      file: tabletFile.name,
+      date: Date.now(),
+    };
+    const chosenProfile = jsonFile.Profiles[profileIndex];
+    // Keep just the chosen profile so the rest of the app (profile preview)
+    // can keep reading Profiles[0] without knowing about the other saves.
+    const filteredFile = { ...jsonFile, Profiles: [chosenProfile] };
+    setTabletSettingsInfo(uploadInfo);
+
+    const result = await saveTablet({
+      tablet: chosenProfile.Tablet,
+      tabletSettingsFile: filteredFile,
+      tabletFileUploadInfo: uploadInfo,
+    });
+
+    const failed = result.message !== "done";
+    setTabletUploadError(failed);
+    if (failed) {
+      toast.error("Failed to upload tablet settings.");
+    } else {
+      toast.success("Tablet settings uploaded.");
+      router.refresh();
+    }
+  };
+
   const uploadTabletSettings = async (tabletFile: File) => {
     const reader = new FileReader();
     reader.onload = async function (e) {
       try {
-        const dataNow = Date.now();
-        const uploadInfo = {
-          file: tabletFile.name,
-          date: dataNow,
-        };
         const jsonFile = JSON.parse(e.target!.result as string);
-        const tabletName = jsonFile.Profiles[0].Tablet;
-        setTabletSettingsInfo(uploadInfo);
-
-        const result = await saveTablet({
-          tablet: tabletName,
-          tabletSettingsFile: jsonFile,
-          tabletFileUploadInfo: uploadInfo,
-        });
-
-        const failed = result.message !== "done";
-        setTabletUploadError(failed);
-        if (failed) {
-          toast.error("Failed to upload tablet settings.");
-        } else {
-          toast.success("Tablet settings uploaded.");
-          router.refresh();
+        const profiles = jsonFile?.Profiles;
+        if (!Array.isArray(profiles) || profiles.length === 0) {
+          throw new Error("No tablet profiles in file");
         }
+
+        if (profiles.length > 1) {
+          // The exported file has multiple tablet saves - let the user pick
+          // which one shows on their profile instead of always using [0].
+          setPendingTabletFile({ file: tabletFile, json: jsonFile });
+          return;
+        }
+
+        await finalizeTabletUpload(tabletFile, jsonFile, 0);
       } catch {
         setTabletUploadError(true);
         toast.error("Invalid tablet settings file.");
       }
     };
     reader.readAsText(tabletFile);
+  };
+
+  const chooseTabletProfile = async (profileIndex: number) => {
+    if (!pendingTabletFile) return;
+    const { file, json } = pendingTabletFile;
+    setPendingTabletFile(null);
+    await finalizeTabletUpload(file, json, profileIndex);
   };
 
   const deleteTabletSettings = async () => {
@@ -547,7 +619,8 @@ export default function SettingsClient({
 
           <p className="text-sm text-muted-foreground">
             Show on your profile the tablet area you are currently using! Upload
-            the exported .json file.
+            the exported .json file. If it contains settings for more than one
+            tablet, you&apos;ll be asked which one to use.
             <br />
             It supports only the .json file made by{" "}
             <a
@@ -713,9 +786,30 @@ export default function SettingsClient({
           {selectedDevice && (
             <>
               {hasLayout ? (
-                <p className="text-sm text-muted-foreground">
-                  Click the keys you tap on to highlight them.
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Click the keys you tap on to highlight them, or press them
+                    on your keyboard.
+                  </p>
+                  <Button
+                    type="button"
+                    variant={capturingKeys ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCapturingKeys((v) => !v)}
+                  >
+                    {capturingKeys ? (
+                      <>
+                        <Square className="animate-pulse" />
+                        Listening... (Esc to stop)
+                      </>
+                    ) : (
+                      <>
+                        <KeyboardIcon />
+                        Press keys
+                      </>
+                    )}
+                  </Button>
+                </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2">
                   <Input
@@ -734,6 +828,23 @@ export default function SettingsClient({
                   <Button type="button" variant="secondary" onClick={addTapKey}>
                     <Plus />
                     Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={capturingKeys ? "default" : "outline"}
+                    onClick={() => setCapturingKeys((v) => !v)}
+                  >
+                    {capturingKeys ? (
+                      <>
+                        <Square className="animate-pulse" />
+                        Listening... (Esc to stop)
+                      </>
+                    ) : (
+                      <>
+                        <KeyboardIcon />
+                        Press keys
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
@@ -856,6 +967,43 @@ export default function SettingsClient({
                 {requesting ? <LoadingIcon /> : "Send request"}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={!!pendingTabletFile}
+          onOpenChange={(open) => {
+            if (!open) setPendingTabletFile(null);
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Choose a tablet profile</DialogTitle>
+              <DialogDescription>
+                This file has settings saved for multiple tablets. Pick the
+                one you want shown on your profile.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2">
+              {pendingTabletFile?.json.Profiles.map((profile: any, i: number) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => chooseTabletProfile(i)}
+                  className="flex flex-col items-start rounded-md border border-border bg-site-primary px-4 py-3 text-left transition-colors hover:bg-site-primary/70"
+                >
+                  <span className="font-medium text-foreground">
+                    {profile?.Tablet || `Profile ${i + 1}`}
+                  </span>
+                  {profile?.AbsoluteModeSettings?.Tablet && (
+                    <span className="text-xs text-muted-foreground">
+                      Area: {profile.AbsoluteModeSettings.Tablet.Width}mm x{" "}
+                      {profile.AbsoluteModeSettings.Tablet.Height}mm
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </DialogContent>
         </Dialog>
 

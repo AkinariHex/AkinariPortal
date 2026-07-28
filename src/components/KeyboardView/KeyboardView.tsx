@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type KeyboardDevice = {
@@ -55,9 +56,48 @@ function Keycap({
   );
 }
 
+function WootingKeyBadge({ label }: { label?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex size-14 shrink-0 items-center justify-center rounded-xl border text-base font-semibold select-none",
+        label
+          ? "border-wooting-key-border bg-wooting-key-bg text-wooting-key-text"
+          : "border-wooting-key-border bg-wooting-key-bg"
+      )}
+    >
+      {label ? label : <TriangleAlert className="size-6 text-wooting-warn" />}
+    </div>
+  );
+}
+
+// Wootility-style key preview: a gradient pill card (the Wooting brand
+// gradient) holding a row of key badges. Unset key slots show a warning
+// triangle instead of a label.
+function WootingKeyCard({ tapKeys }: { tapKeys: string[] }) {
+  const keys = tapKeys.length > 0 ? tapKeys : [undefined];
+
+  return (
+    <div
+      className="inline-flex rounded-[2.25rem] p-[5px]"
+      style={{
+        background:
+          "conic-gradient(from 180deg, var(--color-wooting-purple), var(--color-wooting-magenta), var(--color-wooting-teal), var(--color-wooting-purple))",
+      }}
+    >
+      <div className="flex items-center justify-center gap-3 rounded-[calc(2.25rem-5px)] bg-wooting-card-bg px-8 py-6">
+        {keys.map((k, i) => (
+          <WootingKeyBadge key={k ?? `empty-${i}`} label={k} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Semi-3D keycap view. Renders the device's keypad layout (keys colored when
 // tapped), or — for keyboards without a layout — just the tap keys as keycaps.
-// If the device has a model_url image, it's shown instead.
+// If the device has a model_url image, it's shown instead. Wooting devices
+// get a Wootility-style gradient key preview card instead of plain keycaps.
 export default function KeyboardView({
   device,
   tapKeys = [],
@@ -66,6 +106,15 @@ export default function KeyboardView({
   className,
 }: Props) {
   const rows = device?.layout?.rows;
+  const isWooting = device?.brand?.trim().toLowerCase() === "wooting";
+
+  if (isWooting && !device?.model_url) {
+    return (
+      <div className={cn("flex justify-center", className)}>
+        <WootingKeyCard tapKeys={tapKeys} />
+      </div>
+    );
+  }
 
   if (device?.model_url) {
     return (

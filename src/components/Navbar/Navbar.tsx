@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
   Home,
-  Gamepad2,
   LogIn,
   LogOut,
   User,
@@ -61,16 +60,6 @@ export default function Navbar({
                 aria-current="page"
               >
                 Home
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                href="/games"
-                className={desktopLink}
-                activeClassName="text-accent-blue"
-                aria-current="page"
-              >
-                Games
               </NavLink>
             </li>
           </ul>
@@ -159,14 +148,6 @@ export default function Navbar({
             aria-current="page"
           >
             <Home className="size-6" />
-          </NavLink>
-          <NavLink
-            href="/games"
-            className="flex items-center rounded-full p-2.5 transition-colors"
-            activeClassName="bg-white/10"
-            aria-current="page"
-          >
-            <Gamepad2 className="size-6" />
           </NavLink>
           {session ? (
             <>
