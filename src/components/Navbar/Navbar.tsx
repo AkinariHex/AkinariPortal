@@ -1,23 +1,27 @@
 "use client";
 
 import { signIn, signOut } from "next-auth/react";
-import { usePathname } from "next/navigation";
 import NavLink from "@/components/NavLink/NavLink";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
-import { useClickOutside } from "react-haiku";
+import { useState, useEffect } from "react";
 import {
-  Home2,
-  Login,
-  Logout,
+  Home,
+  Gamepad2,
+  LogIn,
+  LogOut,
   User,
-  Setting2,
-  Cup,
-  SearchNormal1,
-  ShieldTick,
-} from "iconsax-react";
-import { motion } from "motion/react";
+  Settings,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 import { useSearch } from "@/components/Search/SearchProvider";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export default function Navbar({
   session,
@@ -26,187 +30,176 @@ export default function Navbar({
   session: any;
   isAdmin?: boolean;
 }) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { openSearch } = useSearch();
   const [isMac, setIsMac] = useState(false);
+
   useEffect(() => {
     setIsMac(/Mac|iPhone|iPad/.test(navigator.userAgent));
   }, []);
-  const pathname = usePathname();
-  const variants = {
-    open: { opacity: 1, y: 0, display: "block" },
-    closed: { opacity: 0, y: -10, display: "none" },
-  };
 
-  const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => {
-    setTimeout(() => {
-      if (isDropdownOpen) setIsDropdownOpen(false);
-    }, 100);
-  });
+  const desktopLink =
+    "relative py-1 text-foreground/80 transition-colors hover:text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-foreground after:transition-transform after:duration-150 hover:after:scale-x-100";
 
   return (
     <>
-      <header>
-        <Link href="/">
+      <header className="sticky top-0 z-50 hidden h-[4.2em] w-full items-center gap-6 px-24 backdrop-blur-md md:flex">
+        <Link href="/" className="flex items-center">
           <object
-            style={{ filter: "brightness(1.1)" }}
             type="image/webp"
             data="/img/logoFull.webp"
-            className="logoNavbar"
+            className="pointer-events-none h-[3.1em] brightness-110"
           />
         </Link>
-        <button
-          type="button"
-          className="navSearch"
-          onClick={openSearch}
-          aria-label="Search skins and players"
-        >
-          <SearchNormal1 size="18" color="#d9e3f0" />
-          <span className="navSearch_label">Search</span>
-          <kbd className="navSearch_kbd">{isMac ? "⌘" : "Ctrl"} K</kbd>
-        </button>
-        {!pathname.startsWith("/users/") && (
-          <nav className="navbar">
-            <ul className="navLinks">
-              <li>
-                <NavLink
-                  href="/"
-                  className="navLinks_link"
-                  activeClassName="active"
-                  aria-current="page"
-                >
-                  Home
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  href="/games"
-                  className="navLinks_link"
-                  activeClassName="active"
-                  aria-current="page"
-                >
-                  Games
-                </NavLink>
-              </li>
-            </ul>
-          </nav>
-        )}
 
-        <div className="userInfo">
+        <nav className="mx-auto">
+          <ul className="flex list-none gap-8 p-0 font-medium">
+            <li>
+              <NavLink
+                href="/"
+                className={desktopLink}
+                activeClassName="text-accent-blue"
+                aria-current="page"
+              >
+                Home
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                href="/games"
+                className={desktopLink}
+                activeClassName="text-accent-blue"
+                aria-current="page"
+              >
+                Games
+              </NavLink>
+            </li>
+          </ul>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-4">
+          <button
+            type="button"
+            onClick={openSearch}
+            aria-label="Search skins and players"
+            className="flex items-center gap-2 rounded-[10px] bg-site-secondary px-3 py-[7px] text-[10.5pt] text-navbar-text transition-colors hover:bg-[#3f4a58]"
+          >
+            <Search className="size-[18px]" />
+            <span className="opacity-85">Search</span>
+            <kbd className="rounded-md border border-white/[0.06] bg-site-bg px-1.5 py-[3px] text-[8.5pt] leading-none text-[#92a9c6]">
+              {isMac ? "⌘" : "Ctrl"} K
+            </kbd>
+          </button>
           {session ? (
-            <div className="userInfoContent">
-              <div
-                onClick={() => setIsDropdownOpen((prev) => !prev)}
-              >
-                <a>
-                  <div className="userContent">
-                    <span className="userInfo_name">{session.username}</span>
-                    <img
-                      className="userInfo_image"
-                      src={session.avatar_url}
-                      alt="user image"
-                    />
-                  </div>
-                </a>
-              </div>
-              <motion.div
-                className="profileActions"
-                animate={isDropdownOpen ? "open" : "closed"}
-                variants={variants}
-                transition={{ duration: 0.2 }}
-                ref={ref}
-              >
-                <Link href={`/users/${session.id}`}>
-                  <div className="item" onClick={() => setIsDropdownOpen(false)}>
-                    <User size="16" color="#d9e3f0" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 outline-none focus:outline-none focus-visible:outline-none">
+                  <span className="font-medium text-foreground">
+                    {session.username}
+                  </span>
+                  <img
+                    src={session.avatar_url}
+                    alt="user avatar"
+                    className="size-[2.6em] rounded-full"
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem asChild>
+                  <Link href={`/users/${session.id}`}>
+                    <User className="size-4" />
                     Profile
-                  </div>
-                </Link>
-                <Link href="/settings">
-                  <div className="item" onClick={() => setIsDropdownOpen(false)}>
-                    <Setting2 size="16" color="#d9e3f0" />
-                    Settings
-                  </div>
-                </Link>
-                {isAdmin && (
-                  <Link href="/admin">
-                    <div
-                      className="item"
-                      onClick={() => setIsDropdownOpen(false)}
-                    >
-                      <ShieldTick size="16" color="#d9e3f0" />
-                      Admin
-                    </div>
                   </Link>
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <ShieldCheck className="size-4" />
+                      Admin
+                    </Link>
+                  </DropdownMenuItem>
                 )}
-                <div
-                  className="item logout"
-                  onClick={() => {
-                    signOut();
-                    setIsDropdownOpen(false);
-                  }}
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">
+                    <Settings className="size-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => signOut()}
                 >
-                  <Logout size="16" color="#F47373" />
+                  <LogOut className="size-4" />
                   Logout
-                </div>
-              </motion.div>
-            </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <div className="userLogin">
-              <button onClick={() => signIn("osu")}>
-                <img
-                  style={{
-                    height: "28px",
-                    width: "28px",
-                    filter: "contrast(0) brightness(2)",
-                  }}
-                  src="https://img.icons8.com/ios/50/000000/osu.png"
-                  alt="osu! logo"
-                />{" "}
-                <span style={{ margin: "auto", fontFamily: "Poppins" }}>
-                  Login
-                </span>
-              </button>
-            </div>
+            <button
+              onClick={() => signIn("osu")}
+              className="flex h-11 items-center gap-2 rounded-[10px] bg-[#414d5b] px-3.5 py-1.5 text-white transition-colors hover:bg-[#607086b4]"
+            >
+              <img
+                src="https://img.icons8.com/ios/50/000000/osu.png"
+                alt="osu! logo"
+                className="h-7 w-7 [filter:contrast(0)_brightness(2)]"
+              />
+              <span>Login</span>
+            </button>
           )}
         </div>
       </header>
-      <div className="mobileNav">
-        <div className="nav">
-          <NavLink href="/" activeClassName="active" aria-current="page">
-            <div className="item">
-              <Home2 color="#D9E3F0" />
-            </div>
+
+      <div className="fixed inset-x-0 bottom-2.5 z-[999] flex justify-center md:hidden">
+        <nav className="flex h-[4.2em] items-center gap-8 rounded-full bg-[hsla(218,16%,13%,0.7)] px-2.5 text-navbar-text shadow-[rgba(0,0,0,0.1)_0px_10px_15px_-3px,rgba(0,0,0,0.05)_0px_4px_6px_-2px] backdrop-blur-md">
+          <NavLink
+            href="/"
+            className="flex items-center rounded-full p-2.5 transition-colors"
+            activeClassName="bg-white/10"
+            aria-current="page"
+          >
+            <Home className="size-6" />
           </NavLink>
-          <NavLink href="/games" activeClassName="active" aria-current="page">
-            <div className="item">
-              <Cup color="#D9E3F0" />
-            </div>
+          <NavLink
+            href="/games"
+            className="flex items-center rounded-full p-2.5 transition-colors"
+            activeClassName="bg-white/10"
+            aria-current="page"
+          >
+            <Gamepad2 className="size-6" />
           </NavLink>
           {session ? (
             <>
               <NavLink
                 href="/settings"
-                activeClassName="active"
+                className="flex items-center rounded-full p-2.5 transition-colors"
+                activeClassName="bg-white/10"
                 aria-current="page"
               >
-                <div className="item">
-                  <Setting2 color="#d9e3f0" />
-                </div>
+                <Settings className="size-6" />
               </NavLink>
-              <Link href={`/users/${session.id}`}>
-                <div className="item">
-                  <img src={session.avatar_url} alt="user propic" />
-                </div>
+              <Link
+                href={`/users/${session.id}`}
+                className="flex items-center rounded-full p-2.5"
+              >
+                <img
+                  src={session.avatar_url}
+                  alt="user avatar"
+                  className="size-6 rounded-full"
+                />
               </Link>
             </>
           ) : (
-            <div className="item" onClick={() => signIn("osu")}>
-              <Login color="#d9e3f0" />
-            </div>
+            <button
+              type="button"
+              onClick={() => signIn("osu")}
+              className="flex items-center rounded-full p-2.5"
+              aria-label="Login"
+            >
+              <LogIn className="size-6" />
+            </button>
           )}
-        </div>
+        </nav>
       </div>
     </>
   );

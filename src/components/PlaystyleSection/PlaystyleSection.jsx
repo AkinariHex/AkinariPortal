@@ -27,18 +27,17 @@ export default function PlaystyleSection({ tabletInfo, tabletSettings }) {
   const areaLeft = (tabletX - left0) * 2.2;
 
   return (
-    <div className="playstyleContainer">
-      <div className="tabletAreaContainer">
+    <div className="flex w-full flex-col items-center justify-center">
+      <div className="flex h-[15em] w-full flex-col items-center justify-center pt-[1.6em] max-[450px]:h-[11em]">
         <div
-          className="tabletArea"
-          style={{
-            aspectRatio: aspectRatio,
-            height: `100%`,
-          }}
+          className="relative w-max border border-accent-blue"
+          style={{ aspectRatio: aspectRatio, height: `100%` }}
         >
-          <div className="name">{tabletInfo.name}</div>
+          <div className="absolute -top-[22px] flex w-full select-none justify-center text-[10pt] font-normal text-accent-blue">
+            {tabletInfo.name}
+          </div>
           <div
-            className="tabletUsedArea"
+            className="absolute box-border select-none border border-dashed border-accent-blue bg-accent-blue/20 text-[0.7rem] text-accent-blue"
             style={{
               width: `calc( 100% - (${widthDifference}px * 2.2))`,
               height: `calc( 100% - (${heightDifference}px * 2.2))`,
@@ -48,32 +47,20 @@ export default function PlaystyleSection({ tabletInfo, tabletSettings }) {
               aspectRatio: aspectRatioUsed,
             }}
           >
-            <div className="height">{tabletUsedHeight}mm</div>
-            <div className="width">{tabletUsedWidth}mm</div>
-            <div className="coordinates">
-              <div className="x">X: {tabletX}mm</div>
-              <div className="y">Y: {tabletY}mm</div>
-              <div className="deg">{tabletRotation}°</div>
+            <div className="absolute left-[2px] flex h-full items-center">
+              {tabletUsedHeight}mm
+            </div>
+            <div className="absolute top-[2px] flex w-full justify-center">
+              {tabletUsedWidth}mm
+            </div>
+            <div className="absolute bottom-[1px] flex w-full flex-row justify-center gap-2.5">
+              <div>X: {tabletX}mm</div>
+              <div>Y: {tabletY}mm</div>
+              <div>{tabletRotation}&deg;</div>
             </div>
           </div>
         </div>
       </div>
-      {/* <div className="info">
-        <div className="item" id="firstPenButton">
-          <div className="button">
-            <div className="key">Z</div>
-            <div className="action">Quick Restart Map</div>
-          </div>
-          <div className="type">Pen Button 1</div>
-        </div>
-        <div className="item" id="secondPenButton">
-          <div className="button">
-            <div className="key">Z</div>
-            <div className="action">Quick Restart Map</div>
-          </div>
-          <div className="type">Pen Button 2</div>
-        </div>
-      </div> */}
     </div>
   );
 }

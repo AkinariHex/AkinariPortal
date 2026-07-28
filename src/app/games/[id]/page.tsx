@@ -38,46 +38,31 @@ export default async function GameDetailsPage({
 
   if (error) {
     return (
-      <div className="profileDivBackground">
-        <div className="mainDiv" style={{ padding: "20px", color: "white" }}>
-          <h1>Error loading game details</h1>
-          <p>{error}</p>
+      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+        <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary p-5 text-foreground">
+          <h1 className="text-2xl font-bold">Error loading game details</h1>
+          <p className="mt-2 text-destructive">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="profileDivBackground">
-        <div className="mainDiv">
-          <div className="section">
-            <div className="header">
-              <div className="title">{room.name}</div>
-              <div style={{ marginLeft: "auto", color: "#6ba2ed" }}>
-                #{room.id}
-              </div>
-            </div>
+    <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+      <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary">
+        <div className="p-5 md:p-6">
+          <div className="mb-3 flex items-center">
+            <div className="text-2xl font-bold text-foreground">{room.name}</div>
+            <div className="ml-auto font-bold text-accent-blue">#{room.id}</div>
+          </div>
 
-            <div
-              className="gameInfo"
-              style={{ marginTop: "20px", color: "#cee0f6" }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "20px",
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "var(--site-primary-color)",
-                    padding: "20px",
-                    borderRadius: "10px",
-                  }}
-                >
-                  <h3>Room Info</h3>
+          <div className="mt-5 text-foreground">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="rounded-xl bg-site-primary p-5">
+                <h3 className="mb-3 text-lg font-semibold text-accent-blue">
+                  Room Info
+                </h3>
+                <div className="flex flex-col gap-1 text-sm">
                   <p>
                     <strong>Status:</strong> {room.status}
                   </p>
@@ -94,15 +79,13 @@ export default async function GameDetailsPage({
                     <strong>Players:</strong> {room.participant_count}
                   </p>
                 </div>
-                {room.current_playlist_item && (
-                  <div
-                    style={{
-                      backgroundColor: "var(--site-primary-color)",
-                      padding: "20px",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    <h3>Current / Last Map</h3>
+              </div>
+              {room.current_playlist_item && (
+                <div className="rounded-xl bg-site-primary p-5">
+                  <h3 className="mb-3 text-lg font-semibold text-accent-blue">
+                    Current / Last Map
+                  </h3>
+                  <div className="flex flex-col gap-1 text-sm">
                     <p>
                       <strong>Map:</strong>{" "}
                       {room.current_playlist_item.beatmap?.beatmapset?.title} [
@@ -123,78 +106,63 @@ export default async function GameDetailsPage({
                         : "Mania"}
                     </p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="events" style={{ marginTop: "30px" }}>
-              <h2 style={{ color: "#6ba2ed" }}>Match History / Events</h2>
-              <div
-                style={{
-                  display: "flex",
-                  flexFlow: "column",
-                  gap: "10px",
-                  marginTop: "10px",
-                }}
-              >
-                {events && events.length > 0 ? (
-                  events.map((event: any, index: number) => (
-                    <div
-                      key={index}
-                      style={{
-                        backgroundColor: "var(--site-primary-color)",
-                        padding: "15px",
-                        borderRadius: "8px",
-                        borderLeft:
-                          event.type === "match-finished"
-                            ? "4px solid #6ba2ed"
-                            : "4px solid #414a55",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontWeight: "bold",
-                          color: "#cee0f6",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {event.type.replace(/-/g, " ")}
-                      </div>
-                      <div style={{ fontSize: "0.9em", color: "#636c76" }}>
-                        {new Date(event.timestamp).toLocaleString()}
-                      </div>
-                      {event.detail && (
-                        <div style={{ marginTop: "5px", color: "#afbed1" }}>
-                          {event.type === "match-finished" &&
-                            event.detail.playlist_item && (
-                              <div>
-                                Map:{" "}
-                                {
-                                  event.detail.playlist_item.beatmap?.beatmapset
-                                    ?.title
-                                }
-                              </div>
-                            )}
-                          {event.type === "user-joined" && (
-                            <div>User {event.detail.user_id} joined</div>
-                          )}
-                          {event.type === "user-left" && (
-                            <div>User {event.detail.user_id} left</div>
-                          )}
-                        </div>
-                      )}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold text-accent-blue">
+              Match History / Events
+            </h2>
+            <div className="mt-2.5 flex flex-col gap-2.5">
+              {events && events.length > 0 ? (
+                events.map((event: any, index: number) => (
+                  <div
+                    key={index}
+                    className={`rounded-lg bg-site-primary p-4 ${
+                      event.type === "match-finished"
+                        ? "border-l-4 border-accent-blue"
+                        : "border-l-4 border-border"
+                    }`}
+                  >
+                    <div className="font-bold capitalize text-foreground">
+                      {event.type.replace(/-/g, " ")}
                     </div>
-                  ))
-                ) : (
-                  <p style={{ color: "#636c76" }}>
-                    No events found for this room.
-                  </p>
-                )}
-              </div>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(event.timestamp).toLocaleString()}
+                    </div>
+                    {event.detail && (
+                      <div className="mt-1.5 text-sm text-card-foreground">
+                        {event.type === "match-finished" &&
+                          event.detail.playlist_item && (
+                            <div>
+                              Map:{" "}
+                              {
+                                event.detail.playlist_item.beatmap?.beatmapset
+                                  ?.title
+                              }
+                            </div>
+                          )}
+                        {event.type === "user-joined" && (
+                          <div>User {event.detail.user_id} joined</div>
+                        )}
+                        {event.type === "user-left" && (
+                          <div>User {event.detail.user_id} left</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">
+                  No events found for this room.
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

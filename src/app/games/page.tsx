@@ -11,13 +11,12 @@ export default async function GamesListPage() {
 
   if (!session) {
     return (
-      <div className="profileDivBackground">
-        <div
-          className="mainDiv"
-          style={{ padding: "40px", color: "white", textAlign: "center" }}
-        >
-          <h1>Login Required</h1>
-          <p>Please log in with your osu! account to see your match history.</p>
+      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+        <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary p-10 text-center text-foreground">
+          <h1 className="text-2xl font-bold">Login Required</h1>
+          <p className="mt-2 text-muted-foreground">
+            Please log in with your osu! account to see your match history.
+          </p>
         </div>
       </div>
     );
@@ -36,10 +35,10 @@ export default async function GamesListPage() {
 
   if (error) {
     return (
-      <div className="profileDivBackground">
-        <div className="mainDiv" style={{ padding: "20px", color: "white" }}>
-          <h1>Error loading games</h1>
-          <p>{error}</p>
+      <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+        <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary p-5 text-foreground">
+          <h1 className="text-2xl font-bold">Error loading games</h1>
+          <p className="mt-2 text-destructive">{error}</p>
         </div>
       </div>
     );
@@ -54,108 +53,62 @@ export default async function GamesListPage() {
   }, {});
 
   return (
-    <>
-      <div className="profileDivBackground">
-        <div className="mainDiv">
-          <div className="section">
-            <div className="header">
-              <div className="title">My osu! lazer Ranked Matches</div>
-            </div>
+    <div className="flex min-h-screen w-full flex-col items-center bg-site-users px-2.5 pb-24 md:pb-10">
+      <div className="my-8 w-full max-w-[60em] rounded-[20px] bg-site-secondary">
+        <div className="p-5 md:p-6">
+          <div className="mb-3 flex items-center">
+            <div className="text-2xl font-bold text-foreground">My osu! lazer Ranked Matches</div>
+          </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexFlow: "column",
-                gap: "20px",
-                marginTop: "20px",
-              }}
-            >
-              {rooms.length === 0 && (
-                <p
-                  style={{
-                    color: "#cee0f6",
-                    textAlign: "center",
-                    padding: "20px",
-                  }}
-                >
-                  You haven't participated in any ranked matches yet.
-                </p>
-              )}
+          <div className="mt-5 flex flex-col gap-5">
+            {rooms.length === 0 && (
+              <p className="p-5 text-center text-muted-foreground">
+                You haven&apos;t participated in any ranked matches yet.
+              </p>
+            )}
 
-              {Object.entries(groupedRooms).map(([type, roomsOfType]) => (
-                <div key={type} className="roomTypeSection">
-                  <h2
-                    style={{
-                      color: "#6ba2ed",
-                      fontSize: "1.2em",
-                      marginBottom: "10px",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {type.replace("_", " ")}
-                  </h2>
-                  <div
-                    className="list"
-                    style={{ display: "flex", flexFlow: "column", gap: "10px" }}
-                  >
-                    {roomsOfType.map((room: any) => (
-                      <Link key={room.id} href={`/games/${room.id}`}>
-                        <div
-                          className="gameItem"
-                          style={{
-                            backgroundColor: "var(--site-primary-color)",
-                            padding: "15px",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            transition: "transform 0.1s ease",
-                          }}
-                        >
-                          <div>
-                            <div
-                              style={{
-                                color: "#cee0f6",
-                                fontSize: "1.1em",
-                                fontWeight: "500",
-                              }}
-                            >
-                              {room.name}
-                            </div>
-                            <div style={{ color: "#636c76", fontSize: "0.9em" }}>
-                              Status:{" "}
-                              <span
-                                style={{
-                                  color:
-                                    room.status === "ended"
-                                      ? "#f47373"
-                                      : "#6ba2ed",
-                                }}
-                              >
-                                {room.status}
-                              </span>{" "}
-                              | Ended:{" "}
-                              {room.ends_at
-                                ? new Date(room.ends_at).toLocaleString()
-                                : "N/A"}
-                            </div>
+            {Object.entries(groupedRooms).map(([type, roomsOfType]) => (
+              <div key={type} className="">
+                <h2 className="mb-2.5 text-xl font-medium capitalize text-accent-blue">
+                  {type.replace("_", " ")}
+                </h2>
+                <div className="flex flex-col gap-2.5">
+                  {roomsOfType.map((room: any) => (
+                    <Link key={room.id} href={`/games/${room.id}`}>
+                      <div className="flex cursor-pointer items-center justify-between rounded-lg bg-site-primary p-4 transition-transform duration-150 hover:-translate-y-0.5 hover:brightness-110">
+                        <div>
+                          <div className="text-lg font-medium text-foreground">
+                            {room.name}
                           </div>
-                          <div style={{ color: "#6ba2ed", fontWeight: "bold" }}>
-                            #{room.id}
+                          <div className="text-sm text-muted-foreground">
+                            Status:{" "}
+                            <span
+                              className={
+                                room.status === "ended"
+                                  ? "text-destructive"
+                                  : "text-accent-blue"
+                              }
+                            >
+                              {room.status}
+                            </span>{" "}
+                            | Ended:{" "}
+                            {room.ends_at
+                              ? new Date(room.ends_at).toLocaleString()
+                              : "N/A"}
                           </div>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
+                        <div className="font-bold text-accent-blue">
+                          #{room.id}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-
-      <style>{`.gameItem:hover{transform:translateY(-2px);filter:brightness(1.1);}`}</style>
-    </>
+    </div>
   );
 }

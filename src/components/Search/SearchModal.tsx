@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import {
-  searchSite,
-  type SearchResults,
-} from "@/app/actions/search";
-import styles from "@/components/Search/SearchModal.module.css";
+import { Search } from "lucide-react";
+import { searchSite, type SearchResults } from "@/app/actions/search";
 
 const EMPTY: SearchResults = { skins: [], users: [] };
 
@@ -77,18 +74,17 @@ export default function SearchModal({
   };
 
   const hasResults = results.skins.length > 0 || results.users.length > 0;
-  const showEmpty =
-    !loading && debounced.length >= 2 && !hasResults;
+  const showEmpty = !loading && debounced.length >= 2 && !hasResults;
 
   return (
     <div
-      className={styles.overlay}
+      className="fixed inset-0 z-[1000] flex flex-col items-center justify-start bg-black/55 px-4 pt-[12vh] pb-4 backdrop-blur-md"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <Command
-        className={styles.command}
+        className="flex max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden rounded-xl bg-site-primary text-foreground shadow-2xl shadow-black/45"
         shouldFilter={false}
         loop
         onKeyDown={(e) => {
@@ -98,53 +94,46 @@ export default function SearchModal({
           }
         }}
       >
-        <div className={styles.inputWrapper}>
-          <svg
-            className={styles.searchGlyph}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
+        <div className="flex flex-row items-center gap-2.5 border-b border-site-secondary px-[18px] py-3.5">
+          <Search className="size-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
           <Command.Input
             ref={inputRef}
-            className={styles.input}
+            className="w-full flex-1 bg-transparent text-lg font-normal text-foreground outline-none placeholder:text-muted-foreground"
             value={query}
             onValueChange={setQuery}
             placeholder="Search skins and players..."
           />
         </div>
 
-        <Command.List className={styles.list}>
+        <Command.List className="max-h-[calc(70vh-60px)] overflow-x-hidden overflow-y-auto p-1.5">
           {loading && (
-            <div className={styles.state}>Searching...</div>
+            <div className="select-none px-4 py-7 text-center text-sm text-muted-foreground">
+              Searching...
+            </div>
           )}
 
           {!loading && debounced.length < 2 && (
-            <div className={styles.state}>
+            <div className="select-none px-4 py-7 text-center text-sm text-muted-foreground">
               Type at least 2 characters to search.
             </div>
           )}
 
           {showEmpty && (
-            <Command.Empty className={styles.state}>
+            <Command.Empty className="select-none px-4 py-7 text-center text-sm text-muted-foreground">
               No results found.
             </Command.Empty>
           )}
 
           {!loading && results.skins.length > 0 && (
-            <Command.Group className={styles.group} heading="Skins">
+            <Command.Group
+              className="py-1 [&_[cmdk-group-heading]]:select-none [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase"
+              heading="Skins"
+            >
               {results.skins.map((skin) => (
                 <Command.Item
                   key={`skin-${skin.id}`}
                   value={`skin-${skin.id}`}
-                  className={styles.item}
+                  className="flex cursor-pointer select-none flex-row items-center gap-3 rounded-lg px-2.5 py-2 text-foreground data-[selected=true]:bg-site-secondary"
                   onSelect={() => {
                     if (skin.Player?.id != null) {
                       go(`/users/${skin.Player.id}`);
@@ -154,17 +143,22 @@ export default function SearchModal({
                   {skin.Banner ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      className={styles.thumb}
+                      className="h-[30px] w-[54px] shrink-0 rounded-md bg-site-users object-cover"
                       src={skin.Banner}
                       alt=""
                     />
                   ) : (
-                    <span className={styles.thumb} />
+                    <span className="h-[30px] w-[54px] shrink-0 rounded-md bg-site-users" />
                   )}
-                  <span className={styles.itemText}>
-                    <span className={styles.itemTitle}>{skin.Name}</span>
-                    <span className={styles.itemSub}>
-                      by <b>{skin.Player?.username ?? skin.Creator ?? "Unknown"}</b>
+                  <span className="flex min-w-0 flex-col gap-px">
+                    <span className="truncate text-[15px] font-medium">
+                      {skin.Name}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      by{" "}
+                      <b className="font-medium text-accent-blue">
+                        {skin.Player?.username ?? skin.Creator ?? "Unknown"}
+                      </b>
                     </span>
                   </span>
                 </Command.Item>
@@ -173,22 +167,27 @@ export default function SearchModal({
           )}
 
           {!loading && results.users.length > 0 && (
-            <Command.Group className={styles.group} heading="Players">
+            <Command.Group
+              className="py-1 [&_[cmdk-group-heading]]:select-none [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase"
+              heading="Players"
+            >
               {results.users.map((user) => (
                 <Command.Item
                   key={`user-${user.id}`}
                   value={`user-${user.id}`}
-                  className={styles.item}
+                  className="flex cursor-pointer select-none flex-row items-center gap-3 rounded-lg px-2.5 py-2 text-foreground data-[selected=true]:bg-site-secondary"
                   onSelect={() => go(`/users/${user.id}`)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    className={styles.avatar}
+                    className="size-[34px] shrink-0 rounded-full bg-site-users object-cover"
                     src={`https://s.ppy.sh/a/${user.id}`}
                     alt=""
                   />
-                  <span className={styles.itemText}>
-                    <span className={styles.itemTitle}>{user.username}</span>
+                  <span className="flex min-w-0 flex-col gap-px">
+                    <span className="truncate text-[15px] font-medium">
+                      {user.username}
+                    </span>
                   </span>
                 </Command.Item>
               ))}

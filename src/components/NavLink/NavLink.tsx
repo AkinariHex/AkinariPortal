@@ -3,6 +3,7 @@
 import Link, { type LinkProps } from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type NavLinkProps = LinkProps & {
   href: string;
@@ -20,10 +21,13 @@ export default function NavLink({
 }: NavLinkProps) {
   const pathname = usePathname();
   const isActive = pathname === href;
-  const composed = `${className} ${isActive ? activeClassName : ""}`.trim();
 
   return (
-    <Link href={href} className={composed} {...props}>
+    <Link
+      href={href}
+      className={cn(className, isActive && activeClassName)}
+      {...props}
+    >
       {children}
     </Link>
   );

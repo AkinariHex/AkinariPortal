@@ -1,0 +1,155 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Site theme tokens (source of truth = the old styles.css :root block, values kept
+  exactly to avoid color drift). These generate utilities like bg-site-primary,
+  text-accent, bg-mods-hd-bg, text-social-twitch, etc.
+*/
+@theme {
+  --font-sans: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+    sans-serif;
+
+  --color-site-bg: #232931;
+  --color-site-primary: #323b46;
+  --color-site-secondary: #282f38;
+  --color-site-users: #1c2027;
+  --color-accent-blue: #6ba2ed;
+  --color-accent-active: hsl(219 40% 60%);
+
+  --color-navbar-text: #d9e3f0;
+  --color-navbar-logout: #f47373;
+
+  --color-action: hsl(219 40% 16%);
+  --color-action-2: hsl(219 40% 14%);
+  --color-action-hover: hsl(219 40% 18%);
+
+  /* mods */
+  --color-mods-nm-text: hsl(226 99% 65%);
+  --color-mods-nm-bg: hsl(226 99% 65% / 0.2);
+  --color-mods-nm-grid: #263b7e;
+  --color-mods-hd-text: hsl(43 98% 60%);
+  --color-mods-hd-bg: hsl(43 98% 60% / 0.2);
+  --color-mods-hd-grid: #7d611a;
+  --color-mods-hr-text: hsl(0 100% 69%);
+  --color-mods-hr-bg: hsl(0 100% 69% / 0.2);
+  --color-mods-hr-grid: #803232;
+  --color-mods-ez-text: hsl(120 100% 50%);
+  --color-mods-ez-bg: hsl(120 100% 50% / 0.1);
+  --color-mods-ez-grid: #008000;
+  --color-mods-fl-text: hsl(0 0% 0%);
+  --color-mods-fl-bg: hsl(0 0% 0% / 0.2);
+  --color-mods-fl-grid: hsl(0 0% 0% / 0.4);
+  --color-mods-dt-text: hsl(267 97% 73%);
+  --color-mods-dt-bg: hsl(267 97% 73% / 0.2);
+  --color-mods-dt-grid: #593b7d;
+  --color-mods-fm-text: hsl(101 38% 63%);
+  --color-mods-fm-bg: hsl(101 38% 63% / 0.2);
+  --color-mods-tb-text: hsl(191 26% 57%);
+  --color-mods-tb-bg: hsl(191 26% 57% / 0.2);
+
+  /* tags */
+  --color-tags-lazer-text: hsl(333 100% 73%);
+  --color-tags-lazer-bg: hsl(333 100% 73% / 0.2);
+  --color-tags-lazer-grid: hsl(333 37% 36%);
+
+  /* socials */
+  --color-social-twitch: #9146ff;
+  --color-social-twitch-text: #dec8ff;
+  --color-social-youtube: #ff0000;
+  --color-social-youtube-text: #ffcccc;
+  --color-social-discord: #5865f2;
+  --color-social-discord-text: #cdd1fb;
+  --color-social-twitter: #1d9bf0;
+  --color-social-twitter-text: #bbe1fb;
+  --color-social-github: #171515;
+  --color-social-github-text: #b9b9b9;
+}
+
+/* shadcn/ui semantic tokens, mapped to the dark site palette. */
+:root {
+  --radius: 0.6rem;
+  --background: #232931;
+  --foreground: #d9e3f0;
+  --card: #323b46;
+  --card-foreground: #d9e3f0;
+  --popover: #1c2027;
+  --popover-foreground: #eeeeee;
+  --primary: #6ba2ed;
+  --primary-foreground: #0b1220;
+  --secondary: #282f38;
+  --secondary-foreground: #d9e3f0;
+  --muted: #282f38;
+  --muted-foreground: #92a9c6;
+  --accent: #3a4450;
+  --accent-foreground: #eaf1fb;
+  --destructive: #f47373;
+  --destructive-foreground: #1a0d0d;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: #282f38;
+  --ring: #6ba2ed;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  html,
+  body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow: hidden auto;
+    /* Always reserve the scrollbar gutter so opening a Radix dropdown/dialog
+       (which locks scroll) does not remove the scrollbar and shift the layout. */
+    scrollbar-gutter: stable;
+    position: fixed;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    background: var(--color-site-users);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-site-secondary);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-site-primary);
+  }
+}

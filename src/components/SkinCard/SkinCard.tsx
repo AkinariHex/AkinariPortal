@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
+import { Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Skin = {
   id: number | string;
@@ -13,12 +15,24 @@ type Skin = {
   Downloads: number | string;
 };
 
+const MODE_ACTIVE =
+  "[filter:brightness(0)_saturate(100%)_invert(84%)_sepia(5%)_saturate(2279%)_hue-rotate(183deg)_brightness(88%)_contrast(89%)]";
+const MODE_IDLE =
+  "[filter:brightness(0)_saturate(100%)_invert(33%)_sepia(24%)_saturate(349%)_hue-rotate(172deg)_brightness(98%)_contrast(89%)]";
+
+const MODES: { key: string; src: string; rotate?: boolean }[] = [
+  { key: "osu!standard", src: "/img/modes/mode-osu.webp" },
+  { key: "osu!mania", src: "/img/modes/mode-mania.webp" },
+  { key: "osu!taiko", src: "/img/modes/mode-taiko.webp" },
+  { key: "osu!ctb", src: "/img/modes/mode-fruits.webp", rotate: true },
+];
+
 function SkinCard({ skin }: { skin: Skin | any }) {
   const reduce = useReducedMotion();
 
   return (
     <motion.div
-      className="item skins"
+      className="h-[180px] w-[275px] select-none overflow-hidden rounded-[0.7em] bg-site-secondary"
       initial={reduce ? false : { opacity: 0, y: 12 }}
       whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
@@ -26,62 +40,50 @@ function SkinCard({ skin }: { skin: Skin | any }) {
       whileHover={reduce ? undefined : { scale: 1.02, y: -2 }}
     >
       <div
-        className="header"
+        className="relative h-[40%] rounded-t-[0.7em] bg-cover bg-center"
         style={{ backgroundImage: `url(${skin.Banner})` }}
       >
-        <div className="dimForBG"></div>
+        <div className="h-full w-full rounded-t-[0.7em] bg-black/60" />
       </div>
-      <div className="content">
-        <Link href={skin.URL} target="_blank" className="name">
+      <div className="flex h-[60%] w-full flex-col">
+        <Link
+          href={skin.URL}
+          target="_blank"
+          className="flex flex-1 items-center justify-center break-words px-2 text-center text-[13pt] font-semibold leading-tight text-accent-blue"
+        >
           {skin.Name}
         </Link>
-        <div className="info">
-          <div className="owner">
+        <div className="flex h-[60px] w-full items-end gap-2 px-2 pb-2">
+          <div className="flex w-full items-center gap-1.5 text-[10.5pt] font-medium text-[#92a9c6]">
             <Link href={`/users/${skin.Player.id}`}>
               <img
                 src={`https://s.ppy.sh/a/${skin.Player.id}`}
                 alt={skin.Player.username}
+                className="size-5 rounded-full"
               />
-            </Link>{" "}
+            </Link>
             <Link href={`/users/${skin.Player.id}`}>
               <span>{skin.Player.username}</span>
             </Link>
           </div>
-          <div className="rightSide">
-            <div className="downloads">
+          <div className="flex shrink-0 flex-col items-end gap-0.5">
+            <div className="flex items-center gap-0.5 text-[10pt] font-medium tabular-nums text-[#92a9c6]">
               {skin.Downloads}
-              <i className="bx bxs-download"></i>
+              <Download className="size-[18px]" />
             </div>
-            <div className="gamemodes">
-              <object
-                className={`modeImg ${
-                  skin.Modes.includes("osu!standard") ? "active" : ""
-                }`}
-                data="/img/modes/mode-osu.webp"
-                type="image/webp"
-              />
-              <object
-                className={`modeImg ${
-                  skin.Modes.includes("osu!mania") ? "active" : ""
-                }`}
-                data="/img/modes/mode-mania.webp"
-                type="image/webp"
-              />
-              <object
-                className={`modeImg ${
-                  skin.Modes.includes("osu!taiko") ? "active" : ""
-                }`}
-                data="/img/modes/mode-taiko.webp"
-                type="image/webp"
-              />
-              <object
-                className={`modeImg ${
-                  skin.Modes.includes("osu!ctb") ? "active" : ""
-                }`}
-                data="/img/modes/mode-fruits.webp"
-                type="image/webp"
-                style={{ rotate: "-90deg" }}
-              />
+            <div className="flex items-center gap-px">
+              {MODES.map(({ key, src, rotate }) => (
+                <object
+                  key={key}
+                  data={src}
+                  type="image/webp"
+                  className={cn(
+                    "pointer-events-none size-5 select-none",
+                    skin.Modes.includes(key) ? MODE_ACTIVE : MODE_IDLE,
+                    rotate && "-rotate-90"
+                  )}
+                />
+              ))}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Poppins } from "next/font/google";
 import Script from "next/script";
 import NextTopLoader from "nextjs-toploader";
 import { SessionProvider } from "next-auth/react";
@@ -6,17 +7,20 @@ import { auth } from "@/auth";
 import { isAdmin } from "@/lib/authz";
 import Navbar from "@/components/Navbar/Navbar";
 import SearchProvider from "@/components/Search/SearchProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
+import "@/styles/globals.css";
+// styles.css now holds only the :root theme variables that tags.css consumes.
 import "@/styles/styles.css";
-import "@/styles/settings.css";
-import "@/styles/scrollbars.css";
 import "@/styles/tags.css";
-import "@/styles/Navbar.css";
-import "@/styles/MobileNavbar.css";
-import "@/styles/RecentSkins.css";
-import "@/styles/Users.css";
-import "@/styles/Socials.css";
-import "@/styles/PlaystyleSection.css";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://akinariportal.vercel.app"),
@@ -58,31 +62,18 @@ export default async function RootLayout({
   const [session, admin] = await Promise.all([auth(), isAdmin()]);
 
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css"
-          rel="stylesheet"
-        />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`dark ${poppins.variable}`}>
       <body>
         <NextTopLoader color="#6ba2ed" showSpinner={false} height={3} />
-        <SessionProvider session={session}>
-          <SearchProvider>
-            <Navbar session={session} isAdmin={admin} />
-            {children}
-          </SearchProvider>
-        </SessionProvider>
+        <TooltipProvider delayDuration={200}>
+          <SessionProvider session={session}>
+            <SearchProvider>
+              <Navbar session={session} isAdmin={admin} />
+              {children}
+            </SearchProvider>
+          </SessionProvider>
+        </TooltipProvider>
+        <Toaster richColors position="bottom-right" />
 
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-RXYZ8EPLR2"

@@ -1,12 +1,35 @@
 "use client";
 
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { useClickOutside } from "react-haiku";
+import { useEffect, useState } from "react";
 import { createSkin, updateSkin } from "@/app/users/[id]/actions";
-import styles from "./Modal.module.css";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface ModalProps {
   openModal: (open: boolean) => void;
@@ -14,6 +37,67 @@ interface ModalProps {
   skinToEditStatus: (skin?: any) => void;
   sessionUser?: any;
 }
+
+function tagLabel(tag: string) {
+  if (tag === "current") return "Currently Using";
+  if (tag === "tournaments") return "Using in Tournaments";
+  return tag[0].toUpperCase() + tag.substring(1);
+}
+
+function SortableTag({
+  tag,
+  onRemove,
+}: {
+  tag: string;
+  onRemove: (tag: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tag });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "tag cursor-grab touch-none gap-2 active:cursor-grabbing",
+        tag,
+        isDragging && "z-10 opacity-80 shadow-lg"
+      )}
+    >
+      {tagLabel(tag)}
+      <button
+        type="button"
+        aria-label={`Remove ${tagLabel(tag)}`}
+        className="flex cursor-pointer items-center"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(tag);
+        }}
+      >
+        <X className="size-3" />
+      </button>
+    </div>
+  );
+}
+
+const MODE_ICONS: Record<string, { src: string; rotate?: boolean }> = {
+  "osu!standard": { src: "/img/modes/mode-osu.png" },
+  "osu!mania": { src: "/img/modes/mode-mania.png" },
+  "osu!taiko": { src: "/img/modes/mode-taiko.png" },
+  "osu!ctb": { src: "/img/modes/mode-fruits.png", rotate: true },
+};
 
 function Modal({
   openModal,
@@ -23,11 +107,15 @@ function Modal({
 }: ModalProps) {
   const router = useRouter();
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   const [inputNameError, setInputNameError] = useState(false);
   const [inputAuthorError, setInputAuthorError] = useState(false);
   const [inputURLError, setInputURLError] = useState(false);
   const [inputURLNot, setInputURLNot] = useState(false);
-  const [inputBgURLNot, setInputBgURLNot] = useState(false);
+  const [inputBgURLNot] = useState(false);
 
   const [skinName, setSkinName] = useState(
     skinToEdit != null ? skinToEdit?.Name : ""
@@ -110,7 +198,7 @@ function Modal({
         creator: skinAuthor,
         bg: skinBgURL,
         modes: JSON.stringify(selectedModes),
-        tags: JSON.stringify(selectedTags.sort()),
+        tags: JSON.stringify(selectedTags),
         url: skinURL,
       };
 
@@ -142,302 +230,298 @@ function Modal({
         setAvailableModes((prev) => prev.filter((item) => item !== tag));
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => {
+  function close() {
     openModal(false);
     skinToEditStatus();
-  });
+  }
+
+  function addTag(tag: string) {
+    setSelectedTags((prev) => [...prev, tag]);
+    setAvailableTags((prev) => prev.filter((item) => item !== tag));
+  }
+
+  function removeTag(tag: string) {
+    setAvailableTags((prev) => [...prev, tag]);
+    setSelectedTags((prev) => prev.filter((item) => item !== tag));
+  }
+
+  function handleTagDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSelectedTags((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  }
 
   return (
-    <div className={styles.modal}>
-      <div className={styles.modalMainDiv} ref={ref}>
-        <div className={styles.modalHeader}>
-          <span>{skinToEdit != null ? "Edit skin" : "Add a new skin"}</span>
-          <FontAwesomeIcon
-            icon={faXmark}
-            style={{ cursor: "pointer" }}
-            onClick={() => {
-              openModal(false);
-              skinToEditStatus();
-            }}
-          />
-        </div>
-        <div className={styles.modalContent}>
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label htmlFor="skinName">
-                Name *{" "}
+    <Dialog open onOpenChange={(o) => !o && close()}>
+      <DialogContent className="max-h-[90vh] gap-3 overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>
+            {skinToEdit != null ? "Edit skin" : "Add a new skin"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Fill in the skin details, tags and gamemodes, then submit.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-3">
+          {/* Name + Author */}
+          <div className="grid items-end gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="skinName">
+                Name *
                 {inputNameError && (
-                  <span className={styles.error}>Cannot be empty</span>
+                  <span className="text-[8pt] font-normal text-destructive">
+                    Cannot be empty
+                  </span>
                 )}
-              </label>
-              <div className={styles.complexField}>
-                <input
-                  type="text"
-                  name="skinName"
+              </Label>
+              <div className="flex flex-row">
+                <Input
                   id="skinName"
+                  name="skinName"
                   value={skinName}
+                  className="rounded-r-none"
                   onChange={(e) => {
                     setSkinName(e.target.value);
                     setSkinNameLength(e.target.value.length);
                   }}
                 />
-                <div className={styles.counter}>
-                  {skinNameLength > 45 ? (
-                    <div id="actualCount" style={{ color: "#ffbedc" }}>
-                      {skinNameLength}
-                    </div>
-                  ) : (
-                    <div id="actualCount">{skinNameLength}</div>
-                  )}
-                  <div id={styles.maxCount}>45</div>
+                <div className="flex h-9 w-[4.5em] shrink-0 items-center justify-center gap-1 rounded-r-md bg-[#4a5868] text-[9.2pt] tabular-nums text-[#bedcff]">
+                  <span
+                    className={cn(skinNameLength > 45 && "text-[#ffbedc]")}
+                  >
+                    {skinNameLength}
+                  </span>
+                  <span>/45</span>
                 </div>
               </div>
             </div>
-            <div className={styles.field}>
-              <label htmlFor="skinAuthor">
-                Author *{" "}
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="skinAuthor">
+                Author *
                 {inputAuthorError && (
-                  <span className={styles.error}>Cannot be empty</span>
+                  <span className="text-[8pt] font-normal text-destructive">
+                    Cannot be empty
+                  </span>
                 )}
-              </label>
-              <div className={styles.complexField}>
-                <input
-                  type="text"
-                  name="skinAuthor"
+              </Label>
+              <div className="flex flex-row">
+                <Input
                   id="skinAuthor"
+                  name="skinAuthor"
                   value={skinAuthor}
+                  className="rounded-r-none"
                   onChange={(e) => {
                     setSkinAuthor(e.target.value);
                     setSkinAuthorLength(e.target.value.length);
                   }}
                 />
-                <div className={styles.counter}>
-                  {skinAuthorLength > 25 ? (
-                    <div id="actualCount" style={{ color: "#ffbedc" }}>
-                      {skinAuthorLength}
-                    </div>
-                  ) : (
-                    <div id="actualCount">{skinAuthorLength}</div>
-                  )}
-                  <div id={styles.maxCount}>25</div>
+                <div className="flex h-9 w-[4.5em] shrink-0 items-center justify-center gap-1 rounded-r-md bg-[#4a5868] text-[9.2pt] tabular-nums text-[#bedcff]">
+                  <span
+                    className={cn(skinAuthorLength > 25 && "text-[#ffbedc]")}
+                  >
+                    {skinAuthorLength}
+                  </span>
+                  <span>/25</span>
                 </div>
               </div>
             </div>
           </div>
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label htmlFor="skinURL">
-                Download URL *{" "}
+
+          {/* URLs */}
+          <div className="grid items-end gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="skinURL">
+                Download URL *
                 {inputURLError && (
-                  <span className={styles.error}>Cannot be empty</span>
+                  <span className="text-[8pt] font-normal text-destructive">
+                    Cannot be empty
+                  </span>
                 )}
                 {inputURLNot && !inputURLError && (
-                  <span className={styles.error}>Invalid URL</span>
+                  <span className="text-[8pt] font-normal text-destructive">
+                    Invalid URL
+                  </span>
                 )}
-              </label>
-              <input
-                type="url"
-                name="skinURL"
+              </Label>
+              <Input
                 id="skinURL"
+                name="skinURL"
+                type="url"
                 value={skinURL}
                 onChange={(e) => setSkinURL(e.target.value)}
               />
             </div>
-            <div className={styles.field}>
-              <label htmlFor="skinBgURL">
-                Background Image URL{" "}
-                <span className={styles.advice}>
-                  &#x0028;Preferably in-game screen&#x0029;
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="skinBgURL" className="flex-wrap">
+                Background Image URL
+                <span className="text-[8pt] font-normal text-muted-foreground">
+                  (Preferably in-game screen)
                 </span>
                 {inputBgURLNot && (
-                  <span className={styles.error}>Invalid URL</span>
+                  <span className="text-[8pt] font-normal text-destructive">
+                    Invalid URL
+                  </span>
                 )}
-              </label>
-              <input
-                type="url"
-                name="skinBgURL"
+              </Label>
+              <Input
                 id="skinBgURL"
+                name="skinBgURL"
+                type="url"
                 value={skinBgURL}
                 onChange={(e) => setSkinBgURL(e.target.value)}
               />
             </div>
           </div>
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label htmlFor="skinTags">
-                Tags{" "}
-                <span className={styles.advice}>
-                  &#x0028;Make sure to use &#x0022;Currently Using&#x0022; tag
-                  only with one skin&#x0029;
-                </span>{" "}
-              </label>
-              <div className={styles.tagsSelection}>
-                <div id={styles.skinTags} {...{ name: "skinTags" }}>
-                  {selectedTags.map((tag) => {
-                    return (
-                      <div
-                        key={tag}
-                        className={`tag ${tag}`}
-                        style={{
-                          display: "flex",
-                          flexFlow: "row",
-                          gap: "8px",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => {
-                          setAvailableTags((prev) => [...prev, tag]);
-                          setSelectedTags(
-                            selectedTags.filter((item) => item !== tag)
-                          );
-                        }}
-                      >
-                        {tag === "current"
-                          ? "Currently Using"
-                          : tag === "tournaments"
-                          ? "Using in Tournaments"
-                          : tag[0].toUpperCase() + tag.substring(1)}
-                        <FontAwesomeIcon icon={faXmark} />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className={styles.tagsCollection}>
-                  {availableTags.map((tag) => {
-                    return (
-                      <div
-                        key={tag}
-                        className={`tag ${tag}`}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          setSelectedTags((prev) => [...prev, tag]);
-                          setAvailableTags(
-                            availableTags.filter((item) => item !== tag)
-                          );
-                        }}
-                      >
-                        {tag === "current"
-                          ? "Currently Using"
-                          : tag === "tournaments"
-                          ? "Using in Tournaments"
-                          : tag[0].toUpperCase() + tag.substring(1)}
-                      </div>
-                    );
-                  })}
+
+          {/* Tags */}
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="skinTags" className="flex-wrap">
+              Tags
+              <span className="text-[8pt] font-normal text-muted-foreground">
+                (Make sure to use &quot;Currently Using&quot; tag only with one
+                skin)
+              </span>
+            </Label>
+            <div className="flex flex-col gap-2 rounded-md bg-[#2c343e] p-2">
+              <div className="flex flex-col gap-1">
+                <span className="text-[8pt] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Selected
+                  <span className="ml-1 font-normal normal-case">
+                    (drag to reorder)
+                  </span>
+                </span>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleTagDragEnd}
+                >
+                  <SortableContext
+                    items={selectedTags}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <div className="flex min-h-9 flex-row flex-wrap items-center gap-2 gap-y-2 py-2">
+                      {selectedTags.length === 0 && (
+                        <span className="text-[8pt] text-muted-foreground/70">
+                          No tags selected yet
+                        </span>
+                      )}
+                      {selectedTags.map((tag) => (
+                        <SortableTag key={tag} tag={tag} onRemove={removeTag} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+              <div className="flex flex-col gap-1 border-t border-white/5 pt-1">
+                <span className="text-[8pt] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Available
+                </span>
+                <div className="flex min-h-9 flex-row flex-wrap items-center gap-2 gap-y-2 py-2">
+                  {availableTags.map((tag) => (
+                    <button
+                      type="button"
+                      key={tag}
+                      className={cn(
+                        "tag cursor-pointer opacity-70 ring-1 ring-inset ring-white/10 transition-opacity hover:opacity-100",
+                        tag
+                      )}
+                      onClick={() => addTag(tag)}
+                    >
+                      {tagLabel(tag)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label htmlFor="skinModes">Modes *</label>
-              <div className={styles.modesSelection}>
-                <div id={styles.modesTags} {...{ name: "skinModes" }}>
-                  {selectedModes.map((tag) => {
-                    return (
-                      <div
-                        key={tag}
-                        className={`tag skinMode`}
-                        style={{ cursor: "pointer", gap: "5px" }}
-                        onClick={() => {
-                          setAvailableModes((prev) => [...prev, tag]);
-                          setSelectedModes(
-                            selectedModes.filter((item) => item !== tag)
-                          );
-                        }}
-                      >
-                        {tag === "osu!standard" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px" }}
-                            src="/img/modes/mode-osu.png"
-                          />
-                        )}
-                        {tag === "osu!mania" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px" }}
-                            src="/img/modes/mode-mania.png"
-                          />
-                        )}
-                        {tag === "osu!taiko" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px" }}
-                            src="/img/modes/mode-taiko.png"
-                          />
-                        )}
-                        {tag === "osu!ctb" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px", rotate: "-90deg" }}
-                            src="/img/modes/mode-fruits.png"
-                          />
-                        )}
-                        {tag}
-                        <FontAwesomeIcon icon={faXmark} />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className={styles.modesCollection}>
-                  {availableModes.map((tag) => {
-                    return (
-                      <div
-                        key={tag}
-                        className={`tag skinMode`}
-                        style={{ cursor: "pointer", gap: "5px" }}
-                        onClick={() => {
-                          setSelectedModes((prev) => [...prev, tag]);
-                          setAvailableModes(
-                            availableModes.filter((item) => item !== tag)
-                          );
-                        }}
-                      >
-                        {tag === "osu!standard" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px" }}
-                            src="/img/modes/mode-osu.png"
-                          />
-                        )}
-                        {tag === "osu!mania" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px" }}
-                            src="/img/modes/mode-mania.png"
-                          />
-                        )}
-                        {tag === "osu!taiko" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px" }}
-                            src="/img/modes/mode-taiko.png"
-                          />
-                        )}
-                        {tag === "osu!ctb" && (
-                          <img
-                            className={`skinMode active`}
-                            style={{ width: "18px", rotate: "-90deg" }}
-                            src="/img/modes/mode-fruits.png"
-                          />
-                        )}
-                        {tag}
-                      </div>
-                    );
-                  })}
-                </div>
+
+          {/* Modes */}
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="skinModes">Modes *</Label>
+            <div className="flex flex-col rounded-md bg-[#2c343e]">
+              <div className="flex min-h-9 flex-row flex-wrap items-center gap-2 px-2 shadow-[0_1px_2px_0_rgba(0,0,0,0.12)]">
+                {selectedModes.map((mode) => (
+                  <button
+                    type="button"
+                    key={mode}
+                    className="tag skinMode cursor-pointer gap-[5px]"
+                    onClick={() => {
+                      setAvailableModes((prev) => [...prev, mode]);
+                      setSelectedModes(
+                        selectedModes.filter((item) => item !== mode)
+                      );
+                    }}
+                  >
+                    {MODE_ICONS[mode] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={MODE_ICONS[mode].src}
+                        alt={mode}
+                        className="w-[18px] brightness-100"
+                        style={
+                          MODE_ICONS[mode].rotate
+                            ? { rotate: "-90deg" }
+                            : undefined
+                        }
+                      />
+                    )}
+                    {mode}
+                    <X className="size-3" />
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-row flex-wrap items-center gap-2 p-2">
+                {availableModes.map((mode) => (
+                  <button
+                    type="button"
+                    key={mode}
+                    className="tag skinMode cursor-pointer gap-[5px]"
+                    onClick={() => {
+                      setSelectedModes((prev) => [...prev, mode]);
+                      setAvailableModes(
+                        availableModes.filter((item) => item !== mode)
+                      );
+                    }}
+                  >
+                    {MODE_ICONS[mode] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={MODE_ICONS[mode].src}
+                        alt={mode}
+                        className="w-[18px] brightness-100"
+                        style={
+                          MODE_ICONS[mode].rotate
+                            ? { rotate: "-90deg" }
+                            : undefined
+                        }
+                      />
+                    )}
+                    {mode}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
-          <div className={styles.submitBTN} onClick={postSkinToDB}>
+
+          <Button
+            type="button"
+            onClick={postSkinToDB}
+            className="mt-1 h-9 w-full bg-[#40618e] font-medium text-[#ddd] hover:bg-[#46699a] active:scale-[0.99]"
+          >
             Submit
-          </div>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
