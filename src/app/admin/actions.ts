@@ -76,6 +76,64 @@ export async function deleteBadge(id: BadgeId) {
   }
 }
 
+// Core grant logic (no auth guard — callers must guard). Returns whether it
+// succeeded and where the badge landed.
+async function grantOne(
+  osuId: BadgeId,
+  badgeId: BadgeId
+): Promise<{ ok: boolean; placement?: "active" | "pending" }> {
+  const { data: userRows, error: userErr } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", osuId);
+  if (userErr) {
+    console.error(userErr);
+    return { ok: false };
+  }
+
+  const hasAccount = !!(userRows && userRows.length > 0);
+
+  if (hasAccount) {
+    const { error } = await supabase
+      .from("users_badges")
+      .upsert(
+        { user_id: osuId, badge_id: badgeId },
+        { onConflict: "user_id,badge_id" }
+      );
+    if (error) {
+      console.error(error);
+      return { ok: false };
+    }
+    updateTag(`user:${osuId}`);
+    return { ok: true, placement: "active" };
+  }
+
+  // No site account: place in pending_badges. Assume no unique constraint,
+  // so dedupe with a select-first before inserting.
+  const { data: existing, error: existErr } = await supabase
+    .from("pending_badges")
+    .select("badge_id")
+    .eq("user_id", osuId)
+    .eq("badge_id", badgeId);
+  if (existErr) {
+    console.error(existErr);
+    return { ok: false };
+  }
+
+  if (!existing || existing.length === 0) {
+    const { error } = await supabase
+      .from("pending_badges")
+      .insert({ user_id: osuId, badge_id: badgeId });
+    if (error) {
+      console.error(error);
+      return { ok: false };
+    }
+  }
+
+  updateTag(`user:${osuId}`);
+  return { ok: true, placement: "pending" };
+}
+
 export async function grantBadge(osuId: BadgeId, badgeId: BadgeId) {
   const session = await getAdminSession();
   if (!session) return { status: "unauthorized" as const };
@@ -84,60 +142,53 @@ export async function grantBadge(osuId: BadgeId, badgeId: BadgeId) {
     return { status: "invalid" as const };
 
   try {
-    const { data: userRows, error: userErr } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", osuId);
-    if (userErr) {
-      console.error(userErr);
-      return { status: "error" as const };
-    }
-
-    const hasAccount = !!(userRows && userRows.length > 0);
-
-    if (hasAccount) {
-      const { error } = await supabase
-        .from("users_badges")
-        .upsert(
-          { user_id: osuId, badge_id: badgeId },
-          { onConflict: "user_id,badge_id" }
-        );
-      if (error) {
-        console.error(error);
-        return { status: "error" as const };
-      }
-      updateTag(`user:${osuId}`);
-      return { status: "done" as const, placement: "active" as const };
-    }
-
-    // No site account: place in pending_badges. Assume no unique constraint,
-    // so dedupe with a select-first before inserting.
-    const { data: existing, error: existErr } = await supabase
-      .from("pending_badges")
-      .select("badge_id")
-      .eq("user_id", osuId)
-      .eq("badge_id", badgeId);
-    if (existErr) {
-      console.error(existErr);
-      return { status: "error" as const };
-    }
-
-    if (!existing || existing.length === 0) {
-      const { error } = await supabase
-        .from("pending_badges")
-        .insert({ user_id: osuId, badge_id: badgeId });
-      if (error) {
-        console.error(error);
-        return { status: "error" as const };
-      }
-    }
-
-    updateTag(`user:${osuId}`);
-    return { status: "done" as const, placement: "pending" as const };
+    const res = await grantOne(osuId, badgeId);
+    if (!res.ok) return { status: "error" as const };
+    return { status: "done" as const, placement: res.placement! };
   } catch (err) {
     console.error(err);
     return { status: "error" as const };
   }
+}
+
+// Grant one badge to many osu ids at once. Accepts a raw list (any separators
+// are normalized on the client). Returns a per-id result + summary.
+export async function grantBadgeBatch(osuIds: BadgeId[], badgeId: BadgeId) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+
+  if (badgeId === undefined || badgeId === null)
+    return { status: "invalid" as const };
+
+  const ids = Array.from(
+    new Set(
+      (osuIds ?? [])
+        .map((x) => String(x).trim())
+        .filter((x) => x.length > 0)
+    )
+  );
+  if (ids.length === 0) return { status: "invalid" as const };
+
+  const results: { id: string; ok: boolean; placement?: "active" | "pending" }[] =
+    [];
+  for (const id of ids) {
+    try {
+      const r = await grantOne(id, badgeId);
+      results.push({ id, ok: r.ok, placement: r.placement });
+    } catch (err) {
+      console.error(err);
+      results.push({ id, ok: false });
+    }
+  }
+
+  return {
+    status: "done" as const,
+    results,
+    granted: results.filter((r) => r.ok).length,
+    active: results.filter((r) => r.placement === "active").length,
+    pending: results.filter((r) => r.placement === "pending").length,
+    failed: results.filter((r) => !r.ok).map((r) => r.id),
+  };
 }
 
 export async function revokeBadge(osuId: BadgeId, badgeId: BadgeId) {

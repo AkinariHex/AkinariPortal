@@ -2,14 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Tooltip } from "react-tooltip";
 import {
   createBadge,
   updateBadge,
   deleteBadge,
   grantBadge,
+  grantBadgeBatch,
   revokeBadge,
   getUserBadges,
 } from "./actions";
+import type { BadgeHolder, BadgeHoldersMap } from "./data";
 import styles from "./Admin.module.css";
 
 type Badge = { id: string | number; title: string };
@@ -20,23 +23,150 @@ type UserBadgeState = {
   pending: (string | number)[];
 };
 
-export default function AdminClient({ badges }: { badges: Badge[] }) {
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
+  );
+
+// Tooltip HTML listing every holder: username if they have an account, else the
+// raw osu id; pending grants are marked.
+const holdersTooltipHtml = (holders: BadgeHolder[]) => {
+  if (!holders.length) return "No players have this badge yet.";
+  return holders
+    .map((h) => {
+      const label = h.name ? escapeHtml(h.name) : `#${escapeHtml(h.id)}`;
+      return h.pending ? `${label} <em>(pending)</em>` : label;
+    })
+    .join("<br>");
+};
+
+export default function AdminClient({
+  badges,
+  holders,
+}: {
+  badges: Badge[];
+  holders: BadgeHoldersMap;
+}) {
   const router = useRouter();
 
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>Admin</h1>
-      <BadgeDefinitions badges={badges} onChanged={() => router.refresh()} />
+      <BadgeDefinitions
+        badges={badges}
+        holders={holders}
+        onChanged={() => router.refresh()}
+      />
       <GrantModify badges={badges} />
+      <BatchGrant badges={badges} onChanged={() => router.refresh()} />
     </div>
+  );
+}
+
+function BatchGrant({
+  badges,
+  onChanged,
+}: {
+  badges: Badge[];
+  onChanged: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [badgeId, setBadgeId] = useState<string>("");
+  const [raw, setRaw] = useState("");
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const parseIds = (text: string) =>
+    Array.from(
+      new Set(
+        text
+          .split(/[\s,;]+/)
+          .map((x) => x.trim())
+          .filter(Boolean)
+      )
+    );
+
+  const handleGrant = () => {
+    const id = badgeId || (badges[0] ? String(badges[0].id) : "");
+    if (!id) {
+      setMsg({ text: "Pick a badge.", ok: false });
+      return;
+    }
+    const ids = parseIds(raw);
+    if (ids.length === 0) {
+      setMsg({ text: "Enter at least one osu! user id.", ok: false });
+      return;
+    }
+    startTransition(async () => {
+      const res = await grantBadgeBatch(ids, id);
+      if (res.status === "done") {
+        const parts = [
+          `${res.granted}/${res.results.length} granted`,
+          `${res.active} active`,
+          `${res.pending} pending`,
+        ];
+        if (res.failed.length) parts.push(`failed: ${res.failed.join(", ")}`);
+        setMsg({ text: parts.join(" · "), ok: res.failed.length === 0 });
+        onChanged();
+      } else {
+        setMsg({ text: `Batch grant failed (${res.status}).`, ok: false });
+      }
+    });
+  };
+
+  const count = parseIds(raw).length;
+
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle}>Batch grant a badge</h2>
+
+      <div className={styles.createRow}>
+        <select
+          className={styles.input}
+          value={badgeId}
+          onChange={(e) => setBadgeId(e.target.value)}
+        >
+          {badges.length === 0 && <option value="">No badges</option>}
+          {badges.map((b) => (
+            <option key={String(b.id)} value={String(b.id)}>
+              #{b.id} — {b.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <textarea
+        className={styles.textarea}
+        placeholder="osu! user ids — separated by spaces, commas or new lines"
+        rows={5}
+        value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+      />
+
+      <div className={styles.createRow}>
+        <span className={styles.holderCount}>{count} ids</span>
+        <button
+          className={styles.btnPrimary}
+          onClick={handleGrant}
+          disabled={pending || badges.length === 0}
+        >
+          Grant to all
+        </button>
+      </div>
+
+      {msg && (
+        <p className={msg.ok ? styles.msgOk : styles.msgErr}>{msg.text}</p>
+      )}
+    </section>
   );
 }
 
 function BadgeDefinitions({
   badges,
+  holders,
   onChanged,
 }: {
   badges: Badge[];
+  holders: BadgeHoldersMap;
   onChanged: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -145,6 +275,18 @@ function BadgeDefinitions({
               />
             </div>
             <div className={styles.badgeActions}>
+              {(() => {
+                const list = holders[String(b.id)] ?? [];
+                return (
+                  <span
+                    className={styles.holderCount}
+                    data-tooltip-id="badge-holders"
+                    data-tooltip-html={holdersTooltipHtml(list)}
+                  >
+                    {list.length} {list.length === 1 ? "player" : "players"}
+                  </span>
+                );
+              })()}
               <button
                 className={styles.btnSecondary}
                 onClick={() => handleRename(b.id)}
@@ -166,6 +308,8 @@ function BadgeDefinitions({
           <li className={styles.empty}>No badges yet.</li>
         )}
       </ul>
+
+      <Tooltip id="badge-holders" place="left" className={styles.tooltip} />
     </section>
   );
 }

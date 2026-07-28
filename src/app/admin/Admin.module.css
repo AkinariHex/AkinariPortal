@@ -1,7 +1,7 @@
 .page {
   max-width: 900px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 5.5em 16px 64px;
   display: flex;
   flex-flow: column;
   gap: 24px;
@@ -53,6 +53,42 @@
 .input:focus-visible {
   outline: 0;
   border-color: var(--site-colorful-primary-color);
+}
+
+.textarea {
+  background-color: var(--site-secondary-color);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px;
+  font-size: 10.8pt;
+  font-family: inherit;
+  color: #d9e3f0;
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus-visible {
+  outline: 0;
+  border-color: var(--site-colorful-primary-color);
+}
+
+.holderCount {
+  font-size: 9.5pt;
+  color: #92a9c6;
+  background-color: var(--site-secondary-color);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: default;
+  align-self: center;
+}
+
+.tooltip {
+  max-width: 280px;
+  font-size: 9.5pt;
+  line-height: 1.5;
+  z-index: 1200;
 }
 
 .badgeList {
