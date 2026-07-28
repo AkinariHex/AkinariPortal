@@ -1,17 +1,34 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createBadge,
   updateBadge,
   deleteBadge,
+  reorderBadges,
   grantBadge,
   grantBadgeBatch,
   revokeBadge,
   getUserBadges,
 } from "./actions";
 import type { BadgeHoldersMap } from "./data";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -178,6 +195,115 @@ function BatchGrant({
   );
 }
 
+function SortableBadgeRow({
+  badge,
+  holders,
+  pending,
+  onEditTitle,
+  onRename,
+  onDelete,
+}: {
+  badge: Badge;
+  holders: BadgeHoldersMap;
+  pending: boolean;
+  onEditTitle: (id: string | number, value: string) => void;
+  onRename: (id: string | number) => void;
+  onDelete: (id: string | number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: String(badge.id) });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : undefined,
+    zIndex: isDragging ? 1 : undefined,
+  };
+
+  const list = holders[String(badge.id)] ?? [];
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex flex-row flex-wrap items-center gap-3 rounded-lg bg-site-secondary px-3 py-2.5"
+    >
+      <button
+        type="button"
+        aria-label="Drag to reorder"
+        className="flex shrink-0 cursor-grab touch-none items-center justify-center rounded p-1 text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className="h-10 w-[86px] shrink-0 rounded bg-black/20 object-contain"
+        src={`/img/badges/${badge.id}.webp`}
+        alt={badge.title}
+        width={86}
+        height={40}
+      />
+      <div className="flex min-w-0 flex-1 flex-row items-center gap-2.5 max-sm:order-2 max-sm:basis-full">
+        <span className="shrink-0 text-sm font-semibold text-accent-blue">
+          #{badge.id}
+        </span>
+        <Input
+          className="bg-site-primary"
+          defaultValue={badge.title}
+          onChange={(e) => onEditTitle(badge.id, e.target.value)}
+        />
+      </div>
+      <div className="flex shrink-0 flex-row items-center gap-2 max-sm:order-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="cursor-default bg-site-primary">
+              {list.length} {list.length === 1 ? "player" : "players"}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-[280px] text-left">
+            {list.length === 0 ? (
+              "No players have this badge yet."
+            ) : (
+              <div className="flex flex-col gap-0.5">
+                {list.map((h) => (
+                  <span key={h.id}>
+                    {h.name ?? `#${h.id}`}
+                    {h.pending && (
+                      <em className="ml-1 opacity-70">(pending)</em>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+          </TooltipContent>
+        </Tooltip>
+        <Button
+          variant="secondary"
+          onClick={() => onRename(badge.id)}
+          disabled={pending}
+        >
+          Rename
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={() => onDelete(badge.id)}
+          disabled={pending}
+        >
+          Delete
+        </Button>
+      </div>
+    </li>
+  );
+}
+
 function BadgeDefinitions({
   badges,
   holders,
@@ -191,6 +317,36 @@ function BadgeDefinitions({
   const [newId, setNewId] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const [ordered, setOrdered] = useState<Badge[]>(badges);
+
+  useEffect(() => {
+    setOrdered(badges);
+  }, [badges]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = ordered.findIndex((b) => String(b.id) === String(active.id));
+    const newIndex = ordered.findIndex((b) => String(b.id) === String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const next = arrayMove(ordered, oldIndex, newIndex);
+    setOrdered(next);
+    const newIds = next.map((b) => b.id);
+    startTransition(async () => {
+      const res = await reorderBadges(newIds);
+      if (res.status !== "done") {
+        toast.error("Reorder failed");
+        onChanged();
+      } else {
+        toast.success("Order saved");
+      }
+    });
+  };
 
   const handleCreate = () => {
     if (!newId.trim() || !newTitle.trim()) {
@@ -259,85 +415,37 @@ function BadgeDefinitions({
         </Button>
       </div>
 
-      <ul className="flex list-none flex-col gap-2 p-0">
-        {badges.map((b) => {
-          const list = holders[String(b.id)] ?? [];
-          return (
-            <li
-              key={String(b.id)}
-              className="flex flex-row flex-wrap items-center gap-3 rounded-lg bg-site-secondary px-3 py-2.5"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="h-10 w-[86px] shrink-0 rounded bg-black/20 object-contain"
-                src={`/img/badges/${b.id}.webp`}
-                alt={b.title}
-                width={86}
-                height={40}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={ordered.map((b) => String(b.id))}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className="flex list-none flex-col gap-2 p-0">
+            {ordered.map((b) => (
+              <SortableBadgeRow
+                key={String(b.id)}
+                badge={b}
+                holders={holders}
+                pending={pending}
+                onEditTitle={(id, value) =>
+                  setEdits((s) => ({ ...s, [String(id)]: value }))
+                }
+                onRename={handleRename}
+                onDelete={handleDelete}
               />
-              <div className="flex min-w-0 flex-1 flex-row items-center gap-2.5 max-sm:order-2 max-sm:basis-full">
-                <span className="shrink-0 text-sm font-semibold text-accent-blue">
-                  #{b.id}
-                </span>
-                <Input
-                  className="bg-site-primary"
-                  defaultValue={b.title}
-                  onChange={(e) =>
-                    setEdits((s) => ({ ...s, [String(b.id)]: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="flex shrink-0 flex-row items-center gap-2 max-sm:order-3">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="secondary" className="cursor-default bg-site-primary">
-                      {list.length} {list.length === 1 ? "player" : "players"}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="left"
-                    className="max-w-[280px] text-left"
-                  >
-                    {list.length === 0 ? (
-                      "No players have this badge yet."
-                    ) : (
-                      <div className="flex flex-col gap-0.5">
-                        {list.map((h) => (
-                          <span key={h.id}>
-                            {h.name ?? `#${h.id}`}
-                            {h.pending && (
-                              <em className="ml-1 opacity-70">(pending)</em>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-                <Button
-                  variant="secondary"
-                  onClick={() => handleRename(b.id)}
-                  disabled={pending}
-                >
-                  Rename
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDelete(b.id)}
-                  disabled={pending}
-                >
-                  Delete
-                </Button>
-              </div>
-            </li>
-          );
-        })}
-        {badges.length === 0 && (
-          <li className="px-0.5 py-2 text-sm text-muted-foreground">
-            No badges yet.
-          </li>
-        )}
-      </ul>
+            ))}
+            {ordered.length === 0 && (
+              <li className="px-0.5 py-2 text-sm text-muted-foreground">
+                No badges yet.
+              </li>
+            )}
+          </ul>
+        </SortableContext>
+      </DndContext>
     </Section>
   );
 }

@@ -61,6 +61,7 @@ export const getAllBadges = unstable_cache(
     const { data, error } = await supabase
       .from("badges")
       .select("*")
+      .order("sort_order", { ascending: true, nullsFirst: false })
       .order("id", { ascending: true });
     return error ? [] : data;
   },

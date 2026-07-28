@@ -22,10 +22,19 @@ export function getUserProfile(id: string) {
 
       try {
         if (data.badges) {
-          data.badges = data.badges.map((entry: any) => ({
-            created_at: entry.created_at,
-            ...entry.badge,
-          }));
+          data.badges = data.badges
+            .map((entry: any) => ({
+              created_at: entry.created_at,
+              ...entry.badge,
+            }))
+            // Admin-controlled global order (badges.sort_order); nulls last,
+            // then by id as a stable fallback.
+            .sort((a: any, b: any) => {
+              const ao = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+              const bo = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+              if (ao !== bo) return ao - bo;
+              return String(a.id).localeCompare(String(b.id));
+            });
         }
       } catch (error) {
         console.log(error);
@@ -38,7 +47,7 @@ export function getUserProfile(id: string) {
       return data;
     },
     ["user-profile", id],
-    { tags: [`user:${id}`], revalidate: 86400 }
+    { tags: [`user:${id}`, "badges"], revalidate: 86400 }
   )();
 }
 

@@ -15,10 +15,49 @@ export async function createBadge(input: { id: BadgeId; title: string }) {
   if (!id || !title) return { status: "invalid" as const };
 
   try {
-    const { error } = await supabase.from("badges").insert({ id, title });
+    // New badges go to the end of the order.
+    const { data: maxRow } = await supabase
+      .from("badges")
+      .select("sort_order")
+      .order("sort_order", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    const nextOrder = (maxRow?.sort_order ?? 0) + 1;
+
+    const { error } = await supabase
+      .from("badges")
+      .insert({ id, title, sort_order: nextOrder });
     if (error) {
       console.error(error);
       return { status: "error" as const };
+    }
+    updateTag("badges");
+    return { status: "done" as const };
+  } catch (err) {
+    console.error(err);
+    return { status: "error" as const };
+  }
+}
+
+// Persist a new global badge order. `orderedIds` is the full list of badge ids
+// in the desired display order; each gets sort_order = its index (1-based).
+export async function reorderBadges(orderedIds: BadgeId[]) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0)
+    return { status: "invalid" as const };
+
+  try {
+    for (let i = 0; i < orderedIds.length; i++) {
+      const { error } = await supabase
+        .from("badges")
+        .update({ sort_order: i + 1 })
+        .eq("id", orderedIds[i]);
+      if (error) {
+        console.error(error);
+        return { status: "error" as const };
+      }
     }
     updateTag("badges");
     return { status: "done" as const };
