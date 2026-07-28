@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -979,6 +988,14 @@ const requestDoneClass = "border-transparent bg-accent-blue/20 text-accent-blue"
 const requestPendingClass =
   "border-transparent bg-amber-400/20 text-amber-400";
 
+function slugifyDeviceId(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function KeyboardRequests({
   requests,
   onChanged,
@@ -987,6 +1004,11 @@ function KeyboardRequests({
   onChanged: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [addTarget, setAddTarget] = useState<any | null>(null);
+  const [addId, setAddId] = useState("");
+  const [addName, setAddName] = useState("");
+  const [addBrand, setAddBrand] = useState("");
+  const [addType, setAddType] = useState("keyboard");
 
   const handleResolve = (id: number | string) => {
     startTransition(async () => {
@@ -1012,6 +1034,50 @@ function KeyboardRequests({
     });
   };
 
+  const openAddDialog = (r: any) => {
+    setAddTarget(r);
+    setAddName(r.name ?? "");
+    setAddBrand(r.brand ?? "");
+    setAddType("keyboard");
+    setAddId(
+      slugifyDeviceId(`${r.brand ?? ""} ${r.name ?? ""}`) || `kbd-${r.id}`
+    );
+  };
+
+  const handleAddToCatalog = () => {
+    if (!addTarget) return;
+    const id = addId.trim();
+    const name = addName.trim();
+    if (!id || !name) {
+      toast.error("Both id and name are required.");
+      return;
+    }
+    startTransition(async () => {
+      const createRes = await createKeyboard({
+        id,
+        name,
+        brand: addBrand.trim(),
+        type: addType,
+        layout: null,
+        model_url: "",
+        vendor_id: addTarget.vendor_id ?? null,
+        product_id: addTarget.product_id ?? null,
+      });
+      if (createRes.status !== "done") {
+        toast.error(`Create failed (${createRes.status}).`);
+        return;
+      }
+      const resolveRes = await resolveKeyboardRequest(addTarget.id);
+      if (resolveRes.status !== "done") {
+        toast.error("Keyboard created, but marking the request done failed.");
+      } else {
+        toast.success(`"${name}" added to the catalog.`);
+      }
+      setAddTarget(null);
+      onChanged();
+    });
+  };
+
   return (
     <Section title="Keyboard requests">
       <ul className="flex list-none flex-col gap-2 p-0">
@@ -1031,7 +1097,9 @@ function KeyboardRequests({
                     <span>#{r.id}</span>
                     {r.vendor_id != null && <span>VID {r.vendor_id}</span>}
                     {r.product_id != null && <span>PID {r.product_id}</span>}
-                    {r.user_id != null && <span>user {r.user_id}</span>}
+                    {r.user_id != null && (
+                      <span>{r.username ? `by ${r.username}` : `user ${r.user_id}`}</span>
+                    )}
                   </div>
                   {r.note && (
                     <p className="text-sm text-muted-foreground">{r.note}</p>
@@ -1044,6 +1112,13 @@ function KeyboardRequests({
                   {isDone ? "done" : r.status || "pending"}
                 </Badge>
                 <div className="flex shrink-0 flex-row items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => openAddDialog(r)}
+                    disabled={pending}
+                  >
+                    Add to catalog
+                  </Button>
                   <Button
                     variant="secondary"
                     onClick={() => handleResolve(r.id)}
@@ -1069,6 +1144,79 @@ function KeyboardRequests({
           </li>
         )}
       </ul>
+
+      <Dialog
+        open={!!addTarget}
+        onOpenChange={(open) => {
+          if (!open) setAddTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add to catalog</DialogTitle>
+            <DialogDescription>
+              Creates this device in the keyboards table from request #
+              {addTarget?.id}, and marks the request done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-kb-id">id (unique slug)</Label>
+              <Input
+                id="add-kb-id"
+                className="bg-site-primary"
+                value={addId}
+                onChange={(e) => setAddId(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-kb-name">Name</Label>
+              <Input
+                id="add-kb-name"
+                className="bg-site-primary"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-kb-brand">Brand</Label>
+              <Input
+                id="add-kb-brand"
+                className="bg-site-primary"
+                value={addBrand}
+                onChange={(e) => setAddBrand(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-kb-type">Type</Label>
+              <Select value={addType} onValueChange={setAddType}>
+                <SelectTrigger
+                  id="add-kb-type"
+                  className="w-full border-border bg-site-primary hover:bg-site-primary/80"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-white/10 bg-site-secondary shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)]">
+                  <SelectItem value="keyboard">keyboard</SelectItem>
+                  <SelectItem value="keypad">keypad</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAddTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleAddToCatalog} disabled={pending}>
+              Add keyboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Section>
   );
 }

@@ -1,7 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+  This site is always dark (no theme toggle, no next-themes provider) but the
+  shadcn/ui primitives ship dark: utility overrides pointing at a different
+  palette than our custom theme. Bind the dark: variant to a class that can
+  never exist so those overrides stay permanently inert, even if something
+  external (forced-dark browser/OS mode, a Dark Reader-style extension) adds
+  a real .dark class to an ancestor.
+*/
+@custom-variant dark (&:is(.__disabled-dark-variant__ *));
 
 /*
   Site theme tokens (source of truth = the old styles.css :root block, values kept

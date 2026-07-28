@@ -114,14 +114,35 @@ export const getAllKeyboards = unstable_cache(
   { tags: ["keyboards"], revalidate: 86400 }
 );
 
-// Open keyboard-catalog requests, for the admin page.
+// Open keyboard-catalog requests, for the admin page. keyboard_requests.user_id
+// has no FK to users (it's set from the logged-in session at request time), so
+// resolve usernames with a separate batch lookup instead of a PostgREST join.
 export const getKeyboardRequests = unstable_cache(
   async () => {
     const { data, error } = await supabase
       .from("keyboard_requests")
       .select("*")
       .order("created_at", { ascending: false });
-    return error ? [] : data;
+    if (error || !data) return [];
+
+    const userIds = Array.from(
+      new Set(data.map((r: any) => r.user_id).filter(Boolean).map(String))
+    );
+    if (userIds.length === 0) return data;
+
+    const { data: users } = await supabase
+      .from("users")
+      .select("id,username")
+      .in("id", userIds);
+
+    const usernameById = new Map(
+      (users ?? []).map((u: any) => [String(u.id), u.username])
+    );
+
+    return data.map((r: any) => ({
+      ...r,
+      username: r.user_id != null ? usernameById.get(String(r.user_id)) ?? null : null,
+    }));
   },
   ["keyboard-requests"],
   { tags: ["keyboard-requests"], revalidate: 86400 }
