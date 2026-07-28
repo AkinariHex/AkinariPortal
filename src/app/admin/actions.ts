@@ -266,6 +266,8 @@ type KeyboardInput = {
   type?: string;
   layout?: unknown; // object | null (jsonb)
   model_url?: string;
+  vendor_id?: number | null;
+  product_id?: number | null;
 };
 
 export async function createKeyboard(input: KeyboardInput) {
@@ -284,6 +286,8 @@ export async function createKeyboard(input: KeyboardInput) {
       type: input.type === "keypad" ? "keypad" : "keyboard",
       layout: input.layout ?? null,
       model_url: input.model_url?.trim() || null,
+      vendor_id: input.vendor_id ?? null,
+      product_id: input.product_id ?? null,
     });
     if (error) {
       console.error(error);
@@ -313,6 +317,8 @@ export async function updateKeyboard(input: KeyboardInput) {
         type: input.type === "keypad" ? "keypad" : "keyboard",
         layout: input.layout ?? null,
         model_url: input.model_url?.trim() || null,
+        vendor_id: input.vendor_id ?? null,
+        product_id: input.product_id ?? null,
       })
       .eq("id", id);
     if (error) {
@@ -345,6 +351,46 @@ export async function deleteKeyboard(id: string) {
       return { status: "error" as const };
     }
     updateTag("keyboards");
+    return { status: "done" as const };
+  } catch (err) {
+    console.error(err);
+    return { status: "error" as const };
+  }
+}
+
+export async function resolveKeyboardRequest(id: number | string) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+  try {
+    const { error } = await supabase
+      .from("keyboard_requests")
+      .update({ status: "done" })
+      .eq("id", id);
+    if (error) {
+      console.error(error);
+      return { status: "error" as const };
+    }
+    updateTag("keyboard-requests");
+    return { status: "done" as const };
+  } catch (err) {
+    console.error(err);
+    return { status: "error" as const };
+  }
+}
+
+export async function deleteKeyboardRequest(id: number | string) {
+  const session = await getAdminSession();
+  if (!session) return { status: "unauthorized" as const };
+  try {
+    const { error } = await supabase
+      .from("keyboard_requests")
+      .delete()
+      .eq("id", id);
+    if (error) {
+      console.error(error);
+      return { status: "error" as const };
+    }
+    updateTag("keyboard-requests");
     return { status: "done" as const };
   } catch (err) {
     console.error(err);

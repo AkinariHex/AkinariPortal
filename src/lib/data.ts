@@ -114,6 +114,19 @@ export const getAllKeyboards = unstable_cache(
   { tags: ["keyboards"], revalidate: 86400 }
 );
 
+// Open keyboard-catalog requests, for the admin page.
+export const getKeyboardRequests = unstable_cache(
+  async () => {
+    const { data, error } = await supabase
+      .from("keyboard_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    return error ? [] : data;
+  },
+  ["keyboard-requests"],
+  { tags: ["keyboard-requests"], revalidate: 86400 }
+);
+
 // All badge definitions, for the admin page and any badge picker.
 export const getAllBadges = unstable_cache(
   async () => {

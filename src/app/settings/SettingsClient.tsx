@@ -1,10 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Copy, Upload, X, Plus } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Copy,
+  Upload,
+  X,
+  Plus,
+  Check,
+  ChevronsUpDown,
+  ScanLine,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import moment from "moment/moment";
+import { cn } from "@/lib/utils";
 import ConnectionField from "@/components/ConnectionField/ConnectionField";
 import LoadingIcon from "@/components/LoadingIcon/LoadingIcon";
 import KeyboardView, {
@@ -12,16 +24,37 @@ import KeyboardView, {
 } from "@/components/KeyboardView/KeyboardView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +67,7 @@ import {
   saveSocials,
   saveTablet,
   saveKeyboard,
+  requestKeyboard,
 } from "@/app/settings/actions";
 
 moment.locale("en");
@@ -97,6 +131,24 @@ export default function SettingsClient({
   const [keyInput, setKeyInput] = useState("");
   const [savingKeyboard, setSavingKeyboard] = useState(false);
 
+  const [comboOpen, setComboOpen] = useState(false);
+  const [hidSupported, setHidSupported] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [reqName, setReqName] = useState("");
+  const [reqBrand, setReqBrand] = useState("");
+  const [reqNote, setReqNote] = useState("");
+  const [reqVendorId, setReqVendorId] = useState<number | null>(null);
+  const [reqProductId, setReqProductId] = useState<number | null>(null);
+  const [requesting, setRequesting] = useState(false);
+
+  useEffect(() => {
+    setHidSupported(
+      typeof navigator !== "undefined" && "hid" in navigator
+    );
+  }, []);
+
   const selectedDevice = useMemo(
     () => keyboards.find((k) => String(k.id) === keyboardId) ?? null,
     [keyboards, keyboardId]
@@ -143,6 +195,80 @@ export default function SettingsClient({
     setKeyboardId(value);
     setTapKeys([]);
     setKeyInput("");
+    setComboOpen(false);
+  };
+
+  const openRequestDialog = (vendorId?: number, productId?: number) => {
+    setReqName("");
+    setReqBrand("");
+    setReqNote("");
+    setReqVendorId(vendorId ?? null);
+    setReqProductId(productId ?? null);
+    setRequestOpen(true);
+  };
+
+  const detectDevice = async () => {
+    if (detecting) return;
+    setDetecting(true);
+    try {
+      const hid = (navigator as any).hid;
+      const devices = await hid.requestDevice({
+        filters: [{ usagePage: 0xff60 }, { vendorId: 0x31e3 }],
+      });
+      const device = devices?.[0];
+      if (!device) {
+        toast("No device selected.");
+        return;
+      }
+      const vendorId: number = device.vendorId;
+      const productId: number = device.productId;
+      const match = keyboards.find(
+        (k) =>
+          (k as any).vendor_id != null &&
+          (k as any).product_id != null &&
+          Number((k as any).vendor_id) === vendorId &&
+          Number((k as any).product_id) === productId
+      );
+      if (match) {
+        onSelectKeyboard(String(match.id));
+        toast.success(`Detected: ${match.name}`);
+      } else {
+        toast("Device not in catalog yet - request it below.");
+        openRequestDialog(vendorId, productId);
+      }
+    } catch {
+      toast("Detection cancelled or unavailable.");
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  const submitRequest = async () => {
+    if (requesting) return;
+    if (!reqName.trim()) {
+      toast.error("Name is required.");
+      return;
+    }
+    setRequesting(true);
+    try {
+      const result = await requestKeyboard({
+        name: reqName.trim(),
+        brand: reqBrand.trim() || undefined,
+        vendor_id: reqVendorId,
+        product_id: reqProductId,
+        note: reqNote.trim() || undefined,
+      });
+      if (result.status === "done") {
+        toast.success("Keyboard requested. Thanks!");
+        setRequestOpen(false);
+      } else {
+        toast.error("Failed to send request.");
+      }
+    } catch {
+      toast.error("Failed to send request.");
+    } finally {
+      setRequesting(false);
+    }
   };
 
   const saveKeyboardSettings = async () => {
@@ -473,33 +599,82 @@ export default function SettingsClient({
           </h2>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Select value={keyboardId} onValueChange={onSelectKeyboard}>
-              <SelectTrigger className="w-full sm:w-80">
-                <SelectValue placeholder="Select your keyboard or keypad" />
-              </SelectTrigger>
-              <SelectContent>
-                {keypads.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Keypads</SelectLabel>
-                    {keypads.map((k) => (
-                      <SelectItem key={String(k.id)} value={String(k.id)}>
-                        {deviceLabel(k)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-                {fullKeyboards.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Keyboards</SelectLabel>
-                    {fullKeyboards.map((k) => (
-                      <SelectItem key={String(k.id)} value={String(k.id)}>
-                        {deviceLabel(k)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-              </SelectContent>
-            </Select>
+            <Popover open={comboOpen} onOpenChange={setComboOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboOpen}
+                  className="w-full justify-between font-normal sm:w-80"
+                >
+                  <span
+                    className={cn(
+                      "truncate",
+                      !selectedDevice && "text-muted-foreground"
+                    )}
+                  >
+                    {selectedDevice
+                      ? deviceLabel(selectedDevice)
+                      : "Select a keyboard"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-[--radix-popover-trigger-width] min-w-[16rem] p-0"
+              >
+                <Command>
+                  <CommandInput placeholder="Search keyboards..." />
+                  <CommandList className="max-h-72 overflow-y-auto">
+                    <CommandEmpty>No device found.</CommandEmpty>
+                    {keypads.length > 0 && (
+                      <CommandGroup heading="Keypads">
+                        {keypads.map((k) => (
+                          <CommandItem
+                            key={String(k.id)}
+                            value={`${deviceLabel(k)} ${k.id}`}
+                            onSelect={() => onSelectKeyboard(String(k.id))}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 size-4",
+                                keyboardId === String(k.id)
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {deviceLabel(k)}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                    {fullKeyboards.length > 0 && (
+                      <CommandGroup heading="Keyboards">
+                        {fullKeyboards.map((k) => (
+                          <CommandItem
+                            key={String(k.id)}
+                            value={`${deviceLabel(k)} ${k.id}`}
+                            onSelect={() => onSelectKeyboard(String(k.id))}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 size-4",
+                                keyboardId === String(k.id)
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {deviceLabel(k)}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             {keyboardId && (
               <Button
                 type="button"
@@ -511,6 +686,28 @@ export default function SettingsClient({
                 <X />
               </Button>
             )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {hidSupported && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={detectDevice}
+                disabled={detecting}
+              >
+                {detecting ? <LoadingIcon /> : <ScanLine />}
+                Detect device
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => openRequestDialog()}
+            >
+              <Send />
+              Request a keyboard
+            </Button>
           </div>
 
           {selectedDevice && (
@@ -589,6 +786,78 @@ export default function SettingsClient({
             your profile.
           </p>
         </section>
+
+        <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request a keyboard</DialogTitle>
+              <DialogDescription>
+                Can&apos;t find your device? Tell us about it and we&apos;ll add
+                it to the catalog.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="req-name">Name</Label>
+                <Input
+                  id="req-name"
+                  value={reqName}
+                  onChange={(e) => setReqName(e.target.value)}
+                  placeholder="e.g. Wooting 60HE"
+                  maxLength={100}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="req-brand">Brand</Label>
+                <Input
+                  id="req-brand"
+                  value={reqBrand}
+                  onChange={(e) => setReqBrand(e.target.value)}
+                  placeholder="e.g. Wooting"
+                  maxLength={60}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="req-note">Note</Label>
+                <Textarea
+                  id="req-note"
+                  value={reqNote}
+                  onChange={(e) => setReqNote(e.target.value)}
+                  placeholder="Anything that helps us find it (optional)"
+                  rows={3}
+                  maxLength={500}
+                  className="resize-y"
+                />
+              </div>
+              {(reqVendorId != null || reqProductId != null) && (
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  Detected ids will be included
+                  {reqVendorId != null && ` - VID ${reqVendorId}`}
+                  {reqProductId != null && ` - PID ${reqProductId}`}
+                </p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRequestOpen(false)}
+                disabled={requesting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={submitRequest}
+                disabled={requesting}
+              >
+                {requesting ? <LoadingIcon /> : "Send request"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Skin View */}
         <section

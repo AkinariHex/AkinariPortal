@@ -118,6 +118,39 @@ export async function saveSocials(input: unknown) {
   return { message: "done" as const };
 }
 
+// Any logged-in user can request a device that's not in the catalog.
+export async function requestKeyboard(input: unknown) {
+  const session: any = await auth();
+  if (!session?.id) return { status: "unauthorized" as const };
+
+  const parsed = z
+    .object({
+      name: z.string().trim().min(1).max(100),
+      brand: z.string().trim().max(60).optional(),
+      vendor_id: z.number().int().nullable().optional(),
+      product_id: z.number().int().nullable().optional(),
+      note: z.string().trim().max(500).optional(),
+    })
+    .safeParse(input);
+  if (!parsed.success) return { status: "error" as const };
+
+  const { error } = await supabase.from("keyboard_requests").insert({
+    user_id: String(session.id),
+    name: parsed.data.name,
+    brand: parsed.data.brand ?? null,
+    vendor_id: parsed.data.vendor_id ?? null,
+    product_id: parsed.data.product_id ?? null,
+    note: parsed.data.note ?? null,
+  });
+  if (error) {
+    console.error(error);
+    return { status: "error" as const };
+  }
+
+  updateTag("keyboard-requests");
+  return { status: "done" as const };
+}
+
 export async function saveKeyboard(input: unknown) {
   const session: any = await auth();
   if (!session?.id) return { message: "error" as const };

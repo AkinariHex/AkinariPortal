@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/authz";
-import { getAllBadges, getAllKeyboards } from "@/lib/data";
+import {
+  getAllBadges,
+  getAllKeyboards,
+  getKeyboardRequests,
+} from "@/lib/data";
 import { getBadgeHolders } from "./data";
 import AdminClient from "./AdminClient";
 
@@ -12,10 +16,11 @@ export default async function AdminPage() {
   const session = await getAdminSession();
   if (!session) redirect("/");
 
-  const [badges, holders, keyboards] = await Promise.all([
+  const [badges, holders, keyboards, keyboardRequests] = await Promise.all([
     getAllBadges(),
     getBadgeHolders(),
     getAllKeyboards(),
+    getKeyboardRequests(),
   ]);
 
   return (
@@ -23,6 +28,7 @@ export default async function AdminPage() {
       badges={badges ?? []}
       holders={holders}
       keyboards={keyboards ?? []}
+      keyboardRequests={keyboardRequests ?? []}
     />
   );
 }

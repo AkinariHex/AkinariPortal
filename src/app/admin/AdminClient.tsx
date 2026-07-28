@@ -14,6 +14,8 @@ import {
   createKeyboard,
   updateKeyboard,
   deleteKeyboard,
+  resolveKeyboardRequest,
+  deleteKeyboardRequest,
 } from "./actions";
 import type { BadgeHoldersMap } from "./data";
 import KeyboardView, {
@@ -68,10 +70,12 @@ export default function AdminClient({
   badges,
   holders,
   keyboards = [],
+  keyboardRequests = [],
 }: {
   badges: Badge[];
   holders: BadgeHoldersMap;
   keyboards?: KeyboardDevice[];
+  keyboardRequests?: any[];
 }) {
   const router = useRouter();
 
@@ -86,6 +90,10 @@ export default function AdminClient({
       <GrantModify badges={badges} />
       <BatchGrant badges={badges} onChanged={() => router.refresh()} />
       <Keyboards keyboards={keyboards} onChanged={() => router.refresh()} />
+      <KeyboardRequests
+        requests={keyboardRequests}
+        onChanged={() => router.refresh()}
+      />
     </div>
   );
 }
@@ -605,6 +613,13 @@ function GrantModify({ badges }: { badges: Badge[] }) {
 const keyboardTypeClass = "border-transparent bg-accent-blue/20 text-accent-blue";
 const keypadTypeClass = "border-transparent bg-amber-400/20 text-amber-400";
 
+function parseUsbId(raw: string): number | null {
+  const text = raw.trim();
+  if (!text) return null;
+  const n = Number.parseInt(text, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 function parseLayout(raw: string): { ok: true; value: unknown } | { ok: false } {
   const text = raw.trim();
   if (!text) return { ok: true, value: null };
@@ -630,6 +645,8 @@ function KeyboardRow({
     type: string;
     layout: unknown;
     model_url: string;
+    vendor_id: number | null;
+    product_id: number | null;
   }) => void;
   onDelete: (id: string) => void;
 }) {
@@ -641,6 +658,12 @@ function KeyboardRow({
     device.layout ? JSON.stringify(device.layout, null, 2) : ""
   );
   const [modelUrl, setModelUrl] = useState(device.model_url ?? "");
+  const [vendorId, setVendorId] = useState(
+    (device as any).vendor_id != null ? String((device as any).vendor_id) : ""
+  );
+  const [productId, setProductId] = useState(
+    (device as any).product_id != null ? String((device as any).product_id) : ""
+  );
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -659,6 +682,8 @@ function KeyboardRow({
       type,
       layout: parsed.value,
       model_url: modelUrl.trim(),
+      vendor_id: parseUsbId(vendorId),
+      product_id: parseUsbId(productId),
     });
     setEditing(false);
   };
@@ -725,6 +750,24 @@ function KeyboardRow({
             value={modelUrl}
             onChange={(e) => setModelUrl(e.target.value)}
           />
+          <div className="flex flex-row flex-wrap items-center gap-2.5">
+            <Input
+              className="flex-1 basis-40 bg-site-primary"
+              type="number"
+              inputMode="numeric"
+              placeholder="vendor_id (decimal, optional)"
+              value={vendorId}
+              onChange={(e) => setVendorId(e.target.value)}
+            />
+            <Input
+              className="flex-1 basis-40 bg-site-primary"
+              type="number"
+              inputMode="numeric"
+              placeholder="product_id (decimal, optional)"
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+            />
+          </div>
           <Textarea
             className="resize-y bg-site-primary font-mono text-xs"
             placeholder='layout JSON, e.g. {"rows":[[{"label":"Z"},{"label":"X"}]]}'
@@ -757,6 +800,8 @@ function Keyboards({
   const [type, setType] = useState("keyboard");
   const [layout, setLayout] = useState("");
   const [modelUrl, setModelUrl] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const [productId, setProductId] = useState("");
 
   const previewLayout = useMemo(() => {
     const parsed = parseLayout(layout);
@@ -782,6 +827,8 @@ function Keyboards({
         type,
         layout: parsed.value,
         model_url: modelUrl.trim(),
+        vendor_id: parseUsbId(vendorId),
+        product_id: parseUsbId(productId),
       });
       if (res.status === "done") {
         toast.success(`Keyboard "${name.trim()}" created.`);
@@ -791,6 +838,8 @@ function Keyboards({
         setType("keyboard");
         setLayout("");
         setModelUrl("");
+        setVendorId("");
+        setProductId("");
         onChanged();
       } else {
         toast.error(`Create failed (${res.status}).`);
@@ -805,6 +854,8 @@ function Keyboards({
     type: string;
     layout: unknown;
     model_url: string;
+    vendor_id: number | null;
+    product_id: number | null;
   }) => {
     startTransition(async () => {
       const res = await updateKeyboard(input);
@@ -867,6 +918,24 @@ function Keyboards({
           value={modelUrl}
           onChange={(e) => setModelUrl(e.target.value)}
         />
+        <div className="flex flex-row flex-wrap items-center gap-2.5">
+          <Input
+            className="flex-1 basis-40 bg-site-primary"
+            type="number"
+            inputMode="numeric"
+            placeholder="vendor_id (decimal, optional)"
+            value={vendorId}
+            onChange={(e) => setVendorId(e.target.value)}
+          />
+          <Input
+            className="flex-1 basis-40 bg-site-primary"
+            type="number"
+            inputMode="numeric"
+            placeholder="product_id (decimal, optional)"
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+          />
+        </div>
         <Textarea
           className="resize-y bg-site-primary font-mono text-xs"
           placeholder='layout JSON (optional), e.g. {"rows":[[{"label":"Z"},{"label":"X"}]]}'
@@ -899,6 +968,104 @@ function Keyboards({
         {keyboards.length === 0 && (
           <li className="px-0.5 py-2 text-sm text-muted-foreground">
             No keyboards yet.
+          </li>
+        )}
+      </ul>
+    </Section>
+  );
+}
+
+const requestDoneClass = "border-transparent bg-accent-blue/20 text-accent-blue";
+const requestPendingClass =
+  "border-transparent bg-amber-400/20 text-amber-400";
+
+function KeyboardRequests({
+  requests,
+  onChanged,
+}: {
+  requests: any[];
+  onChanged: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+
+  const handleResolve = (id: number | string) => {
+    startTransition(async () => {
+      const res = await resolveKeyboardRequest(id);
+      if (res.status === "done") {
+        toast.success(`Request #${id} marked done.`);
+        onChanged();
+      } else {
+        toast.error(`Action failed (${res.status}).`);
+      }
+    });
+  };
+
+  const handleDelete = (id: number | string) => {
+    startTransition(async () => {
+      const res = await deleteKeyboardRequest(id);
+      if (res.status === "done") {
+        toast.success(`Request #${id} deleted.`);
+        onChanged();
+      } else {
+        toast.error(`Delete failed (${res.status}).`);
+      }
+    });
+  };
+
+  return (
+    <Section title="Keyboard requests">
+      <ul className="flex list-none flex-col gap-2 p-0">
+        {requests.map((r) => {
+          const isDone = r.status === "done";
+          return (
+            <li
+              key={String(r.id)}
+              className="flex flex-col gap-3 rounded-lg bg-site-secondary px-3 py-2.5"
+            >
+              <div className="flex flex-row flex-wrap items-start gap-3">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="truncate text-base font-medium">
+                    {r.brand ? `${r.brand} - ${r.name}` : r.name}
+                  </span>
+                  <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
+                    <span>#{r.id}</span>
+                    {r.vendor_id != null && <span>VID {r.vendor_id}</span>}
+                    {r.product_id != null && <span>PID {r.product_id}</span>}
+                    {r.user_id != null && <span>user {r.user_id}</span>}
+                  </div>
+                  {r.note && (
+                    <p className="text-sm text-muted-foreground">{r.note}</p>
+                  )}
+                </div>
+                <Badge
+                  variant="secondary"
+                  className={isDone ? requestDoneClass : requestPendingClass}
+                >
+                  {isDone ? "done" : r.status || "pending"}
+                </Badge>
+                <div className="flex shrink-0 flex-row items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleResolve(r.id)}
+                    disabled={pending || isDone}
+                  >
+                    Mark done
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleDelete(r.id)}
+                    disabled={pending}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+        {requests.length === 0 && (
+          <li className="px-0.5 py-2 text-sm text-muted-foreground">
+            No keyboard requests.
           </li>
         )}
       </ul>
