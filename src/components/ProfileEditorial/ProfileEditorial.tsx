@@ -189,7 +189,7 @@ export default function ProfileEditorial({
                     <article
                       key={skin.id}
                       id={skin.id}
-                      className="group relative flex h-[16rem] flex-col justify-end overflow-hidden rounded-xl target:[outline:2px_solid_#6ba2ed]"
+                      className="group relative flex h-[16rem] scroll-mt-[calc(4.2em+4rem)] flex-col justify-end overflow-hidden rounded-xl target:[outline:2px_solid_#6ba2ed]"
                     >
                       <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-300 ease-out group-hover:scale-[1.03]"

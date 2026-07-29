@@ -16,24 +16,26 @@ type Props = {
   className?: string;
 };
 
+// Hover uses the muted `-text` tints, not the raw brand colors: at icon size
+// the saturated originals glare against the dark profile surfaces.
 const LINKS = [
   {
     key: "twitch",
     icon: <TwitchIcon />,
     href: (v: string) => `https://twitch.tv/${v}`,
-    hover: "hover:text-social-twitch",
+    hover: "hover:text-social-twitch-text",
   },
   {
     key: "twitter",
     icon: <TwitterIcon />,
     href: (v: string) => `https://twitter.com/${v}`,
-    hover: "hover:text-social-twitter",
+    hover: "hover:text-social-twitter-text",
   },
   {
     key: "youtube",
     icon: <YoutubeIcon />,
     href: (v: string) => `https://youtube.com/${v}`,
-    hover: "hover:text-social-youtube",
+    hover: "hover:text-social-youtube-text",
   },
   {
     key: "github",
@@ -75,7 +77,7 @@ export default function ProfileSocials({ user, className }: Props) {
           <button
             type="button"
             aria-label="discord"
-            className="cursor-pointer transition-colors hover:text-social-discord active:scale-95"
+            className="cursor-pointer transition-colors hover:text-social-discord-text active:scale-95"
           >
             <DiscordIcon />
           </button>

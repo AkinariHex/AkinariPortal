@@ -16,6 +16,7 @@ import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
 import PlaystyleSection from "@/components/PlaystyleSection/PlaystyleSection";
 import ProfileBadges from "@/components/ProfileBadges/ProfileBadges";
 import ProfileSocials from "@/components/ProfileSocials/ProfileSocials";
+import ProgressiveBlur from "@/components/ProgressiveBlur/ProgressiveBlur";
 import SkinActions from "@/components/SkinActions/SkinActions";
 import SkinModes from "@/components/SkinModes/SkinModes";
 import SkinTags from "@/components/SkinTags/SkinTags";
@@ -31,6 +32,9 @@ import { cn } from "@/lib/utils";
 // page. On phones the rail becomes the header block and everything stacks.
 
 const nf = new Intl.NumberFormat("en-US");
+
+// Shared skin links (#<skinId>) must clear the sticky navbar when jumped to.
+const ANCHOR_OFFSET = "scroll-mt-[calc(4.2em+1rem)]";
 
 const deviceLabel = (device: any) =>
   [device?.brand, device?.name].filter(Boolean).join(" ");
@@ -77,6 +81,7 @@ export default function ProfileRail({
   const hasTablet =
     userData.tablet && userData.tabletSettingsFile && userData.tabletFileUploadInfo;
   const hasKeyboard = Boolean(userData.keyboard);
+  const isKeypad = userData.keyboardDevice?.type === "keypad";
 
   const skins = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -144,6 +149,12 @@ export default function ProfileRail({
                 </span>
               </div>
 
+              <ProfileBadges
+                badges={userData.badges}
+                size={32}
+                className="mt-1 justify-center"
+              />
+
               <ProfileSocials user={userData} className="mt-1 justify-center" />
 
               <div className="mt-2 grid w-full grid-cols-2 gap-2">
@@ -160,12 +171,6 @@ export default function ProfileRail({
                   <span className="text-[0.7rem] text-[#8fa2b8]">downloads</span>
                 </div>
               </div>
-
-              <ProfileBadges
-                badges={userData.badges}
-                size={32}
-                className="mt-1 justify-center"
-              />
             </div>
           </div>
 
@@ -181,15 +186,8 @@ export default function ProfileRail({
               {hasKeyboard && (
                 <RailFact
                   icon={<KeyboardIcon className="size-4" />}
-                  label="Keyboard"
-                  value={
-                    [
-                      deviceLabel(userData.keyboardDevice) || "Keyboard",
-                      (userData.keyboard_keys ?? []).join(" / "),
-                    ]
-                      .filter(Boolean)
-                      .join(" - ")
-                  }
+                  label={isKeypad ? "Keypad" : "Keyboard"}
+                  value={deviceLabel(userData.keyboardDevice) || "-"}
                 />
               )}
               {hasTablet && sessionId && (
@@ -236,11 +234,25 @@ export default function ProfileRail({
                   </div>
                 )}
                 {hasKeyboard && (
-                  <div className="flex min-h-[13rem] items-center justify-center overflow-x-auto rounded-md bg-site-primary p-4">
-                    <KeyboardView
-                      device={userData.keyboardDevice}
-                      tapKeys={userData.keyboard_keys ?? []}
-                    />
+                  <div className="flex min-h-[13rem] flex-col gap-3 rounded-md bg-site-primary p-4">
+                    <div className="flex flex-row flex-wrap items-center gap-2">
+                      <KeyboardIcon className="size-[1.05rem] shrink-0 text-accent-blue" />
+                      <span className="text-[1rem] font-medium text-[#cee0f6]">
+                        {deviceLabel(userData.keyboardDevice) ||
+                          (isKeypad ? "Keypad" : "Keyboard")}
+                      </span>
+                      {(userData.keyboard_keys ?? []).length > 0 && (
+                        <span className="ml-auto rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[0.78rem] text-[#9fb2c9]">
+                          {userData.keyboard_keys.join(" / ")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-1 items-center justify-center overflow-x-auto">
+                      <KeyboardView
+                        device={userData.keyboardDevice}
+                        tapKeys={userData.keyboard_keys ?? []}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -316,7 +328,11 @@ export default function ProfileRail({
                   <div
                     key={skin.id}
                     id={skin.id}
-                    className="flex min-h-[60px] w-full flex-row overflow-hidden rounded-md bg-site-primary target:[outline:2px_solid_#6ba2ed]"
+                    className={cn(
+                      "flex min-h-[60px] w-full flex-row overflow-hidden rounded-md bg-site-primary",
+                      ANCHOR_OFFSET,
+                      "target:[outline:2px_solid_#6ba2ed]"
+                    )}
                   >
                     <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-2">
                       <div className="flex flex-row flex-wrap items-baseline gap-x-1.5">
@@ -351,43 +367,55 @@ export default function ProfileRail({
                   <div
                     key={skin.id}
                     id={skin.id}
-                    className="flex flex-col overflow-hidden rounded-md bg-site-primary target:[outline:2px_solid_#6ba2ed]"
+                    className={cn(
+                      "relative flex h-full min-h-[15rem] flex-col overflow-hidden rounded-md bg-site-primary bg-cover bg-center",
+                      ANCHOR_OFFSET,
+                      "target:[outline:2px_solid_#6ba2ed]"
+                    )}
+                    style={{ backgroundImage: `url('${skin.Banner}')` }}
                   >
                     <div
-                      className="relative h-[7.5rem] w-full bg-cover bg-center"
-                      style={{ backgroundImage: `url('${skin.Banner}')` }}
-                    >
+                      aria-hidden
+                      className="absolute inset-0 bg-black/25"
+                    />
+
+                    <SkinTags
+                      tags={skin.Tags}
+                      grid
+                      className="relative z-[1] w-full p-[3px]"
+                    />
+
+                    {/* Bottom-anchored, so titles of different heights still
+                        leave the stats and the action row on the same line
+                        across the whole grid. */}
+                    <div className="relative z-[1] mt-auto">
+                      <ProgressiveBlur className="rounded-b-md" />
                       <div
                         aria-hidden
-                        className="absolute inset-0 bg-gradient-to-t from-site-primary via-black/30 to-transparent"
+                        className="absolute inset-0 bg-site-primary/70"
                       />
-                      <SkinTags
-                        tags={skin.Tags}
-                        grid
-                        className="relative z-[1] w-full p-[3px]"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5 px-3 pb-3">
-                      <div className="flex flex-col">
-                        <span className="text-[0.95rem] font-medium leading-tight text-accent-blue">
-                          {skin.Name}
-                        </span>
-                        <span className="text-[0.78rem] text-[#9fb2c9]">
-                          by {skin.Creator}
-                        </span>
-                      </div>
-                      <div className="flex flex-row items-center justify-between">
-                        <SkinModes modes={skin.Modes} />
-                        <div className="flex select-none flex-row items-center gap-1 text-[0.8rem] tabular-nums text-[#9fb2c9]">
-                          {nf.format(Number(skin.Downloads ?? 0))}
-                          <Download className="size-[16px]" />
+                      <div className="relative flex flex-col gap-1.5 px-3 pb-3 pt-2.5">
+                        <div className="flex flex-col">
+                          <span className="text-[0.95rem] font-medium leading-tight text-accent-blue">
+                            {skin.Name}
+                          </span>
+                          <span className="text-[0.78rem] text-[#cee0f6]">
+                            by {skin.Creator}
+                          </span>
                         </div>
+                        <div className="flex flex-row items-center justify-between">
+                          <SkinModes modes={skin.Modes} />
+                          <div className="flex select-none flex-row items-center gap-1 text-[0.8rem] tabular-nums text-[#cee0f6]">
+                            {nf.format(Number(skin.Downloads ?? 0))}
+                            <Download className="size-[16px]" />
+                          </div>
+                        </div>
+                        <SkinActions
+                          {...actionProps}
+                          skin={skin}
+                          shareUrl={shareUrl(skin.id)}
+                        />
                       </div>
-                      <SkinActions
-                        {...actionProps}
-                        skin={skin}
-                        shareUrl={shareUrl(skin.id)}
-                      />
                     </div>
                   </div>
                 ))}
