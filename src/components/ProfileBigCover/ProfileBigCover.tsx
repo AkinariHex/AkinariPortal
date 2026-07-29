@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import KeyboardView from "@/components/KeyboardView/KeyboardView";
 import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
+import OsuSettingsCard from "@/components/OsuSettingsCard/OsuSettingsCard";
 import {
   useNavbarOverlay,
   useNavbarSurface,
@@ -15,6 +16,7 @@ import ProfileSocials from "@/components/ProfileSocials/ProfileSocials";
 import SkinActions from "@/components/SkinActions/SkinActions";
 import SkinModes from "@/components/SkinModes/SkinModes";
 import SkinTags from "@/components/SkinTags/SkinTags";
+import { hasAnySetting, type OsuSettings } from "@/lib/osuConfig";
 import type { ProfileLayoutProps } from "@/lib/profileLayout";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +50,9 @@ export default function ProfileBigCover({
   const hasTablet =
     userData.tablet && userData.tabletSettingsFile && userData.tabletFileUploadInfo;
   const hasKeyboard = Boolean(userData.keyboard);
-  const hasSetup = hasTablet || hasKeyboard;
+  const osuSettings = (userData.osu_settings ?? null) as OsuSettings | null;
+  const hasOsuSettings = hasAnySetting(osuSettings);
+  const hasSetup = hasTablet || hasKeyboard || hasOsuSettings;
 
   const tabs = hasSetup ? (["Skins", "Setup"] as const) : (["Skins"] as const);
   const [tab, setTab] = useState<"Skins" | "Setup">("Skins");
@@ -255,6 +259,7 @@ export default function ProfileBigCover({
                 </div>
               )
             ) : (
+              <div className="flex flex-col gap-4">
               <div
                 className={cn(
                   "grid grid-cols-1 gap-4",
@@ -315,6 +320,27 @@ export default function ProfileBigCover({
                     </div>
                   </section>
                 )}
+              </div>
+
+              {hasOsuSettings && osuSettings && (
+                <section className="flex flex-col gap-3 rounded-xl bg-site-secondary p-5">
+                  <div className="flex flex-row flex-wrap items-center gap-2.5">
+                    <h2 className="text-[1.3rem] font-medium tracking-tight text-[#cee0f6]">
+                      osu! settings
+                    </h2>
+                    {osuSettings.source && (
+                      <span className="ml-auto rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[0.8rem] text-[#cee0f6]">
+                        {osuSettings.source === "manual"
+                          ? "manual"
+                          : `osu! ${osuSettings.source}`}
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-lg bg-site-primary px-4 py-3">
+                    <OsuSettingsCard settings={osuSettings} />
+                  </div>
+                </section>
+              )}
               </div>
             )}
           </motion.div>

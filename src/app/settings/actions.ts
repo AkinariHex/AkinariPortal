@@ -236,6 +236,127 @@ export async function saveKeyboard(input: unknown) {
   return { message: "done" as const };
 }
 
+// Mirror of the shape in src/lib/osuConfig.ts. Every object is `.strict()` on
+// purpose: the browser parser already drops everything outside its allowlist,
+// but that runs on the client, so it is not a guarantee. An unexpected key here
+// fails the whole parse instead of reaching the database - which is what keeps
+// `Username` / `Password` / `BeatmapDirectory` out even if the client is lying.
+const osuSettingsSchema = z
+  .object({
+    source: z.enum(["stable", "lazer", "manual"]),
+    display: z
+      .object({
+        resolution: z
+          .object({
+            width: z.number().int().min(320).max(15360),
+            height: z.number().int().min(240).max(8640),
+          })
+          .strict()
+          .optional(),
+        windowMode: z.enum(["fullscreen", "borderless", "windowed"]).optional(),
+        letterboxing: z.boolean().optional(),
+        letterboxOffset: z
+          .object({
+            x: z.number().int().min(-100).max(100),
+            y: z.number().int().min(-100).max(100),
+          })
+          .strict()
+          .optional(),
+        frameLimiter: z
+          .enum(["vsync", "120fps", "240fps", "unlimited", "custom", "2x", "4x", "8x"])
+          .optional(),
+        customFrameLimit: z.number().int().min(30).max(10000).optional(),
+        refreshRate: z.number().int().min(24).max(1000).optional(),
+        renderer: z
+          .enum(["automatic", "opengl", "direct3d11", "vulkan", "metal"])
+          .optional(),
+        compatibilityMode: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    audio: z
+      .object({
+        master: z.number().int().min(0).max(100).optional(),
+        music: z.number().int().min(0).max(100).optional(),
+        effects: z.number().int().min(0).max(100).optional(),
+        offsetMs: z.number().int().min(-500).max(500).optional(),
+        ignoreBeatmapHitsounds: z.boolean().optional(),
+        useSkinSamples: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    cursor: z
+      .object({
+        size: z.number().min(0.1).max(2).optional(),
+        automaticSizing: z.boolean().optional(),
+        rawInput: z.boolean().optional(),
+        sensitivity: z.number().min(0.1).max(6).optional(),
+        mapAbsoluteToWindow: z.boolean().optional(),
+        disableButtons: z.boolean().optional(),
+        disableWheel: z.boolean().optional(),
+        confine: z
+          .enum(["never", "during-gameplay", "fullscreen", "always"])
+          .optional(),
+        useSkinCursor: z.boolean().optional(),
+        ripples: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    gameplay: z
+      .object({
+        backgroundDim: z.number().int().min(0).max(100).optional(),
+        backgroundVideo: z.boolean().optional(),
+        storyboard: z.boolean().optional(),
+        snakingSliders: z.boolean().optional(),
+        hitLighting: z.boolean().optional(),
+        comboBursts: z.boolean().optional(),
+        maniaScrollSpeed: z.number().int().min(1).max(40).optional(),
+        maniaScaleWithBpm: z.boolean().optional(),
+        maniaSpeedPerBeatmap: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+// Keys that must never be persisted, whatever the schema says. Independent of
+// zod on purpose: if someone later loosens the schema, this still refuses. It
+// is a tripwire, not the mechanism - the strict schema below is.
+const CREDENTIAL_KEYS =
+  /"(Username|Password|SavePassword|CredentialEndpoint|BeatmapDirectory|AudioDevice)"\s*:/i;
+
+export async function saveOsuSettings(input: unknown) {
+  const session: any = await auth();
+  if (!session?.id) return { message: "error" as const };
+
+  // null clears the field.
+  let value: unknown = null;
+  if (input !== null) {
+    if (CREDENTIAL_KEYS.test(JSON.stringify(input) ?? "")) {
+      console.error("osu_settings payload carried a credential key; refused.");
+      return { message: "error" as const };
+    }
+
+    const parsed = osuSettingsSchema.safeParse(input);
+    if (!parsed.success) return { message: "error" as const };
+    // updatedAt is stamped here, not taken from the client.
+    value = { ...parsed.data, updatedAt: new Date().toISOString() };
+  }
+
+  const { error } = await supabase
+    .from("users")
+    .update({ osu_settings: value })
+    .eq("id", session.id);
+
+  if (error) {
+    console.error(error);
+    return { message: "error" as const };
+  }
+
+  updateTag(`user:${session.id}`);
+  return { message: "done" as const };
+}
+
 export async function saveTablet(input: unknown) {
   const session: any = await auth();
   if (!session?.id) return { message: "error" as const };

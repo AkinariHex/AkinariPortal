@@ -56,14 +56,23 @@ export function getUserProfile(id: string) {
     async () => {
       const columns = `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo,keyboard,keyboard_keys`;
 
-      // profile_layout is a later migration (docs/profile-layout.sql); if it
-      // hasn't been run the query errors, so fall back to the older column set
-      // and let the profile render with the default layout.
+      // profile_layout and osu_settings are later migrations
+      // (docs/profile-layout.sql, docs/osu-settings.sql); if they haven't been
+      // run the query errors, so fall back to the older column set and let the
+      // profile render with the default layout and no osu! settings.
       let statusData = await supabase
         .from("users")
-        .select(`${columns},profile_layout`)
+        .select(`${columns},profile_layout,osu_settings`)
         .eq("id", id)
         .single();
+
+      if (statusData.error) {
+        statusData = await supabase
+          .from("users")
+          .select(`${columns},profile_layout`)
+          .eq("id", id)
+          .single();
+      }
 
       if (statusData.error) {
         statusData = await supabase

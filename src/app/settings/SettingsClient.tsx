@@ -14,6 +14,7 @@ import {
   ScanLine,
   Send,
   Keyboard as KeyboardIcon,
+  ShieldCheck,
   Square,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -62,7 +63,21 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import OsuSettingsForm from "@/components/OsuSettingsForm/OsuSettingsForm";
 import ProfileLayoutPicker from "@/components/ProfileLayoutPicker/ProfileLayoutPicker";
+import {
+  compactSettings,
+  detectConfigKind,
+  hasAnySetting,
+  mergeSettings,
+  parseLazerFramework,
+  parseLazerGame,
+  parseStableConfig,
+  NEVER_READ_FIELDS,
+  PUBLISHED_FIELDS,
+  type ConfigKind,
+  type OsuSettings,
+} from "@/lib/osuConfig";
 import {
   layoutSupportsSkinView,
   normalizeProfileLayout,
@@ -71,6 +86,7 @@ import {
 import {
   generateApiKey,
   destroyApiKey,
+  saveOsuSettings as saveOsuSettingsAction,
   saveProfileLayout as saveProfileLayoutAction,
   saveSkinView as saveSkinViewAction,
   saveSocials,
@@ -146,6 +162,17 @@ export default function SettingsClient({
   );
   const [keyInput, setKeyInput] = useState("");
   const [savingKeyboard, setSavingKeyboard] = useState(false);
+
+  const [osuDraft, setOsuDraft] = useState<OsuSettings>(
+    (data.osu_settings as OsuSettings) ?? { source: "manual" }
+  );
+  const [osuSaved, setOsuSaved] = useState<OsuSettings | null>(
+    (data.osu_settings as OsuSettings) ?? null
+  );
+  const [savingOsu, setSavingOsu] = useState(false);
+  const [osuImportError, setOsuImportError] = useState(false);
+  const [pendingTapKeys, setPendingTapKeys] = useState<string[] | null>(null);
+  const [sentFieldsOpen, setSentFieldsOpen] = useState(false);
   const [capturingKeys, setCapturingKeys] = useState(false);
 
   const [comboOpen, setComboOpen] = useState(false);
@@ -288,7 +315,7 @@ export default function SettingsClient({
         onSelectKeyboard(String(match.id));
         toast.success(`Detected: ${match.name}`);
       } else {
-        toast("Device not in catalog yet - request it below.");
+        toast("Device not in catalog yet. Request it below.");
         openRequestDialog(vendorId, productId);
       }
     } catch {
@@ -324,6 +351,140 @@ export default function SettingsClient({
       toast.error("Failed to send request.");
     } finally {
       setRequesting(false);
+    }
+  };
+
+  // The config file is read and reduced to the allowlist here in the browser;
+  // it is never uploaded. Only the object the parser returns can be saved.
+  const importOsuStable = async (file: File) => {
+    try {
+      const { settings, tapKeys: importedKeys } = parseStableConfig(
+        await file.text()
+      );
+      setOsuDraft(settings);
+      setOsuImportError(false);
+      if (importedKeys.length > 0) setPendingTapKeys(importedKeys);
+      toast.success("Settings imported. Review them, then save.");
+    } catch {
+      setOsuImportError(true);
+      toast.error("That doesn't look like an osu! stable config file.");
+    }
+  };
+
+  // lazer splits its settings across framework.ini (window, frame limiter,
+  // volumes) and game.ini (cursor, dim, storyboard, offset), so both can be
+  // picked at once. game.ini is folded over framework.ini, because where the
+  // two overlap game.ini is what the player sees in the options.
+  const importOsuLazer = async (files: File[]) => {
+    try {
+      const parsed: { kind: ConfigKind; settings: OsuSettings }[] = [];
+
+      for (const file of files) {
+        const text = await file.text();
+        const kind = detectConfigKind(file.name, text);
+        if (kind === "lazer-game") {
+          parsed.push({ kind, settings: parseLazerGame(text) });
+        } else if (kind === "lazer-framework") {
+          parsed.push({ kind, settings: parseLazerFramework(text) });
+        }
+      }
+
+      if (parsed.length === 0) throw new Error("nothing recognised");
+
+      const framework = parsed.find((p) => p.kind === "lazer-framework");
+      const game = parsed.find((p) => p.kind === "lazer-game");
+      const merged =
+        framework && game
+          ? mergeSettings(framework.settings, game.settings)
+          : (game ?? framework)!.settings;
+
+      setOsuDraft(merged);
+      setOsuImportError(false);
+      toast.success(
+        game && framework
+          ? "Both lazer files imported. Review them, then save."
+          : game
+            ? "game.ini imported. Add framework.ini for window and volume settings."
+            : "framework.ini imported. Add game.ini for cursor, dim and offset."
+      );
+
+      // Fullscreen in lazer means "the desktop resolution", stored as the
+      // 9999x9999 sentinel, so there is no number to import. Say so instead of
+      // leaving a silently empty field.
+      const fullscreenish =
+        merged.display?.windowMode === "fullscreen" ||
+        merged.display?.windowMode === "borderless";
+      if (fullscreenish && !merged.display?.resolution) {
+        toast("Set your resolution below: lazer does not store it in fullscreen.");
+      }
+    } catch {
+      setOsuImportError(true);
+      toast.error("Those don't look like osu! lazer config files.");
+    }
+  };
+
+  const saveOsuSettings = async () => {
+    if (savingOsu) return;
+    setSavingOsu(true);
+    try {
+      const payload = compactSettings({
+        ...osuDraft,
+        source: osuDraft.source ?? "manual",
+        updatedAt: undefined,
+      });
+      const result = await saveOsuSettingsAction(payload);
+      if (result.message === "done") {
+        // The server stamps updatedAt; mirror it so the status box is right
+        // straight away instead of after a full page load.
+        setOsuSaved({ ...payload, updatedAt: new Date().toISOString() });
+        setOsuImportError(false);
+        toast.success("osu! settings saved.");
+        router.refresh();
+      } else {
+        toast.error("Failed to save osu! settings.");
+      }
+    } catch {
+      toast.error("Failed to save osu! settings.");
+    } finally {
+      setSavingOsu(false);
+    }
+  };
+
+  const clearOsuSettings = async () => {
+    if (savingOsu) return;
+    setSavingOsu(true);
+    try {
+      const result = await saveOsuSettingsAction(null);
+      if (result.message === "done") {
+        setOsuDraft({ source: "manual" });
+        setOsuSaved(null);
+        setOsuImportError(false);
+        toast.success("osu! settings removed.");
+        router.refresh();
+      } else {
+        toast.error("Failed to remove osu! settings.");
+      }
+    } catch {
+      toast.error("Failed to remove osu! settings.");
+    } finally {
+      setSavingOsu(false);
+    }
+  };
+
+  const applyImportedTapKeys = async () => {
+    if (!pendingTapKeys) return;
+    const keys = pendingTapKeys;
+    setPendingTapKeys(null);
+    setTapKeys(keys);
+    const result = await saveKeyboard({
+      keyboard: keyboardId || null,
+      keyboard_keys: keys,
+    });
+    if (result.message === "done") {
+      toast.success("Tap keys updated.");
+      router.refresh();
+    } else {
+      toast.error("Failed to save tap keys.");
     }
   };
 
@@ -1049,6 +1210,272 @@ export default function SettingsClient({
                 </button>
               ))}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* osu! Settings */}
+        <section
+          id="osuSettings"
+          className="flex flex-col gap-4 rounded-xl border border-border bg-site-secondary p-6"
+        >
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            osu! Settings
+            <Badge variant="secondary" className="text-accent-blue">
+              BETA
+            </Badge>
+          </h2>
+
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex flex-1 flex-col rounded-md border px-4 py-3",
+                osuImportError
+                  ? "border-destructive/50 bg-destructive/10"
+                  : "border-border bg-site-primary"
+              )}
+            >
+              <span className="text-sm font-medium text-foreground">
+                {!hasAnySetting(osuSaved)
+                  ? "No settings saved"
+                  : osuSaved?.source === "stable"
+                    ? "Imported from osu! stable"
+                    : osuSaved?.source === "lazer"
+                      ? "Imported from osu! lazer"
+                      : "Set manually"}
+              </span>
+              {osuSaved?.updatedAt && (
+                <span className="text-xs text-muted-foreground">
+                  {moment(osuSaved.updatedAt).format("DD MMM YYYY, kk:mm")}
+                </span>
+              )}
+            </div>
+            {hasAnySetting(osuSaved) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={clearOsuSettings}
+                    disabled={savingOsu}
+                    aria-label="Delete osu! settings"
+                  >
+                    <X />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete osu! Settings</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button asChild type="button" variant="secondary">
+              <label htmlFor="osuStableCfg" className="cursor-pointer">
+                <Upload />
+                Import from osu! stable
+                <input
+                  type="file"
+                  id="osuStableCfg"
+                  name="osuStableCfg"
+                  accept=".cfg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) void importOsuStable(file);
+                  }}
+                />
+              </label>
+            </Button>
+            <Button asChild type="button" variant="secondary">
+              <label htmlFor="osuLazerIni" className="cursor-pointer">
+                <Upload />
+                Import from osu! lazer
+                <input
+                  type="file"
+                  id="osuLazerIni"
+                  name="osuLazerIni"
+                  accept=".ini"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    if (files.length > 0) void importOsuLazer(files);
+                  }}
+                />
+              </label>
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-md border border-accent-blue/30 bg-accent-blue/5 px-4 py-3">
+            <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <ShieldCheck className="size-4 shrink-0 text-accent-blue" />
+              Your osu! login never leaves the file
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Two of these files hold credentials:{" "}
+              <code>osu!.&lt;username&gt;.cfg</code> on stable stores your osu!
+              username and password, and <code>game.ini</code> on lazer stores
+              your username and a live session token. This page reads the files
+              in your browser, keeps only the settings listed below, and sends
+              nothing else. Nothing is uploaded, nothing is saved, the file names
+              are never shown, and those keys are never read at all.
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              Want to be completely sure? Make a copy of the file, delete the
+              lines you would rather not hand over (<code>Username</code>,{" "}
+              <code>Password</code>, <code>Token</code>,{" "}
+              <code>BeatmapDirectory</code>), and import the copy. Only the
+              settings lines are needed, so a stripped file imports just as well.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              By choosing a file you confirm you have checked what is in it, and
+              you take responsibility for having uploaded it and for anything
+              that follows.
+            </p>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSentFieldsOpen(true)}
+              >
+                See exactly what is sent
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+            <p>
+              osu! stable: <code>osu!.&lt;username&gt;.cfg</code>, inside your
+              osu! folder.
+            </p>
+            <p>
+              osu! lazer: <code>framework.ini</code> and <code>game.ini</code>,
+              inside <code>%APPDATA%/osu</code>. Pick both at once. The first
+              holds window, frame limiter and volume settings, the second holds
+              cursor, dim, storyboard and offset.
+            </p>
+          </div>
+
+          <OsuSettingsForm value={osuDraft} onChange={setOsuDraft} />
+
+          <p className="text-sm text-muted-foreground">
+            Controls you never touch stay unset and are not published.
+          </p>
+
+          <div>
+            <Button type="button" onClick={saveOsuSettings} disabled={savingOsu}>
+              {savingOsu ? <LoadingIcon /> : "Save osu! Settings"}
+            </Button>
+          </div>
+        </section>
+
+        <Dialog open={sentFieldsOpen} onOpenChange={setSentFieldsOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>What is sent from your config file</DialogTitle>
+              <DialogDescription>
+                Only these settings. Everything else in the file is dropped
+                while reading it, in your browser, before anything is sent.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col gap-3">
+              {PUBLISHED_FIELDS.map((group) => (
+                <div key={group.group} className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-foreground">
+                    {group.group}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {group.fields}
+                  </span>
+                </div>
+              ))}
+
+              <div className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+                <span className="text-sm font-medium text-foreground">
+                  Never read
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {NEVER_READ_FIELDS.join(", ")}, the file name, and every other
+                  key binding.
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1 rounded-md border border-border bg-site-primary px-3 py-2">
+                <span className="text-sm font-medium text-foreground">
+                  If you want a guarantee that does not depend on us
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Copy the file, delete the <code>Username</code>,{" "}
+                  <code>Password</code>, <code>Token</code> and{" "}
+                  <code>BeatmapDirectory</code> lines from the copy, and import
+                  that instead. The import reads only the settings lines, so
+                  nothing is lost.
+                </span>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Choosing a file is your decision: you confirm you have checked
+                its contents and you take responsibility for having uploaded it
+                and for anything that follows.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" onClick={() => setSentFieldsOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={pendingTapKeys !== null}
+          onOpenChange={(open) => !open && setPendingTapKeys(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Use these keys for your keyboard?</DialogTitle>
+              <DialogDescription>
+                Your osu! stable config lists these gameplay keys. They can
+                replace the tap keys shown on your profile.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {(pendingTapKeys ?? []).map((key) => (
+                <Badge
+                  key={key}
+                  variant="secondary"
+                  className="bg-site-primary text-accent-blue"
+                >
+                  {key}
+                </Badge>
+              ))}
+            </div>
+
+            {!keyboardId && (
+              <p className="text-sm text-muted-foreground">
+                You haven&apos;t picked a device in the Keyboard section yet, so
+                the keys won&apos;t show on your profile until you do.
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPendingTapKeys(null)}
+              >
+                Keep current
+              </Button>
+              <Button type="button" onClick={applyImportedTapKeys}>
+                Use these keys
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

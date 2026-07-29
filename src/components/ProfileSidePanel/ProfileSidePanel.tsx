@@ -2,6 +2,7 @@
 
 import {
   Download,
+  Gamepad2,
   Keyboard as KeyboardIcon,
   LayoutGrid,
   List,
@@ -14,6 +15,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import KeyboardView from "@/components/KeyboardView/KeyboardView";
 import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
 import PlaystyleSection from "@/components/PlaystyleSection/PlaystyleSection";
+import OsuSettingsCard from "@/components/OsuSettingsCard/OsuSettingsCard";
 import ProfileBadges from "@/components/ProfileBadges/ProfileBadges";
 import ProfileSocials from "@/components/ProfileSocials/ProfileSocials";
 import ProgressiveBlur from "@/components/ProgressiveBlur/ProgressiveBlur";
@@ -25,6 +27,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { hasAnySetting, type OsuSettings } from "@/lib/osuConfig";
 import type { ProfileLayoutProps } from "@/lib/profileLayout";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +85,8 @@ export default function ProfileSidePanel({
     userData.tablet && userData.tabletSettingsFile && userData.tabletFileUploadInfo;
   const hasKeyboard = Boolean(userData.keyboard);
   const isKeypad = userData.keyboardDevice?.type === "keypad";
+  const osuSettings = (userData.osu_settings ?? null) as OsuSettings | null;
+  const hasOsuSettings = hasAnySetting(osuSettings);
 
   const skins = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -216,7 +221,7 @@ export default function ProfileSidePanel({
             </div>
           )}
 
-          {(hasTablet || hasKeyboard) && (
+          {(hasTablet || hasKeyboard || hasOsuSettings) && (
             <div className="flex flex-col gap-3 rounded-[16px] bg-site-secondary p-4">
               <h2 className="text-[1.2rem] font-medium text-[#cee0f6]">Setup</h2>
               <div
@@ -256,6 +261,27 @@ export default function ProfileSidePanel({
                   </div>
                 )}
               </div>
+
+              {/* Full width under the two device cards: four groups of rows
+                  need the room, and they read badly in a narrow column. */}
+              {hasOsuSettings && osuSettings && (
+                <div className="flex flex-col gap-3 rounded-md bg-site-primary p-4">
+                  <div className="flex flex-row flex-wrap items-center gap-2">
+                    <Gamepad2 className="size-[1.05rem] shrink-0 text-accent-blue" />
+                    <span className="text-[1rem] font-medium text-[#cee0f6]">
+                      osu! settings
+                    </span>
+                    {osuSettings.source && (
+                      <span className="ml-auto rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[0.78rem] text-[#9fb2c9]">
+                        {osuSettings.source === "manual"
+                          ? "manual"
+                          : `osu! ${osuSettings.source}`}
+                      </span>
+                    )}
+                  </div>
+                  <OsuSettingsCard settings={osuSettings} />
+                </div>
+              )}
             </div>
           )}
 
