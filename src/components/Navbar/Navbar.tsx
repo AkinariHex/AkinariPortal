@@ -14,6 +14,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useSearch } from "@/components/Search/SearchProvider";
+import { useNavbarSurface } from "@/components/Navbar/NavbarSurface";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -30,6 +32,7 @@ export default function Navbar({
   isAdmin?: boolean;
 }) {
   const { openSearch } = useSearch();
+  const { overlay, docked } = useNavbarSurface();
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
@@ -41,7 +44,31 @@ export default function Navbar({
 
   return (
     <>
-      <header className="sticky top-0 z-50 hidden h-[4.2em] w-full items-center gap-6 px-24 backdrop-blur-md md:flex">
+      <header
+        className={cn(
+          "sticky top-0 z-50 hidden h-[4.2em] w-full items-center gap-6 px-24 md:flex",
+          // Over artwork the page owns the surface; everywhere else the navbar
+          // keeps its own frosted one.
+          !overlay && "backdrop-blur-md"
+        )}
+      >
+        {/*
+          At rest, continue the page's scrim so the navbar fades into the
+          artwork instead of cutting a band across it. Once the page's sticky
+          bar docks, this clears out entirely and that bar's own glass extends
+          up behind the navbar - one surface for both, so no seam where two
+          separate blurs would each sample a different backdrop.
+        */}
+        {overlay && (
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-site-users/90 via-site-users/45 to-transparent transition-opacity duration-200 ease-out",
+              docked ? "opacity-0" : "opacity-100"
+            )}
+          />
+        )}
+
         <Link href="/" className="flex items-center">
           <object
             type="image/webp"

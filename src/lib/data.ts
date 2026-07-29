@@ -103,52 +103,52 @@ export const getSiteStats = unstable_cache(
 );
 
 // All keyboard/keypad devices, for the settings picker + admin.
-export const getAllKeyboards = unstable_cache(
-  async () => {
-    const { data, error } = await supabase
-      .from("keyboards")
-      .select("*")
-      .order("brand", { ascending: true, nullsFirst: false })
-      .order("name", { ascending: true });
-    return error ? [] : data;
-  },
-  ["all-keyboards"],
-  { tags: ["keyboards"], revalidate: 86400 }
-);
+//
+// Deliberately NOT cached. Both callers are logged-in, low-traffic pages that
+// edit this very table, and the catalog is a few dozen rows. Caching it meant a
+// device edited or deleted straight in Supabase - i.e. without a server action
+// to call updateTag("keyboards") - kept showing up in the admin list and the
+// settings picker for up to a day.
+export async function getAllKeyboards() {
+  const { data, error } = await supabase
+    .from("keyboards")
+    .select("*")
+    .order("brand", { ascending: true, nullsFirst: false })
+    .order("name", { ascending: true });
+  return error ? [] : data;
+}
 
 // Open keyboard-catalog requests, for the admin page. keyboard_requests.user_id
 // has no FK to users (it's set from the logged-in session at request time), so
 // resolve usernames with a separate batch lookup instead of a PostgREST join.
-export const getKeyboardRequests = unstable_cache(
-  async () => {
-    const { data, error } = await supabase
-      .from("keyboard_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error || !data) return [];
+// Uncached for the same reason as getAllKeyboards: admin-only, and a queue is
+// useless if it shows yesterday's state.
+export async function getKeyboardRequests() {
+  const { data, error } = await supabase
+    .from("keyboard_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
 
-    const userIds = Array.from(
-      new Set(data.map((r: any) => r.user_id).filter(Boolean).map(String))
-    );
-    if (userIds.length === 0) return data;
+  const userIds = Array.from(
+    new Set(data.map((r: any) => r.user_id).filter(Boolean).map(String))
+  );
+  if (userIds.length === 0) return data;
 
-    const { data: users } = await supabase
-      .from("users")
-      .select("id,username")
-      .in("id", userIds);
+  const { data: users } = await supabase
+    .from("users")
+    .select("id,username")
+    .in("id", userIds);
 
-    const usernameById = new Map(
-      (users ?? []).map((u: any) => [String(u.id), u.username])
-    );
+  const usernameById = new Map(
+    (users ?? []).map((u: any) => [String(u.id), u.username])
+  );
 
-    return data.map((r: any) => ({
-      ...r,
-      username: r.user_id != null ? usernameById.get(String(r.user_id)) ?? null : null,
-    }));
-  },
-  ["keyboard-requests"],
-  { tags: ["keyboard-requests"], revalidate: 86400 }
-);
+  return data.map((r: any) => ({
+    ...r,
+    username: r.user_id != null ? usernameById.get(String(r.user_id)) ?? null : null,
+  }));
+}
 
 // All badge definitions, for the admin page and any badge picker.
 export const getAllBadges = unstable_cache(

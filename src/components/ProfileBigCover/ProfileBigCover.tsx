@@ -5,6 +5,10 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import KeyboardView from "@/components/KeyboardView/KeyboardView";
 import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
+import {
+  useNavbarOverlay,
+  useNavbarSurface,
+} from "@/components/Navbar/NavbarSurface";
 import PlaystyleSection from "@/components/PlaystyleSection/PlaystyleSection";
 import ProfileBadges from "@/components/ProfileBadges/ProfileBadges";
 import ProfileSocials from "@/components/ProfileSocials/ProfileSocials";
@@ -35,6 +39,11 @@ export default function ProfileBigCover({
   onDownloadTabletSettings,
 }: ProfileLayoutProps) {
   const reduce = useReducedMotion();
+
+  // The cover runs under the navbar, so the navbar borrows this layout's
+  // surface: the cover scrim at rest, the tab bar's glass once they meet.
+  const tabsSentinelRef = useNavbarOverlay();
+  const { docked } = useNavbarSurface();
 
   const hasTablet =
     userData.tablet && userData.tabletSettingsFile && userData.tabletFileUploadInfo;
@@ -128,8 +137,19 @@ export default function ProfileBigCover({
       )}
 
       {/* TABS */}
-      <nav className="sticky top-0 z-30 border-b border-white/[0.07] bg-site-users/85 backdrop-blur-md md:top-[4.2em]">
-        <div className="mx-auto flex w-full max-w-[72rem] flex-row items-center gap-1 px-4 sm:px-8">
+      <div ref={tabsSentinelRef} aria-hidden className="h-px w-full" />
+
+      <nav className="sticky top-0 z-30 border-b border-white/[0.07] md:top-[4.2em]">
+        {/* The bar's surface lives on its own layer so that, once docked, it can
+            reach up behind the navbar and cover both with a single blur. */}
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 top-0 bg-site-users/85 backdrop-blur-md",
+            docked && "md:-top-[4.2em]"
+          )}
+        />
+        <div className="relative mx-auto flex w-full max-w-[72rem] flex-row items-center gap-1 px-4 sm:px-8">
           {tabs.map((t) => (
             <button
               key={t}

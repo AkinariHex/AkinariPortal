@@ -117,7 +117,10 @@ export function getUserProfile(id: string) {
       return data;
     },
     ["user-profile", id],
-    { tags: [`user:${id}`, "badges"], revalidate: 86400 }
+    // "keyboards" is here because the profile embeds the resolved device row:
+    // renaming or deleting a device in /admin has to refresh every profile
+    // showing it, not just the catalog.
+    { tags: [`user:${id}`, "badges", "keyboards"], revalidate: 86400 }
   )();
 }
 

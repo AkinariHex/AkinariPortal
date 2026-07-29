@@ -6,6 +6,7 @@ import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/authz";
 import Navbar from "@/components/Navbar/Navbar";
+import { NavbarSurfaceProvider } from "@/components/Navbar/NavbarSurface";
 import SearchProvider from "@/components/Search/SearchProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -68,8 +69,10 @@ export default async function RootLayout({
         <TooltipProvider delayDuration={200}>
           <SessionProvider session={session}>
             <SearchProvider>
-              <Navbar session={session} isAdmin={admin} />
-              {children}
+              <NavbarSurfaceProvider>
+                <Navbar session={session} isAdmin={admin} />
+                {children}
+              </NavbarSurfaceProvider>
             </SearchProvider>
           </SessionProvider>
         </TooltipProvider>
