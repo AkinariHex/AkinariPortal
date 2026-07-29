@@ -62,9 +62,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ProfileLayoutPicker from "@/components/ProfileLayoutPicker/ProfileLayoutPicker";
+import {
+  normalizeProfileLayout,
+  type ProfileLayout,
+} from "@/lib/profileLayout";
 import {
   generateApiKey,
   destroyApiKey,
+  saveProfileLayout as saveProfileLayoutAction,
   saveSkinView as saveSkinViewAction,
   saveSocials,
   saveTablet,
@@ -112,6 +118,9 @@ export default function SettingsClient({
   } | null>(null);
 
   const [skinview, setSkinview] = useState<any>(data.skin_view);
+  const [profileLayout, setProfileLayout] = useState<ProfileLayout>(
+    normalizeProfileLayout(data.profile_layout)
+  );
 
   const [prevTwitchData, setPrevTwitchData] = useState(data.twitch);
   const [prevGithubData, setPrevGithubData] = useState(data.github);
@@ -425,6 +434,21 @@ export default function SettingsClient({
       router.refresh();
     } else {
       toast.error("Failed to save skin view.");
+    }
+  };
+
+  const changeProfileLayout = async (layout: ProfileLayout) => {
+    const previous = profileLayout;
+    setProfileLayout(layout);
+
+    const result = await saveProfileLayoutAction(layout);
+
+    if (result.message === "done") {
+      toast.success("Profile layout saved.");
+      router.refresh();
+    } else {
+      setProfileLayout(previous);
+      toast.error("Failed to save profile layout.");
     }
   };
 
@@ -1007,6 +1031,25 @@ export default function SettingsClient({
           </DialogContent>
         </Dialog>
 
+        {/* Profile Layout */}
+        <section
+          id="profilelayout"
+          className="flex flex-col gap-4 rounded-xl border border-border bg-site-secondary p-6"
+        >
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold text-foreground">
+              Profile Layout
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              How your userpage is arranged for everyone who visits it
+            </p>
+          </div>
+          <ProfileLayoutPicker
+            value={profileLayout}
+            onChange={changeProfileLayout}
+          />
+        </section>
+
         {/* Skin View */}
         <section
           id="skinview"
@@ -1038,7 +1081,8 @@ export default function SettingsClient({
             </Select>
           </div>
           <p className="text-sm text-muted-foreground">
-            Default view for skins of your userpage
+            Default view for skins of your userpage. Used by the Rail layout;
+            Editorial always shows large cards.
           </p>
         </section>
 

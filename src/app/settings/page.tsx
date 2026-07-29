@@ -13,15 +13,22 @@ export default async function SettingsPage() {
 
   if (!session) redirect("/");
 
-  const [{ data }, keyboards] = await Promise.all([
+  const columns =
+    "skin_view,twitch,youtube,github,twitter,discord,tabletSettingsFile,tabletFileUploadInfo,secret_key,keyboard,keyboard_keys";
+
+  // profile_layout ships with docs/profile-layout.sql; keep settings usable
+  // before that migration is run.
+  const [layoutRes, keyboards] = await Promise.all([
     supabase
       .from("users")
-      .select(
-        "skin_view,twitch,youtube,github,twitter,discord,tabletSettingsFile,tabletFileUploadInfo,secret_key,keyboard,keyboard_keys"
-      )
+      .select(`${columns},profile_layout`)
       .eq("id", session.id),
     getAllKeyboards(),
   ]);
+
+  const { data } = layoutRes.error
+    ? await supabase.from("users").select(columns).eq("id", session.id)
+    : layoutRes;
 
   const userData = data && data.length ? data[0] : null;
 

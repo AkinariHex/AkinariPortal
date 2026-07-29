@@ -54,13 +54,24 @@ export function resolveUserId(idParam: string) {
 export function getUserProfile(id: string) {
   return unstable_cache(
     async () => {
-      const statusData = await supabase
+      const columns = `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo,keyboard,keyboard_keys`;
+
+      // profile_layout is a later migration (docs/profile-layout.sql); if it
+      // hasn't been run the query errors, so fall back to the older column set
+      // and let the profile render with the default layout.
+      let statusData = await supabase
         .from("users")
-        .select(
-          `id,username,badges:users_badges(created_at,badge:badges(*)),country,banner,skin_view,twitch,twitter,youtube,github,discord,tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo,keyboard,keyboard_keys`
-        )
+        .select(`${columns},profile_layout`)
         .eq("id", id)
         .single();
+
+      if (statusData.error) {
+        statusData = await supabase
+          .from("users")
+          .select(columns)
+          .eq("id", id)
+          .single();
+      }
 
       const data: any = statusData.data;
       if (!data) return null;

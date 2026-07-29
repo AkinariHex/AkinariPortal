@@ -83,10 +83,12 @@ export const getSiteStats = unstable_cache(
     if (keyboardId) {
       const { data } = await supabase
         .from("keyboards")
-        .select("name")
+        .select("brand, name")
         .eq("id", keyboardId)
         .maybeSingle();
-      keyboard = data?.name ?? keyboardId;
+      keyboard = data
+        ? [data.brand, data.name].filter(Boolean).join(" ")
+        : keyboardId;
     }
 
     return {

@@ -89,6 +89,27 @@ export async function saveSkinView(skinView: unknown) {
   return { message: "done" as const };
 }
 
+export async function saveProfileLayout(layout: unknown) {
+  const session: any = await auth();
+  if (!session?.id) return { message: "error" as const };
+
+  const parsed = z.enum(["rail", "editorial"]).safeParse(layout);
+  if (!parsed.success) return { message: "error" as const };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ profile_layout: parsed.data })
+    .eq("id", session.id);
+
+  if (error) {
+    console.error(error);
+    return { message: "error" as const };
+  }
+
+  updateTag(`user:${session.id}`);
+  return { message: "done" as const };
+}
+
 export async function saveSocials(input: unknown) {
   const session: any = await auth();
   if (!session?.id) return { message: "error" as const };
