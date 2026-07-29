@@ -155,6 +155,7 @@ export default function SettingsClient({
   const [requestOpen, setRequestOpen] = useState(false);
   const [reqName, setReqName] = useState("");
   const [reqBrand, setReqBrand] = useState("");
+  const [reqType, setReqType] = useState<"keyboard" | "keypad">("keyboard");
   const [reqNote, setReqNote] = useState("");
   const [reqVendorId, setReqVendorId] = useState<number | null>(null);
   const [reqProductId, setReqProductId] = useState<number | null>(null);
@@ -254,6 +255,7 @@ export default function SettingsClient({
   const openRequestDialog = (vendorId?: number, productId?: number) => {
     setReqName("");
     setReqBrand("");
+    setReqType("keyboard");
     setReqNote("");
     setReqVendorId(vendorId ?? null);
     setReqProductId(productId ?? null);
@@ -307,6 +309,7 @@ export default function SettingsClient({
       const result = await requestKeyboard({
         name: reqName.trim(),
         brand: reqBrand.trim() || undefined,
+        type: reqType,
         vendor_id: reqVendorId,
         product_id: reqProductId,
         note: reqNote.trim() || undefined,
@@ -953,6 +956,23 @@ export default function SettingsClient({
                   placeholder="e.g. Wooting"
                   maxLength={60}
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="req-type">Type</Label>
+                <Select
+                  value={reqType}
+                  onValueChange={(value) =>
+                    setReqType(value === "keypad" ? "keypad" : "keyboard")
+                  }
+                >
+                  <SelectTrigger id="req-type" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="keyboard">Keyboard</SelectItem>
+                    <SelectItem value="keypad">Keypad</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="req-note">Note</Label>

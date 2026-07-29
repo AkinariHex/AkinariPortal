@@ -1038,7 +1038,7 @@ function KeyboardRequests({
     setAddTarget(r);
     setAddName(r.name ?? "");
     setAddBrand(r.brand ?? "");
-    setAddType("keyboard");
+    setAddType(r.type === "keypad" ? "keypad" : "keyboard");
     setAddId(
       slugifyDeviceId(`${r.brand ?? ""} ${r.name ?? ""}`) || `kbd-${r.id}`
     );
@@ -1095,6 +1095,7 @@ function KeyboardRequests({
                   </span>
                   <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
                     <span>#{r.id}</span>
+                    <span>{r.type === "keypad" ? "keypad" : "keyboard"}</span>
                     {r.vendor_id != null && <span>VID {r.vendor_id}</span>}
                     {r.product_id != null && <span>PID {r.product_id}</span>}
                     {r.user_id != null && (

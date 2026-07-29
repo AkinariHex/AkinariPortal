@@ -4,6 +4,7 @@ import { z } from "zod";
 import { updateTag } from "next/cache";
 import { auth } from "@/auth";
 import supabase from "@/lib/supabaseServer";
+import { notifyKeyboardRequest } from "@/lib/discord";
 
 const generateApiKeyLib = require("generate-api-key");
 
@@ -148,6 +149,7 @@ export async function requestKeyboard(input: unknown) {
     .object({
       name: z.string().trim().min(1).max(100),
       brand: z.string().trim().max(60).optional(),
+      type: z.enum(["keyboard", "keypad"]).default("keyboard"),
       vendor_id: z.number().int().nullable().optional(),
       product_id: z.number().int().nullable().optional(),
       note: z.string().trim().max(500).optional(),
@@ -155,20 +157,52 @@ export async function requestKeyboard(input: unknown) {
     .safeParse(input);
   if (!parsed.success) return { status: "error" as const };
 
-  const { error } = await supabase.from("keyboard_requests").insert({
+  const row = {
     user_id: String(session.id),
     name: parsed.data.name,
     brand: parsed.data.brand ?? null,
     vendor_id: parsed.data.vendor_id ?? null,
     product_id: parsed.data.product_id ?? null,
     note: parsed.data.note ?? null,
-  });
+  };
+
+  // `type` arrives with docs/keyboard-request-type.sql; until that runs, insert
+  // without it rather than losing the request.
+  let { error } = await supabase
+    .from("keyboard_requests")
+    .insert({ ...row, type: parsed.data.type });
+
+  if (error) {
+    ({ error } = await supabase.from("keyboard_requests").insert(row));
+  }
+
   if (error) {
     console.error(error);
     return { status: "error" as const };
   }
 
   updateTag("keyboard-requests");
+
+  // Ping Discord after the row is safely in. notifyKeyboardRequest swallows its
+  // own failures, so a broken webhook never costs the user their request.
+  const { data: requester } = await supabase
+    .from("users")
+    .select("username")
+    .eq("id", session.id)
+    .maybeSingle();
+
+  await notifyKeyboardRequest({
+    name: parsed.data.name,
+    brand: parsed.data.brand ?? null,
+    type: parsed.data.type,
+    note: parsed.data.note ?? null,
+    vendorId: parsed.data.vendor_id ?? null,
+    productId: parsed.data.product_id ?? null,
+    userId: String(session.id),
+    username: requester?.username ?? null,
+    requestedAt: new Date().toISOString(),
+  });
+
   return { status: "done" as const };
 }
 
