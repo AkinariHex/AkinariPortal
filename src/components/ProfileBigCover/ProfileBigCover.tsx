@@ -22,7 +22,7 @@ const nf = new Intl.NumberFormat("en-US");
 const deviceLabel = (device: any) =>
   [device?.brand, device?.name].filter(Boolean).join(" ");
 
-export default function ProfileEditorial({
+export default function ProfileBigCover({
   userData,
   skinsData,
   isOwner,
@@ -146,7 +146,7 @@ export default function ProfileEditorial({
               {t}
               {tab === t && (
                 <motion.span
-                  layoutId="profile-editorial-tab"
+                  layoutId="profile-big-cover-tab"
                   className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-accent-blue"
                   transition={
                     reduce

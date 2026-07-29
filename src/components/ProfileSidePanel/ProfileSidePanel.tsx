@@ -28,8 +28,8 @@ import {
 import type { ProfileLayoutProps } from "@/lib/profileLayout";
 import { cn } from "@/lib/utils";
 
-// Identity and gear live in a persistent left rail; the skin library is the
-// page. On phones the rail becomes the header block and everything stacks.
+// Identity and gear live in a persistent left panel; the skin library is the
+// page. On phones the panel becomes the header block and everything stacks.
 
 const nf = new Intl.NumberFormat("en-US");
 
@@ -39,7 +39,7 @@ const ANCHOR_OFFSET = "scroll-mt-[calc(4.2em+1rem)]";
 const deviceLabel = (device: any) =>
   [device?.brand, device?.name].filter(Boolean).join(" ");
 
-function RailFact({
+function PanelFact({
   icon,
   label,
   value,
@@ -61,7 +61,7 @@ function RailFact({
   );
 }
 
-export default function ProfileRail({
+export default function ProfileSidePanel({
   userData,
   skinsData,
   isOwner,
@@ -113,7 +113,7 @@ export default function ProfileRail({
   return (
     <div className="-mt-[4.2em] min-h-screen w-full bg-site-users px-3 pb-24 pt-[calc(4.2em+1.25rem)] sm:px-5">
       <div className="mx-auto grid w-full max-w-[76rem] grid-cols-1 gap-4 lg:grid-cols-[19rem_1fr]">
-        {/* RAIL */}
+        {/* SIDE PANEL */}
         <motion.aside
           initial={reduce ? false : { opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
@@ -177,14 +177,14 @@ export default function ProfileRail({
           {(hasTablet || hasKeyboard) && (
             <div className="flex flex-col gap-2 rounded-[16px] bg-site-secondary p-3">
               {hasTablet && (
-                <RailFact
+                <PanelFact
                   icon={<TabletIcon className="size-4" />}
                   label="Tablet"
                   value={userData.tablet.name}
                 />
               )}
               {hasKeyboard && (
-                <RailFact
+                <PanelFact
                   icon={<KeyboardIcon className="size-4" />}
                   label={isKeypad ? "Keypad" : "Keyboard"}
                   value={deviceLabel(userData.keyboardDevice) || "-"}

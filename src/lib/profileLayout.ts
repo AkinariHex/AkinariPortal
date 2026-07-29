@@ -1,22 +1,31 @@
 // Which layout a user's public profile renders with. Stored on users.profile_layout.
 export const PROFILE_LAYOUTS = [
   {
-    value: "rail",
-    label: "Rail",
+    value: "side-panel",
+    label: "Side panel",
     description:
-      "Identity, socials and gear stay pinned in a side rail while your skins scroll.",
+      "Your name, socials and gear stay in a panel on the left while your skins scroll beside it.",
+    /** Only this layout lets visitors switch between the list and grid views. */
+    supportsSkinView: true,
   },
   {
-    value: "editorial",
-    label: "Editorial",
+    value: "big-cover",
+    label: "Big cover",
     description:
-      "Full-width cover with your name in large type, then tabs for skins and setup.",
+      "A full width cover photo with your name in large type, then tabs for skins and setup.",
+    supportsSkinView: false,
   },
 ] as const;
 
 export type ProfileLayout = (typeof PROFILE_LAYOUTS)[number]["value"];
 
-export const DEFAULT_PROFILE_LAYOUT: ProfileLayout = "rail";
+export const DEFAULT_PROFILE_LAYOUT: ProfileLayout = "side-panel";
+
+export function layoutSupportsSkinView(layout: ProfileLayout) {
+  return (
+    PROFILE_LAYOUTS.find((l) => l.value === layout)?.supportsSkinView ?? false
+  );
+}
 
 // Contract every profile layout renders against. ProfileClient owns the state
 // and the mutations; a layout only decides how it all looks.

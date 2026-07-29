@@ -93,7 +93,7 @@ export async function saveProfileLayout(layout: unknown) {
   const session: any = await auth();
   if (!session?.id) return { message: "error" as const };
 
-  const parsed = z.enum(["rail", "editorial"]).safeParse(layout);
+  const parsed = z.enum(["side-panel", "big-cover"]).safeParse(layout);
   if (!parsed.success) return { message: "error" as const };
 
   const { error } = await supabase

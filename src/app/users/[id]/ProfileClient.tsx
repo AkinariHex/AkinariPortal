@@ -4,8 +4,8 @@ import jsDownload from "js-file-download";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Modal from "@/components/Modal/Modal";
-import ProfileEditorial from "@/components/ProfileEditorial/ProfileEditorial";
-import ProfileRail from "@/components/ProfileRail/ProfileRail";
+import ProfileBigCover from "@/components/ProfileBigCover/ProfileBigCover";
+import ProfileSidePanel from "@/components/ProfileSidePanel/ProfileSidePanel";
 import {
   normalizeProfileLayout,
   type ProfileLayoutProps,
@@ -81,10 +81,10 @@ export default function ProfileClient({
 
   return (
     <>
-      {layout === "editorial" ? (
-        <ProfileEditorial {...layoutProps} />
+      {layout === "big-cover" ? (
+        <ProfileBigCover {...layoutProps} />
       ) : (
-        <ProfileRail {...layoutProps} />
+        <ProfileSidePanel {...layoutProps} />
       )}
 
       {modalIsOpen && (

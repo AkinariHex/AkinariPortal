@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/tooltip";
 import ProfileLayoutPicker from "@/components/ProfileLayoutPicker/ProfileLayoutPicker";
 import {
+  layoutSupportsSkinView,
   normalizeProfileLayout,
   type ProfileLayout,
 } from "@/lib/profileLayout";
@@ -1048,42 +1049,47 @@ export default function SettingsClient({
             value={profileLayout}
             onChange={changeProfileLayout}
           />
-        </section>
 
-        {/* Skin View */}
-        <section
-          id="skinview"
-          className="flex flex-col gap-4 rounded-xl border border-border bg-site-secondary p-6"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-foreground">Skin View</h2>
-            <Select
-              value={skinview?.value}
-              onValueChange={(value) => {
-                const option =
-                  select_options.find((o) => o.value === value) ?? null;
-                if (option) {
-                  setSkinview(option);
-                  saveSkinView(option);
-                }
-              }}
+          {/* Only the side panel layout offers list and grid; big cover always
+              uses its large cards, so the control is hidden rather than shown
+              doing nothing. */}
+          {layoutSupportsSkinView(profileLayout) && (
+            <div
+              id="skinview"
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"
             >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Select view" />
-              </SelectTrigger>
-              <SelectContent>
-                {select_options.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Default view for skins of your userpage. Used by the Rail layout;
-            Editorial always shows large cards.
-          </p>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-base font-semibold text-foreground">
+                  Skin View
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Default view for the skins on your userpage
+                </p>
+              </div>
+              <Select
+                value={skinview?.value}
+                onValueChange={(value) => {
+                  const option =
+                    select_options.find((o) => o.value === value) ?? null;
+                  if (option) {
+                    setSkinview(option);
+                    saveSkinView(option);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select view" />
+                </SelectTrigger>
+                <SelectContent>
+                  {select_options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </section>
 
         {/* Socials */}
