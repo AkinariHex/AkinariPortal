@@ -1,23 +1,11 @@
-import { useEffect, useState } from 'react';
-import ReactPlayer from 'react-player/twitch';
-
-async function generateToken(channel) {
-  var response = await fetch('/api/twitch/generate');
-  response = await response.json();
-
-  if (response.message === 'token created') {
-    return checkUserLivestream(channel);
-  }
-}
+import { useEffect, useRef, useState } from 'react';
+import ReactPlayer from 'react-player';
 
 async function checkUserLivestream(channel, setIsUserLive) {
-  var checkResponse = await fetch(
-    `/api/twitch/checklivestream?channel=${channel}&secret=${process.env.NEXT_PUBLIC_TWITCH_DB_SECRET}`
+  const response = await fetch(
+    `/api/twitch/checklivestream?channel=${encodeURIComponent(channel)}`
   );
-  checkResponse = await checkResponse.json();
-  if (checkResponse?.status === 401) {
-    return generateToken(channel);
-  }
+  const checkResponse = await response.json();
 
   if (checkResponse?.is_live === true) {
     setIsUserLive(true);
@@ -26,26 +14,31 @@ async function checkUserLivestream(channel, setIsUserLive) {
 
 function LivestreamPlayer({ twitchName }) {
   const [isUserLive, setIsUserLive] = useState(false);
+  const checkedRef = useRef(false);
 
   useEffect(() => {
+    // Guard against React Strict Mode's double effect invocation (dev), which
+    // would otherwise fire the Twitch check twice.
+    if (checkedRef.current) return;
+    checkedRef.current = true;
     checkUserLivestream(twitchName, setIsUserLive);
-  }, []);
+  }, [twitchName]);
 
   return (
     <>
       {isUserLive && (
         <div
-          className={`section ${isUserLive ? 'live' : 'notlive'}`}
           id="livestream"
+          className="flex w-full flex-col gap-3.5 box-border p-3.5 animate-in fade-in duration-500"
         >
-          <div className="header">
-            <div className="title">Livestream</div>
+          <div className="flex w-full flex-row">
+            <div className="text-[1.4em] font-medium text-[#cee0f6]">
+              Livestream
+            </div>
           </div>
-          <ReactPlayer
-            className="twitchPlayer"
-            width="100%"
-            url={`https://twitch.tv/${twitchName}`}
-          />
+          <div className="overflow-hidden rounded-md">
+            <ReactPlayer width="100%" src={`https://twitch.tv/${twitchName}`} />
+          </div>
         </div>
       )}
     </>
