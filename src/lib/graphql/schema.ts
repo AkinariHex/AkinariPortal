@@ -22,6 +22,12 @@ const typeDefs = /* GraphQL */ `
   type Query {
     "The user the API key belongs to. There is no way to read anyone else."
     viewer: Viewer!
+    """
+    Public profile lookup by id or username. This data is already public on the
+    user's profile page, so any valid API key may look up any account — provide
+    either id or username. Returns null if no matching account exists.
+    """
+    user(id: ID, username: String): PublicUser
   }
 
   type Viewer {
@@ -37,6 +43,25 @@ const typeDefs = /* GraphQL */ `
     tablet: Tablet
     keyboard: Keyboard
     osuSettings: JSON
+    skinCount: Int!
+    totalDownloads: Int!
+    skins(
+      "Exact mode, e.g. \\"osu!standard\\", \\"osu!mania\\", \\"osu!taiko\\", \\"osu!ctb\\""
+      mode: String
+      "Exact tag, e.g. \\"current\\", \\"lazer\\", \\"HD\\""
+      tag: String
+      "Case-insensitive match on name or creator"
+      search: String
+      "1-100, defaults to 50"
+      limit: Int = 50
+    ): [Skin!]!
+  }
+
+  type PublicUser {
+    id: ID!
+    username: String!
+    avatarUrl: String!
+    profileUrl: String!
     skinCount: Int!
     totalDownloads: Int!
     skins(
@@ -132,6 +157,34 @@ function emptyToNull(value: unknown): string | null {
   return str === "" ? null : str;
 }
 
+// Shared by Viewer.skins and PublicUser.skins — both apply the same
+// mode/tag/search filters and the same 1-100 limit clamp to an already-loaded
+// skin list.
+function applySkinFilters(
+  skins: any[],
+  args: { mode?: string; tag?: string; search?: string; limit?: number }
+): any[] {
+  let result = skins;
+
+  if (args.mode) {
+    result = result.filter((skin: any) => parseJsonArray(skin.Modes).includes(args.mode as string));
+  }
+  if (args.tag) {
+    result = result.filter((skin: any) => parseJsonArray(skin.Tags).includes(args.tag as string));
+  }
+  if (args.search) {
+    const needle = args.search.toLowerCase();
+    result = result.filter(
+      (skin: any) =>
+        String(skin.Name ?? "").toLowerCase().includes(needle) ||
+        String(skin.Creator ?? "").toLowerCase().includes(needle)
+    );
+  }
+
+  const limit = Math.min(Math.max(args.limit ?? 50, 1), 100);
+  return result.slice(0, limit);
+}
+
 export function createSkinsLoader(userId: string) {
   let pending: Promise<any[]> | null = null;
 
@@ -139,7 +192,7 @@ export function createSkinsLoader(userId: string) {
     pending ??= (async () => {
       const { data, error } = await supabase
         .from("skins")
-        .select("id,Name,Creator,Banner,Modes,Tags,URL,Downloads,created_at")
+        .select("id,Player,Name,Creator,Banner,Modes,Tags,URL,Downloads,created_at")
         .eq("Player", userId)
         .order("created_at", { ascending: false });
 
@@ -160,6 +213,26 @@ const resolvers = {
 
   Query: {
     viewer: (_parent: unknown, _args: unknown, ctx: GraphQLContext) => ctx.user,
+
+    user: async (_parent: unknown, args: { id?: string; username?: string }) => {
+      const id = args.id?.trim();
+      const username = args.username?.trim();
+      if (!id && !username) {
+        throw new GraphQLError("Provide id or username.");
+      }
+
+      const { data, error } = id
+        ? await supabase.from("users").select("id,username").eq("id", id).maybeSingle()
+        : await supabase
+            .from("users")
+            .select("id,username")
+            .ilike("username", username as string)
+            .maybeSingle();
+
+      if (error || !data) return null;
+
+      return { id: data.id, username: data.username, loadSkins: createSkinsLoader(data.id) };
+    },
   },
 
   Viewer: {
@@ -246,31 +319,20 @@ const resolvers = {
       _user: ViewerRow,
       args: { mode?: string; tag?: string; search?: string; limit?: number },
       ctx: GraphQLContext
-    ) => {
-      let skins = await ctx.loadSkins();
+    ) => applySkinFilters(await ctx.loadSkins(), args),
+  },
 
-      if (args.mode) {
-        skins = skins.filter((skin: any) =>
-          parseJsonArray(skin.Modes).includes(args.mode as string)
-        );
-      }
-      if (args.tag) {
-        skins = skins.filter((skin: any) =>
-          parseJsonArray(skin.Tags).includes(args.tag as string)
-        );
-      }
-      if (args.search) {
-        const needle = args.search.toLowerCase();
-        skins = skins.filter(
-          (skin: any) =>
-            String(skin.Name ?? "").toLowerCase().includes(needle) ||
-            String(skin.Creator ?? "").toLowerCase().includes(needle)
-        );
-      }
-
-      const limit = Math.min(Math.max(args.limit ?? 50, 1), 100);
-      return skins.slice(0, limit);
-    },
+  // The parent object here is whatever Query.user resolved: { id, username, loadSkins }.
+  PublicUser: {
+    avatarUrl: (user: any) => `https://s.ppy.sh/a/${user.id}`,
+    profileUrl: (user: any, _args: unknown, ctx: GraphQLContext) => `${ctx.origin}/users/${user.id}`,
+    skinCount: async (user: any) => (await user.loadSkins()).length,
+    totalDownloads: async (user: any) =>
+      (await user.loadSkins()).reduce((sum: number, skin: any) => sum + (skin.Downloads ?? 0), 0),
+    skins: async (
+      user: any,
+      args: { mode?: string; tag?: string; search?: string; limit?: number }
+    ) => applySkinFilters(await user.loadSkins(), args),
   },
 
   Skin: {
@@ -283,8 +345,10 @@ const resolvers = {
     tags: (skin: any) => parseJsonArray(skin.Tags),
     downloads: (skin: any) => skin.Downloads ?? 0,
     createdAt: (skin: any) => skin.created_at ?? null,
+    // Always the skin's own owner, not the caller — a Skin is reachable from
+    // both Viewer.skins (owner === caller) and PublicUser.skins (owner !== caller).
     pageUrl: (skin: any, _args: unknown, ctx: GraphQLContext) =>
-      `${ctx.origin}/users/${ctx.user.id}#${skin.id}`,
+      `${ctx.origin}/users/${skin.Player}#${skin.id}`,
   },
 };
 

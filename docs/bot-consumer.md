@@ -26,9 +26,11 @@ Every request is authenticated with **one end user's secret key**, sent as a Bea
 (`x-api-key: <key>` is accepted as an alternative header if a Bearer token is awkward in
 your HTTP client.)
 
-The key *is* the identity. The API always answers for the account the key belongs to and
-for no one else, so you never send a user id, an osu! id, or a username in a query. There
-is no way to read another user's data with it.
+The key *is* the identity. The `viewer` query always answers for the account the key
+belongs to and for no one else, so you never send a user id, an osu! id, or a username to
+it. The one exception is `user(id, username)` (see Schema below): it looks up *any*
+account's already-public profile and skins, using your key only to authenticate the
+request (identity/rate-limit), not to scope the result.
 
 ### Getting the key
 
@@ -59,6 +61,27 @@ one. Do not retry, and do not keep the dead key.
 type Query {
   "The user the API key belongs to. There is no way to read anyone else."
   viewer: Viewer!
+  """
+  Public profile lookup by id or username. This data is already public on the
+  user's profile page, so any valid API key may look up any account — provide
+  either id or username. Returns null if no matching account exists.
+  """
+  user(id: ID, username: String): PublicUser
+}
+
+type PublicUser {
+  id: ID!
+  username: String!
+  avatarUrl: String!
+  profileUrl: String!
+  skinCount: Int!
+  totalDownloads: Int!
+  skins(
+    mode: String
+    tag: String
+    search: String
+    limit: Int = 50
+  ): [Skin!]!
 }
 
 type Viewer {
@@ -163,6 +186,17 @@ List skins:
 `modes` and `tags` come back as real arrays. Filtering is exact, so
 `skins(mode: "osu!mania")` returns only mania skins and `skins(tag: "current")` only the
 current one.
+
+Look up someone else's public skins, authenticating with your own key:
+
+```json
+{
+  "query": "query ($username: String) { user(username: $username) { username skinCount skins(limit: 10) { id name creator url pageUrl } } }",
+  "variables": { "username": "SomeOtherPlayer" }
+}
+```
+
+`user` returns `null` (not an error) if no account matches the given id or username.
 
 Hardware and settings in a single round trip:
 
