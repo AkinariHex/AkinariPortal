@@ -108,20 +108,30 @@ export default function SettingsClient({
   session,
   userData,
   keyboards = [],
+  hasApiKey = false,
+  apiKeyCreatedAt = null,
 }: {
   session: any;
   userData: any;
   keyboards?: KeyboardDevice[];
+  hasApiKey?: boolean;
+  apiKeyCreatedAt?: string | null;
 }) {
   const router = useRouter();
   const data: any = userData ?? {};
 
-  const [hideAPI, setHideAPI] = useState(true);
-  const [apikey, setApikey] = useState(
-    data.secret_key === null || data.secret_key === undefined
-      ? ""
-      : data.secret_key
+  // The key is stored hashed, so the raw value only exists in this state, and
+  // only for the page load that generated it.
+  const [hideAPI, setHideAPI] = useState(false);
+  const [freshKey, setFreshKey] = useState("");
+  const [keyExists, setKeyExists] = useState(hasApiKey);
+  const [keyCreatedAt, setKeyCreatedAt] = useState<string | null>(
+    apiKeyCreatedAt
   );
+  const [keyAction, setKeyAction] = useState<"regenerate" | "destroy" | null>(
+    null
+  );
+  const [keyBusy, setKeyBusy] = useState(false);
 
   const [tabletSettingsInfo, setTabletSettingsInfo] = useState<any>(
     data.tabletFileUploadInfo !== null && data.tabletFileUploadInfo !== undefined
@@ -653,33 +663,54 @@ export default function SettingsClient({
   };
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(apikey);
+    navigator.clipboard.writeText(freshKey);
     toast.success("Secret key copied to clipboard.");
   }
 
   async function createApikey() {
-    const result = await generateApiKey();
-    if (result.status === "success") {
-      setApikey(result.secret_key);
-      toast.success("Secret key generated.");
-    } else {
+    setKeyBusy(true);
+    try {
+      const result = await generateApiKey();
+      if (result.status === "success") {
+        setFreshKey(result.secret_key);
+        setHideAPI(false);
+        setKeyExists(true);
+        setKeyCreatedAt(new Date().toISOString());
+        toast.success("Secret key generated. Copy it now.");
+      } else {
+        toast.error("Failed to generate secret key.");
+      }
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to generate secret key.");
+    } finally {
+      setKeyBusy(false);
+      setKeyAction(null);
     }
   }
 
   async function destroyApikey() {
-    const result = await destroyApiKey();
-    if (result.status === "success") {
-      setApikey(NO_KEY);
-      setHideAPI(false);
-      toast.success("Secret key destroyed.");
-      router.refresh();
-    } else {
+    setKeyBusy(true);
+    try {
+      const result = await destroyApiKey();
+      if (result.status === "success") {
+        setFreshKey("");
+        setKeyExists(false);
+        setKeyCreatedAt(null);
+        toast.success("Secret key destroyed.");
+        router.refresh();
+      } else {
+        toast.error("Failed to destroy secret key.");
+      }
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to destroy secret key.");
+    } finally {
+      setKeyBusy(false);
+      setKeyAction(null);
     }
   }
 
-  const hasKey = apikey !== "" && apikey !== NO_KEY;
   const connectionsChanged =
     twitchData !== prevTwitchData ||
     twitterData !== prevTwitterData ||
@@ -698,16 +729,21 @@ export default function SettingsClient({
           className="flex flex-col gap-4 rounded-xl border border-border bg-site-secondary p-6"
         >
           <h2 className="text-lg font-semibold text-foreground">Secret Key</h2>
-          <div className="flex items-center gap-2">
-            <Input
-              type="text"
-              placeholder={NO_KEY}
-              value={hasKey && hideAPI ? "*".repeat(45) : apikey}
-              disabled
-              className="flex-1 font-mono"
-            />
-            {hasKey && (
-              <>
+          <p className="text-sm text-muted-foreground">
+            Lets external apps and bots read your profile through the portal API.
+            It is stored hashed, so it can only be shown once, right after you
+            generate it. Treat it like a password.
+          </p>
+
+          {freshKey ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={hideAPI ? "*".repeat(45) : freshKey}
+                  disabled
+                  className="flex-1 font-mono"
+                />
                 <Button
                   type="button"
                   variant="outline"
@@ -726,17 +762,99 @@ export default function SettingsClient({
                 >
                   <Copy />
                 </Button>
-              </>
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                Copy it now. Once you leave this page it cannot be shown again.
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col rounded-md border border-border bg-site-primary px-4 py-3">
+              <span className="text-sm font-medium text-foreground">
+                {keyExists ? "Secret key active" : NO_KEY}
+              </span>
+              {keyExists && keyCreatedAt && (
+                <span className="text-xs text-muted-foreground">
+                  Generated {moment(keyCreatedAt).format("DD MMM YYYY, kk:mm")}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              onClick={() =>
+                keyExists ? setKeyAction("regenerate") : createApikey()
+              }
+              disabled={keyBusy}
+            >
+              {keyBusy && keyAction === null ? (
+                <LoadingIcon />
+              ) : keyExists ? (
+                "Regenerate Apikey"
+              ) : (
+                "Generate Apikey"
+              )}
+            </Button>
+            {keyExists && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setKeyAction("destroy")}
+                disabled={keyBusy}
+              >
+                Destroy Apikey
+              </Button>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={createApikey}>
-              Generate Apikey
-            </Button>
-            <Button type="button" variant="destructive" onClick={destroyApikey}>
-              Destroy Apikey
-            </Button>
-          </div>
+
+          <Dialog
+            open={keyAction !== null}
+            onOpenChange={(open) => {
+              if (!open && !keyBusy) setKeyAction(null);
+            }}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {keyAction === "destroy"
+                    ? "Destroy secret key?"
+                    : "Regenerate secret key?"}
+                </DialogTitle>
+                <DialogDescription>
+                  {keyAction === "destroy"
+                    ? "Anything connected with this key loses access immediately."
+                    : "The current key stops working immediately, and anything connected with it has to be updated with the new one."}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setKeyAction(null)}
+                  disabled={keyBusy}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() =>
+                    keyAction === "destroy" ? destroyApikey() : createApikey()
+                  }
+                  disabled={keyBusy}
+                >
+                  {keyBusy ? (
+                    <LoadingIcon />
+                  ) : keyAction === "destroy" ? (
+                    "Destroy"
+                  ) : (
+                    "Regenerate"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </section>
 
         {/* Tablet Settings */}

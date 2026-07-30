@@ -5,6 +5,7 @@ import { updateTag } from "next/cache";
 import { auth } from "@/auth";
 import supabase from "@/lib/supabaseServer";
 import { notifyKeyboardRequest } from "@/lib/discord";
+import { hashApiKey } from "@/lib/apiKey";
 
 const generateApiKeyLib = require("generate-api-key");
 
@@ -39,9 +40,14 @@ export async function generateApiKey() {
     prefix: String(data[0].id),
   });
 
+  // Only the digest is stored, so this is the one and only time the raw key can
+  // be shown. See docs/api-graphql.sql.
   const { error: updateError } = await supabase
     .from("users")
-    .update({ secret_key: newAPI })
+    .update({
+      secret_key_hash: hashApiKey(newAPI),
+      secret_key_created_at: new Date().toISOString(),
+    })
     .eq("id", session.id);
 
   if (updateError) {
@@ -56,9 +62,11 @@ export async function destroyApiKey() {
   const session: any = await auth();
   if (!session?.id) return { status: "error" as const };
 
+  // null, not "": an empty string would make every key-less user match a lookup
+  // by an empty key.
   const { error } = await supabase
     .from("users")
-    .update({ secret_key: "" })
+    .update({ secret_key_hash: null, secret_key_created_at: null })
     .eq("id", session.id);
 
   if (error) {
