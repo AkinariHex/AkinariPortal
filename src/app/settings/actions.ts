@@ -1,17 +1,18 @@
-"use server";
+'use server';
 
-import { z } from "zod";
-import { updateTag } from "next/cache";
-import { auth } from "@/auth";
-import supabase from "@/lib/supabaseServer";
-import { notifyKeyboardRequest } from "@/lib/discord";
+import { auth } from '@/auth';
+import { hashApiKey } from '@/lib/apiKey';
+import { notifyKeyboardRequest } from '@/lib/discord';
+import supabase from '@/lib/supabaseServer';
+import { updateTag } from 'next/cache';
+import { z } from 'zod';
 
-const generateApiKeyLib = require("generate-api-key");
+import generateApiKeyLib from 'generate-api-key';
 
 const randomString = (length = 32) => {
   const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:<>?,./";
-  let str = "";
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:<>?,./';
+  let str = '';
   for (let i = 0; i < length; i++) {
     str += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -20,100 +21,111 @@ const randomString = (length = 32) => {
 
 export async function generateApiKey() {
   const session: any = await auth();
-  if (!session?.id) return { status: "error" as const };
+  if (!session?.id) return { status: 'error' as const };
 
   const { data, error } = await supabase
-    .from("users")
-    .select("id,UUID")
-    .eq("id", session.id);
+    .from('users')
+    .select('id,UUID')
+    .eq('id', session.id);
 
   if (error || !data?.length) {
     console.error(error);
-    return { status: "error" as const };
+    return { status: 'error' as const };
   }
 
+  // generate-api-key types the return as string | string[]; without `batch` it is
+  // always a single key.
   const newAPI = generateApiKeyLib({
-    method: "uuidv5",
+    method: 'uuidv5',
     name: randomString(),
     namespace: data[0].UUID,
     prefix: String(data[0].id),
-  });
+  }) as string;
 
+  // Only the digest is stored, so this is the one and only time the raw key can
+  // be shown. See docs/api-graphql.sql.
   const { error: updateError } = await supabase
-    .from("users")
-    .update({ secret_key: newAPI })
-    .eq("id", session.id);
+    .from('users')
+    .update({
+      secret_key_hash: hashApiKey(newAPI),
+      secret_key_created_at: new Date().toISOString(),
+    })
+    .eq('id', session.id);
 
   if (updateError) {
     console.error(updateError);
-    return { status: "error" as const };
+    return { status: 'error' as const };
   }
 
-  return { status: "success" as const, secret_key: newAPI as string };
+  return { status: 'success' as const, secret_key: newAPI };
 }
 
 export async function destroyApiKey() {
   const session: any = await auth();
-  if (!session?.id) return { status: "error" as const };
+  if (!session?.id) return { status: 'error' as const };
 
+  // null, not "": an empty string would make every key-less user match a lookup
+  // by an empty key.
   const { error } = await supabase
-    .from("users")
-    .update({ secret_key: "" })
-    .eq("id", session.id);
+    .from('users')
+    .update({ secret_key_hash: null, secret_key_created_at: null })
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { status: "error" as const };
+    return { status: 'error' as const };
   }
 
-  return { status: "success" as const };
+  return { status: 'success' as const };
 }
 
 export async function saveSkinView(skinView: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { message: "error" as const };
+  if (!session?.id) return { message: 'error' as const };
 
-  const parsed = z.object({ value: z.string(), label: z.string() }).safeParse(skinView);
-  if (!parsed.success) return { message: "error" as const };
+  const parsed = z
+    .object({ value: z.string(), label: z.string() })
+    .safeParse(skinView);
+  if (!parsed.success) return { message: 'error' as const };
 
   const { error } = await supabase
-    .from("users")
+    .from('users')
     .update({ skin_view: parsed.data })
-    .eq("id", session.id);
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { message: "error" as const };
+    return { message: 'error' as const };
   }
 
   updateTag(`user:${session.id}`);
-  return { message: "done" as const };
+  return { message: 'done' as const };
 }
 
 export async function saveProfileLayout(layout: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { message: "error" as const };
+  if (!session?.id) return { message: 'error' as const };
 
-  const parsed = z.enum(["side-panel", "big-cover"]).safeParse(layout);
-  if (!parsed.success) return { message: "error" as const };
+  const parsed = z.enum(['side-panel', 'big-cover']).safeParse(layout);
+  if (!parsed.success) return { message: 'error' as const };
 
   const { error } = await supabase
-    .from("users")
+    .from('users')
     .update({ profile_layout: parsed.data })
-    .eq("id", session.id);
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { message: "error" as const };
+    return { message: 'error' as const };
   }
 
   updateTag(`user:${session.id}`);
-  return { message: "done" as const };
+  return { message: 'done' as const };
 }
 
 export async function saveSocials(input: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { message: "error" as const };
+  if (!session?.id) return { message: 'error' as const };
 
   const parsed = z
     .object({
@@ -124,38 +136,38 @@ export async function saveSocials(input: unknown) {
       youtube: z.string(),
     })
     .safeParse(input);
-  if (!parsed.success) return { message: "error" as const };
+  if (!parsed.success) return { message: 'error' as const };
 
   const { error } = await supabase
-    .from("users")
+    .from('users')
     .update(parsed.data)
-    .eq("id", session.id);
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { message: "error" as const };
+    return { message: 'error' as const };
   }
 
   updateTag(`user:${session.id}`);
-  return { message: "done" as const };
+  return { message: 'done' as const };
 }
 
 // Any logged-in user can request a device that's not in the catalog.
 export async function requestKeyboard(input: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { status: "unauthorized" as const };
+  if (!session?.id) return { status: 'unauthorized' as const };
 
   const parsed = z
     .object({
       name: z.string().trim().min(1).max(100),
       brand: z.string().trim().max(60).optional(),
-      type: z.enum(["keyboard", "keypad"]).default("keyboard"),
+      type: z.enum(['keyboard', 'keypad']).default('keyboard'),
       vendor_id: z.number().int().nullable().optional(),
       product_id: z.number().int().nullable().optional(),
       note: z.string().trim().max(500).optional(),
     })
     .safeParse(input);
-  if (!parsed.success) return { status: "error" as const };
+  if (!parsed.success) return { status: 'error' as const };
 
   const row = {
     user_id: String(session.id),
@@ -169,26 +181,26 @@ export async function requestKeyboard(input: unknown) {
   // `type` arrives with docs/keyboard-request-type.sql; until that runs, insert
   // without it rather than losing the request.
   let { error } = await supabase
-    .from("keyboard_requests")
+    .from('keyboard_requests')
     .insert({ ...row, type: parsed.data.type });
 
   if (error) {
-    ({ error } = await supabase.from("keyboard_requests").insert(row));
+    ({ error } = await supabase.from('keyboard_requests').insert(row));
   }
 
   if (error) {
     console.error(error);
-    return { status: "error" as const };
+    return { status: 'error' as const };
   }
 
-  updateTag("keyboard-requests");
+  updateTag('keyboard-requests');
 
   // Ping Discord after the row is safely in. notifyKeyboardRequest swallows its
   // own failures, so a broken webhook never costs the user their request.
   const { data: requester } = await supabase
-    .from("users")
-    .select("username")
-    .eq("id", session.id)
+    .from('users')
+    .select('username')
+    .eq('id', session.id)
     .maybeSingle();
 
   await notifyKeyboardRequest({
@@ -203,12 +215,12 @@ export async function requestKeyboard(input: unknown) {
     requestedAt: new Date().toISOString(),
   });
 
-  return { status: "done" as const };
+  return { status: 'done' as const };
 }
 
 export async function saveKeyboard(input: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { message: "error" as const };
+  if (!session?.id) return { message: 'error' as const };
 
   const parsed = z
     .object({
@@ -216,24 +228,24 @@ export async function saveKeyboard(input: unknown) {
       keyboard_keys: z.array(z.string()).default([]),
     })
     .safeParse(input);
-  if (!parsed.success) return { message: "error" as const };
+  if (!parsed.success) return { message: 'error' as const };
 
   const { error } = await supabase
-    .from("users")
+    .from('users')
     .update({
       keyboard: parsed.data.keyboard,
       keyboard_keys: parsed.data.keyboard_keys,
     })
-    .eq("id", session.id);
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { message: "error" as const };
+    return { message: 'error' as const };
   }
 
   updateTag(`user:${session.id}`);
-  updateTag("keyboards");
-  return { message: "done" as const };
+  updateTag('keyboards');
+  return { message: 'done' as const };
 }
 
 // Mirror of the shape in src/lib/osuConfig.ts. Every object is `.strict()` on
@@ -243,7 +255,7 @@ export async function saveKeyboard(input: unknown) {
 // `Username` / `Password` / `BeatmapDirectory` out even if the client is lying.
 const osuSettingsSchema = z
   .object({
-    source: z.enum(["stable", "lazer", "manual"]),
+    source: z.enum(['stable', 'lazer', 'manual']),
     display: z
       .object({
         resolution: z
@@ -253,7 +265,7 @@ const osuSettingsSchema = z
           })
           .strict()
           .optional(),
-        windowMode: z.enum(["fullscreen", "borderless", "windowed"]).optional(),
+        windowMode: z.enum(['fullscreen', 'borderless', 'windowed']).optional(),
         letterboxing: z.boolean().optional(),
         letterboxOffset: z
           .object({
@@ -263,12 +275,21 @@ const osuSettingsSchema = z
           .strict()
           .optional(),
         frameLimiter: z
-          .enum(["vsync", "120fps", "240fps", "unlimited", "custom", "2x", "4x", "8x"])
+          .enum([
+            'vsync',
+            '120fps',
+            '240fps',
+            'unlimited',
+            'custom',
+            '2x',
+            '4x',
+            '8x',
+          ])
           .optional(),
         customFrameLimit: z.number().int().min(30).max(10000).optional(),
         refreshRate: z.number().int().min(24).max(1000).optional(),
         renderer: z
-          .enum(["automatic", "opengl", "direct3d11", "vulkan", "metal"])
+          .enum(['automatic', 'opengl', 'direct3d11', 'vulkan', 'metal'])
           .optional(),
         compatibilityMode: z.boolean().optional(),
       })
@@ -295,7 +316,7 @@ const osuSettingsSchema = z
         disableButtons: z.boolean().optional(),
         disableWheel: z.boolean().optional(),
         confine: z
-          .enum(["never", "during-gameplay", "fullscreen", "always"])
+          .enum(['never', 'during-gameplay', 'fullscreen', 'always'])
           .optional(),
         useSkinCursor: z.boolean().optional(),
         ripples: z.boolean().optional(),
@@ -327,39 +348,39 @@ const CREDENTIAL_KEYS =
 
 export async function saveOsuSettings(input: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { message: "error" as const };
+  if (!session?.id) return { message: 'error' as const };
 
   // null clears the field.
   let value: unknown = null;
   if (input !== null) {
-    if (CREDENTIAL_KEYS.test(JSON.stringify(input) ?? "")) {
-      console.error("osu_settings payload carried a credential key; refused.");
-      return { message: "error" as const };
+    if (CREDENTIAL_KEYS.test(JSON.stringify(input) ?? '')) {
+      console.error('osu_settings payload carried a credential key; refused.');
+      return { message: 'error' as const };
     }
 
     const parsed = osuSettingsSchema.safeParse(input);
-    if (!parsed.success) return { message: "error" as const };
+    if (!parsed.success) return { message: 'error' as const };
     // updatedAt is stamped here, not taken from the client.
     value = { ...parsed.data, updatedAt: new Date().toISOString() };
   }
 
   const { error } = await supabase
-    .from("users")
+    .from('users')
     .update({ osu_settings: value })
-    .eq("id", session.id);
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { message: "error" as const };
+    return { message: 'error' as const };
   }
 
   updateTag(`user:${session.id}`);
-  return { message: "done" as const };
+  return { message: 'done' as const };
 }
 
 export async function saveTablet(input: unknown) {
   const session: any = await auth();
-  if (!session?.id) return { message: "error" as const };
+  if (!session?.id) return { message: 'error' as const };
 
   const parsed = z
     .object({
@@ -368,22 +389,22 @@ export async function saveTablet(input: unknown) {
       tabletFileUploadInfo: z.any().nullable(),
     })
     .safeParse(input);
-  if (!parsed.success) return { message: "error" as const };
+  if (!parsed.success) return { message: 'error' as const };
 
   const { error } = await supabase
-    .from("users")
+    .from('users')
     .update({
       tablet: parsed.data.tablet ?? null,
       tabletSettingsFile: parsed.data.tabletSettingsFile ?? null,
       tabletFileUploadInfo: parsed.data.tabletFileUploadInfo ?? null,
     })
-    .eq("id", session.id);
+    .eq('id', session.id);
 
   if (error) {
     console.error(error);
-    return { message: "error" as const };
+    return { message: 'error' as const };
   }
 
   updateTag(`user:${session.id}`);
-  return { message: "done" as const };
+  return { message: 'done' as const };
 }

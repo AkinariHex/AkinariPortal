@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabaseServer";
+import { resolveApiKeyUser } from "@/lib/apiKey";
 
 // Twitch extension frontends are served from *.ext-twitch.tv. Only allow those
 // origins instead of a wildcard CORS. Route handlers have no `cors` middleware
@@ -115,12 +116,21 @@ export async function POST(req: Request) {
   const type = params.get("type");
 
   if (twitchid && secretkey && type === "submit") {
+    // Keys are stored hashed (docs/api-graphql.sql). Resolving the owner first
+    // and updating by id also stops a blank key from matching every user whose
+    // key column is empty.
+    const user = await resolveApiKeyUser(secretkey);
+
+    if (!user) {
+      return NextResponse.json({ message: "wrong secretkey" }, { headers });
+    }
+
     const { error } = await supabase
       .from("users")
       .update({
         twitch_id: twitchid,
       })
-      .eq("secret_key", secretkey);
+      .eq("id", user.id);
 
     if (error) {
       return NextResponse.json({ message: "wrong secretkey" }, { headers });

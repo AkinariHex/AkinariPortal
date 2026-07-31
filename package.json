@@ -6,7 +6,7 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "next dev -p 4444",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
@@ -22,6 +22,8 @@
     "cmdk": "^1.1.1",
     "cors": "^2.8.6",
     "generate-api-key": "^1.0.2",
+    "graphql": "^16.14.2",
+    "graphql-yoga": "^5.21.2",
     "js-file-download": "^0.4.12",
     "lucide-react": "^1.27.0",
     "moment": "^2.30.1",
