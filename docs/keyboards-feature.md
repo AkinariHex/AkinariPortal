@@ -17,11 +17,48 @@
   the "Request a keyboard" form. Chromium-only (Chrome/Edge/Opera), HTTPS + user gesture; generic OEM
   keyboards are blocklisted by the browser and cannot be detected.
 
-## The preview / 3D model (BLOCKED on Wooting permission)
+## The preview (two views, user-picked)
 
-Current preview = **`src/components/KeyboardView/KeyboardView.tsx`**: a CSS "semi-3D" keycap render
-(keypad layout with tapped keys colored, or just the tap keys for layout-less keyboards). If a device
-row has `model_url`, it shows that image instead.
+`src/components/KeyboardView/KeyboardView.tsx` renders the device layout in one of two styles, chosen
+by the user in Settings and stored in `users.keyboard_view` (SQL: `docs/keyboard-settings.sql`):
+
+- **`instrumented`** (default) - muted board plus a rail listing every tap key with its actuation
+  point, rapid trigger and switch model. Tapped keys are filled from the top down to their actuation
+  depth (magnetic switches only).
+- **`plate`** - physical render: case, plate, keycaps with a skirt, tapped keys lit.
+
+Devices with no `layout` fall back to a single row built from the tap keys, so both views work for
+full keyboards that are not in the catalog with a layout. A `model_url` image is shown above the
+board instead of replacing it.
+
+## Switch settings
+
+`users.keyboard_settings` (jsonb) holds switch type / feel / model, polling rate, travel, actuation
+point, rapid trigger + sensitivity and the **per-key overrides**: `key_actuation` and `key_switch`,
+both keyed by key label (boards are often built with a different switch under the keys the user taps
+with). Shape and validation: `src/lib/keyboardSettings.ts` (`keyboardSettingsSchema`), reused by the
+`saveKeyboard` server action. Actuation and rapid trigger are only offered for **magnetic (hall
+effect)** switches - those are the analog ones (`isAnalog`); mechanical and optical are digital. The
+per-key switch override is offered whatever the technology.
+UI: `src/components/KeyboardSettingsForm/KeyboardSettingsForm.tsx`, with the model picked through
+`src/components/SwitchModelCombobox/SwitchModelCombobox.tsx` - a searchable list of known switches
+(`SWITCH_MODELS`, filtered by the chosen technology) that is **not** a closed set: typing a model
+that is not listed and pressing Enter saves that text.
+
+`saveKeyboard` retries without the two new columns if the migration has not run yet, so the device
+and tap keys still save on an un-migrated database.
+
+### Wootility import
+
+The Settings form takes a Wootility profile export (JSON) and maps actuation, rapid trigger +
+sensitivity and per-key actuation onto `keyboard_settings`. **There is no public API and no
+documented export schema**, so `parseWootilityProfile` reads the field names seen in the wild
+(`actuation_point` / `actuation` / `actuationPoint`, `rapid_trigger*`, a `keys` array or map) and
+returns null when nothing matches. Values above the switch travel are read as a 0-100 percentage of
+it. Tap keys are never overwritten by an import. Talking to the device directly over WebHID would
+need Wooting's undocumented config protocol, so it is not attempted.
+
+## 3D model (BLOCKED on Wooting permission)
 
 Goal (user): replicate the Wootility-web keyboard preview for Wooting keyboards/keypads. Findings:
 - Wooting's open repo `WootingKb/wooting-design` has **STL/STEP** files under **CERN-OHL-S**

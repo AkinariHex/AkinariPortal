@@ -24,7 +24,9 @@ export default async function SettingsPage() {
   const [fullRes, keyboards, keyRes] = await Promise.all([
     supabase
       .from("users")
-      .select(`${columns},profile_layout,osu_settings`)
+      .select(
+        `${columns},profile_layout,osu_settings,keyboard_view,keyboard_settings`
+      )
       .eq("id", session.id),
     getAllKeyboards(),
     supabase
@@ -37,6 +39,12 @@ export default async function SettingsPage() {
   // `any` because each fallback selects a different column set, so the inferred
   // row types differ between branches.
   let res: any = fullRes;
+  if (res.error) {
+    res = await supabase
+      .from("users")
+      .select(`${columns},profile_layout,osu_settings`)
+      .eq("id", session.id);
+  }
   if (res.error) {
     res = await supabase
       .from("users")

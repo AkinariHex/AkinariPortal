@@ -3,6 +3,16 @@ import { createSchema } from "graphql-yoga";
 import { GraphQLError, GraphQLScalarType } from "graphql";
 import supabase from "@/lib/supabaseServer";
 import type { ViewerRow } from "@/lib/apiKey";
+import {
+  actuationFor,
+  DEFAULT_KEYBOARD_VIEW,
+  isAnalog,
+  KEYBOARD_VIEWS,
+  readKeyboardSettings,
+  switchModelFor,
+  type KeyboardSettings,
+} from "@/lib/keyboardSettings";
+import { namedLabelsOf, slotCountOf, slotValues } from "@/lib/keyboardSlots";
 
 export type GraphQLContext = {
   user: ViewerRow;
@@ -62,6 +72,8 @@ const typeDefs = /* GraphQL */ `
     username: String!
     avatarUrl: String!
     profileUrl: String!
+    "Same device and switch setup the profile page shows publicly."
+    keyboard: Keyboard
     skinCount: Int!
     totalDownloads: Int!
     skins(
@@ -119,8 +131,80 @@ const typeDefs = /* GraphQL */ `
     id: ID!
     name: String!
     brand: String
+    "keyboard | keypad"
     type: String
+    "Image of the device, when the catalog has one."
+    modelUrl: String
+    "Keys the user taps with. Unset positions are omitted."
     keys: [String!]!
+    "How the profile renders this device: instrumented or plate."
+    view: String!
+    """
+    Every physical key of the device, row by row. Empty for devices the catalog
+    has no layout for - only \`keys\` is known for those.
+    """
+    layout: [KeyboardKey!]!
+    switches: SwitchSettings!
+  }
+
+  type KeyboardKey {
+    "Row index in the device layout, starting at 0."
+    row: Int!
+    "Legend printed on the keycap. Null on keypads whose keys carry none."
+    label: String
+    "Position among the unlabeled keys, null when the layout names this one."
+    slot: Int
+    "The key the user taps with here. Null when nothing is bound to it."
+    key: String
+    "True when the user taps with this key."
+    tap: Boolean!
+    "Width in key units: 1 is a standard key, 6.25 a spacebar."
+    width: Float!
+    """
+    Actuation point of this key in millimetres, its per-key override when it has
+    one. Null on digital switches and on keys nothing is bound to.
+    """
+    actuationMm: Float
+    """
+    Switch under this key: its per-key override when it has one, the board's
+    model otherwise. Null when neither is set or nothing is bound here.
+    """
+    switchModel: String
+  }
+
+  type SwitchSettings {
+    "mechanical | optical | magnetic"
+    type: String!
+    "linear | tactile | clicky"
+    feel: String!
+    model: String
+    pollingHz: Int!
+    """
+    True for magnetic (hall effect) switches. Only those report travel, so
+    actuation and rapid trigger are null on anything else.
+    """
+    analog: Boolean!
+    "Total travel of the switch in millimetres."
+    travelMm: Float!
+    "Actuation point applied to every key without an override."
+    actuationMm: Float
+    rapidTrigger: Boolean!
+    "Rapid trigger sensitivity, null when rapid trigger is off."
+    rapidTriggerMm: Float
+    "Per-key overrides of the actuation point."
+    keyActuation: [KeyActuation!]!
+    "Per-key overrides of the switch model, for boards built with more than one."
+    keySwitches: [KeySwitch!]!
+  }
+
+  type KeyActuation {
+    key: String!
+    actuationMm: Float!
+  }
+
+  type KeySwitch {
+    key: String!
+    model: String!
   }
 `;
 
@@ -185,6 +269,79 @@ function applySkinFilters(
   return result.slice(0, limit);
 }
 
+type KeyboardPayload = {
+  device: any;
+  tapKeys: string[];
+  settings: KeyboardSettings;
+  view: string;
+};
+
+// Shared by Viewer.keyboard and PublicUser.keyboard. No FK on users.keyboard, so
+// the device row is fetched directly, and only when the field is asked for.
+async function loadKeyboard(row: any): Promise<KeyboardPayload | null> {
+  if (!row?.keyboard) return null;
+
+  const { data } = await supabase
+    .from("keyboards")
+    .select("id,name,brand,type,layout,model_url")
+    .eq("id", row.keyboard)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  return {
+    device: data,
+    tapKeys: Array.isArray(row.keyboard_keys)
+      ? row.keyboard_keys.map(String)
+      : [],
+    settings: readKeyboardSettings(row.keyboard_settings),
+    view: KEYBOARD_VIEWS.includes(row.keyboard_view)
+      ? row.keyboard_view
+      : DEFAULT_KEYBOARD_VIEW,
+  };
+}
+
+// Flattens the device layout into one entry per physical key, resolved against
+// the user's tap keys. Keypads whose keycaps carry no legend are stored with
+// blank labels and bind their keys by position - see src/lib/keyboardSlots.ts.
+function buildLayout(keyboard: KeyboardPayload) {
+  const rows: { label: string; w?: number }[][] =
+    keyboard.device?.layout?.rows ?? [];
+  if (rows.length === 0) return [];
+
+  const { settings, tapKeys } = keyboard;
+  const analog = isAnalog(settings.switch_tech);
+  const named = namedLabelsOf(keyboard.device);
+  const values = slotValues(tapKeys, named, slotCountOf(keyboard.device));
+
+  let slot = 0;
+
+  return rows.flatMap((row, rowIndex) =>
+    row.map((key) => {
+      const label = key.label.trim();
+      const bound = label
+        ? (tapKeys.find(
+            (k) => k.trim().toLowerCase() === label.toLowerCase()
+          ) ?? null)
+        : values[slot] || null;
+
+      const entry = {
+        row: rowIndex,
+        label: label || null,
+        slot: label ? null : slot,
+        key: bound,
+        tap: Boolean(bound),
+        width: key.w ?? 1,
+        actuationMm: analog && bound ? actuationFor(settings, bound) : null,
+        switchModel: bound ? switchModelFor(settings, bound) || null : null,
+      };
+
+      if (!label) slot += 1;
+      return entry;
+    })
+  );
+}
+
 export function createSkinsLoader(userId: string) {
   let pending: Promise<any[]> | null = null;
 
@@ -221,17 +378,27 @@ const resolvers = {
         throw new GraphQLError("Provide id or username.");
       }
 
-      const { data, error } = id
-        ? await supabase.from("users").select("id,username").eq("id", id).maybeSingle()
-        : await supabase
-            .from("users")
-            .select("id,username")
-            .ilike("username", username as string)
-            .maybeSingle();
+      // keyboard_view / keyboard_settings ship with docs/keyboard-settings.sql;
+      // fall back to the older column set until it has been run.
+      const lookup = (columns: string) =>
+        id
+          ? supabase.from("users").select(columns).eq("id", id).maybeSingle()
+          : supabase
+              .from("users")
+              .select(columns)
+              .ilike("username", username as string)
+              .maybeSingle();
 
-      if (error || !data) return null;
+      const PUBLIC_COLUMNS = "id,username,keyboard,keyboard_keys";
+      let res: any = await lookup(
+        `${PUBLIC_COLUMNS},keyboard_view,keyboard_settings`
+      );
+      if (res.error) res = await lookup(PUBLIC_COLUMNS);
 
-      return { id: data.id, username: data.username, loadSkins: createSkinsLoader(data.id) };
+      const data: any = res.data;
+      if (res.error || !data) return null;
+
+      return { ...data, loadSkins: createSkinsLoader(data.id) };
     },
   },
 
@@ -282,20 +449,7 @@ const resolvers = {
 
     tablet: (user: ViewerRow) => user.tablet ?? null,
 
-    // No FK on users.keyboard, so the device row is fetched directly.
-    keyboard: async (user: ViewerRow) => {
-      if (!user.keyboard) return null;
-      const { data } = await supabase
-        .from("keyboards")
-        .select("id,name,brand,type")
-        .eq("id", user.keyboard)
-        .maybeSingle();
-      if (!data) return null;
-      return {
-        ...data,
-        keys: Array.isArray(user.keyboard_keys) ? user.keyboard_keys : [],
-      };
-    },
+    keyboard: (user: ViewerRow) => loadKeyboard(user),
 
     osuSettings: (user: ViewerRow) => user.osu_settings ?? null,
 
@@ -326,6 +480,7 @@ const resolvers = {
   PublicUser: {
     avatarUrl: (user: any) => `https://s.ppy.sh/a/${user.id}`,
     profileUrl: (user: any, _args: unknown, ctx: GraphQLContext) => `${ctx.origin}/users/${user.id}`,
+    keyboard: (user: any) => loadKeyboard(user),
     skinCount: async (user: any) => (await user.loadSkins()).length,
     totalDownloads: async (user: any) =>
       (await user.loadSkins()).reduce((sum: number, skin: any) => sum + (skin.Downloads ?? 0), 0),
@@ -333,6 +488,46 @@ const resolvers = {
       user: any,
       args: { mode?: string; tag?: string; search?: string; limit?: number }
     ) => applySkinFilters(await user.loadSkins(), args),
+  },
+
+  Keyboard: {
+    id: (kb: KeyboardPayload) => kb.device.id,
+    name: (kb: KeyboardPayload) => kb.device.name,
+    brand: (kb: KeyboardPayload) => emptyToNull(kb.device.brand),
+    type: (kb: KeyboardPayload) => emptyToNull(kb.device.type),
+    modelUrl: (kb: KeyboardPayload) => emptyToNull(kb.device.model_url),
+    // Blank entries are positions the user left unset, not keys.
+    keys: (kb: KeyboardPayload) =>
+      kb.tapKeys.map((k) => k.trim()).filter(Boolean),
+    view: (kb: KeyboardPayload) => kb.view,
+    layout: (kb: KeyboardPayload) => buildLayout(kb),
+    switches: (kb: KeyboardPayload) => kb.settings,
+  },
+
+  SwitchSettings: {
+    type: (s: KeyboardSettings) => s.switch_tech,
+    feel: (s: KeyboardSettings) => s.feel,
+    model: (s: KeyboardSettings) => emptyToNull(s.switch_model),
+    pollingHz: (s: KeyboardSettings) => s.polling_hz,
+    analog: (s: KeyboardSettings) => isAnalog(s.switch_tech),
+    travelMm: (s: KeyboardSettings) => s.travel_mm,
+    actuationMm: (s: KeyboardSettings) =>
+      isAnalog(s.switch_tech) ? s.actuation_mm : null,
+    rapidTrigger: (s: KeyboardSettings) =>
+      isAnalog(s.switch_tech) && s.rapid_trigger,
+    rapidTriggerMm: (s: KeyboardSettings) =>
+      isAnalog(s.switch_tech) && s.rapid_trigger ? s.rapid_trigger_mm : null,
+    keyActuation: (s: KeyboardSettings) =>
+      isAnalog(s.switch_tech)
+        ? Object.entries(s.key_actuation).map(([key, actuationMm]) => ({
+            key,
+            actuationMm,
+          }))
+        : [],
+    keySwitches: (s: KeyboardSettings) =>
+      Object.entries(s.key_switch)
+        .filter(([, model]) => model.trim())
+        .map(([key, model]) => ({ key, model })),
   },
 
   Skin: {

@@ -72,9 +72,33 @@ introspection - needs the `Authorization` header set in the GraphiQL headers tab
 ## What is exposed
 
 Only what is already on the public profile: id, username, avatar, banner, country,
-playmode, socials, badges, tablet (name and dimensions), keyboard and keys, osu! settings,
+playmode, socials, badges, tablet (name and dimensions), the keyboard setup, osu! settings,
 and skins. Never `secret_key`, `secret_key_hash`, `UUID`, `twitch_id`, or the tablet
 settings file fields.
+
+### The keyboard
+
+`Keyboard` carries the device row (`id`, `name`, `brand`, `type`, `modelUrl`), the tap
+keys, the chosen render (`view`), the resolved `layout`, and `switches`. It is exposed on
+both `viewer` and `user(id:/username:)` - the profile page shows the same thing publicly.
+`loadKeyboard` in `src/lib/graphql/schema.ts` is shared by the two, and only runs when the
+field is selected.
+
+- `layout` is one entry per physical key, flattened with its `row` index and `width` in key
+  units. Keypads whose keycaps carry no legend are stored with blank labels: those entries
+  have `label: null`, a `slot` index and the bound key in `key` (see
+  `src/lib/keyboardSlots.ts`, the same helper the UI uses, so the API and the profile can
+  never disagree about which key sits where).
+- `switches` mirrors `users.keyboard_settings`, validated through `readKeyboardSettings`, so
+  a missing or malformed row serves the defaults instead of erroring. `analog` is true only
+  for magnetic (hall effect) switches, and every actuation / rapid trigger field is null
+  when it is false rather than reporting a number that means nothing.
+- Per-key overrides come out twice: as maps under `switches` (`keyActuation`, `keySwitches`)
+  and resolved onto each key (`layout[].actuationMm`, `layout[].switchModel`), so a client
+  that just renders the board never has to merge them itself.
+- Reads of `keyboard_view` / `keyboard_settings` fall back to the older column set until
+  `docs/keyboard-settings.sql` has been run; before it, the API serves the default view and
+  the default switch settings.
 
 `Modes` and `Tags` are text columns holding a JSON array *string*; the resolvers parse
 them, so clients get real arrays and `skins(mode:)` / `skins(tag:)` filter exactly rather
@@ -85,4 +109,6 @@ than by substring like the profile UI does.
 Add the field to `typeDefs` and a resolver in `src/lib/graphql/schema.ts`. If it needs a
 new column, add it to `VIEWER_COLUMNS` in `src/lib/apiKey.ts` - that select is the
 allowlist, so a column that is not listed there cannot leak through a resolver by
-accident. Keep `Skin` free of a `Viewer` back-reference unless you also add depth limiting.
+accident. Columns from a migration that may not have run yet go in the first select of the
+fallback chain there (and in `Query.user`'s own chain for the public lookup), never in
+`VIEWER_COLUMNS` itself, or every request fails on an un-migrated database. Keep `Skin` free of a `Viewer` back-reference unless you also add depth limiting.

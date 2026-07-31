@@ -4,6 +4,12 @@ import { Download, Plus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import KeyboardView from "@/components/KeyboardView/KeyboardView";
+import {
+  DEFAULT_KEYBOARD_VIEW,
+  KEYBOARD_VIEWS,
+  readKeyboardSettings,
+  type KeyboardViewVariant,
+} from "@/lib/keyboardSettings";
 import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
 import OsuSettingsCard from "@/components/OsuSettingsCard/OsuSettingsCard";
 import {
@@ -56,6 +62,16 @@ export default function ProfileBigCover({
 
   const tabs = hasSetup ? (["Skins", "Setup"] as const) : (["Skins"] as const);
   const [tab, setTab] = useState<"Skins" | "Setup">("Skins");
+
+  const keyboardVariant: KeyboardViewVariant = KEYBOARD_VIEWS.includes(
+    userData.keyboard_view
+  )
+    ? userData.keyboard_view
+    : DEFAULT_KEYBOARD_VIEW;
+  const keyboardSettings = useMemo(
+    () => readKeyboardSettings(userData.keyboard_settings),
+    [userData.keyboard_settings]
+  );
 
   const skins = useMemo(
     () => [
@@ -316,6 +332,8 @@ export default function ProfileBigCover({
                       <KeyboardView
                         device={userData.keyboardDevice}
                         tapKeys={userData.keyboard_keys ?? []}
+                        variant={keyboardVariant}
+                        settings={keyboardSettings}
                       />
                     </div>
                   </section>

@@ -13,6 +13,12 @@ import {
 import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
 import KeyboardView from "@/components/KeyboardView/KeyboardView";
+import {
+  DEFAULT_KEYBOARD_VIEW,
+  KEYBOARD_VIEWS,
+  readKeyboardSettings,
+  type KeyboardViewVariant,
+} from "@/lib/keyboardSettings";
 import LivestreamPlayer from "@/components/LivestreamPlayer/LivestreamPlayer";
 import PlaystyleSection from "@/components/PlaystyleSection/PlaystyleSection";
 import OsuSettingsCard from "@/components/OsuSettingsCard/OsuSettingsCard";
@@ -87,6 +93,15 @@ export default function ProfileSidePanel({
   const isKeypad = userData.keyboardDevice?.type === "keypad";
   const osuSettings = (userData.osu_settings ?? null) as OsuSettings | null;
   const hasOsuSettings = hasAnySetting(osuSettings);
+  const keyboardVariant: KeyboardViewVariant = KEYBOARD_VIEWS.includes(
+    userData.keyboard_view
+  )
+    ? userData.keyboard_view
+    : DEFAULT_KEYBOARD_VIEW;
+  const keyboardSettings = useMemo(
+    () => readKeyboardSettings(userData.keyboard_settings),
+    [userData.keyboard_settings]
+  );
 
   const skins = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -256,6 +271,8 @@ export default function ProfileSidePanel({
                       <KeyboardView
                         device={userData.keyboardDevice}
                         tapKeys={userData.keyboard_keys ?? []}
+                        variant={keyboardVariant}
+                        settings={keyboardSettings}
                       />
                     </div>
                   </div>

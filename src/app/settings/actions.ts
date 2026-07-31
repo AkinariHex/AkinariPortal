@@ -3,6 +3,10 @@
 import { auth } from '@/auth';
 import { hashApiKey } from '@/lib/apiKey';
 import { notifyKeyboardRequest } from '@/lib/discord';
+import {
+  KEYBOARD_VIEWS,
+  keyboardSettingsSchema,
+} from '@/lib/keyboardSettings';
 import supabase from '@/lib/supabaseServer';
 import { updateTag } from 'next/cache';
 import { z } from 'zod';
@@ -226,17 +230,34 @@ export async function saveKeyboard(input: unknown) {
     .object({
       keyboard: z.string().nullable(),
       keyboard_keys: z.array(z.string()).default([]),
+      keyboard_view: z.enum(KEYBOARD_VIEWS).optional(),
+      keyboard_settings: keyboardSettingsSchema.optional(),
     })
     .safeParse(input);
   if (!parsed.success) return { message: 'error' as const };
 
-  const { error } = await supabase
+  const base = {
+    keyboard: parsed.data.keyboard,
+    keyboard_keys: parsed.data.keyboard_keys,
+  };
+
+  let { error } = await supabase
     .from('users')
     .update({
-      keyboard: parsed.data.keyboard,
-      keyboard_keys: parsed.data.keyboard_keys,
+      ...base,
+      keyboard_view: parsed.data.keyboard_view ?? null,
+      keyboard_settings: parsed.data.keyboard_settings ?? null,
     })
     .eq('id', session.id);
+
+  // keyboard_view / keyboard_settings ship with docs/keyboard-settings.sql;
+  // until it runs, still save the device and the tap keys.
+  if (error) {
+    ({ error } = await supabase
+      .from('users')
+      .update(base)
+      .eq('id', session.id));
+  }
 
   if (error) {
     console.error(error);

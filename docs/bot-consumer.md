@@ -74,6 +74,7 @@ type PublicUser {
   username: String!
   avatarUrl: String!
   profileUrl: String!
+  keyboard: Keyboard      # same device and switch setup the profile shows
   skinCount: Int!
   totalDownloads: Int!
   skins(
@@ -124,7 +125,45 @@ type Country { code: String  name: String }
 type Socials { twitch: String  twitter: String  youtube: String  github: String  discord: String }
 type Badge   { id: ID!  title: String!  imageUrl: String!  awardedAt: String }
 type Tablet  { name: String!  width: Float  height: Float }
-type Keyboard { id: ID!  name: String!  brand: String  type: String  keys: [String!]! }
+type Keyboard {
+  id: ID!
+  name: String!
+  brand: String
+  type: String            # "keyboard" | "keypad"
+  modelUrl: String        # image of the device, when the catalog has one
+  keys: [String!]!        # the keys the user taps with
+  view: String!           # how the profile renders it: "instrumented" | "plate"
+  layout: [KeyboardKey!]! # every physical key; empty when the catalog has no layout
+  switches: SwitchSettings!
+}
+
+type KeyboardKey {
+  row: Int!               # row index in the layout, from 0
+  label: String           # legend on the keycap, null on unlabeled keypad keys
+  slot: Int               # position among the unlabeled keys, else null
+  key: String             # the key bound here, null when nothing is
+  tap: Boolean!           # true when the user taps with it
+  width: Float!           # key units: 1 = standard key, 6.25 = spacebar
+  actuationMm: Float      # null on digital switches and unbound keys
+  switchModel: String     # the per-key switch when set, else the board's
+}
+
+type SwitchSettings {
+  type: String!           # "mechanical" | "optical" | "magnetic"
+  feel: String!           # "linear" | "tactile" | "clicky"
+  model: String
+  pollingHz: Int!
+  analog: Boolean!        # true only for magnetic (hall effect) switches
+  travelMm: Float!
+  actuationMm: Float      # global actuation point, null when not analog
+  rapidTrigger: Boolean!
+  rapidTriggerMm: Float   # null when rapid trigger is off
+  keyActuation: [KeyActuation!]!   # per-key actuation overrides
+  keySwitches: [KeySwitch!]!       # per-key switch overrides
+}
+
+type KeyActuation { key: String!  actuationMm: Float! }
+type KeySwitch    { key: String!  model: String! }
 
 scalar JSON
 ```
@@ -203,6 +242,18 @@ Hardware and settings in a single round trip:
 ```json
 { "query": "{ viewer { tablet { name width height } keyboard { name brand keys } osuSettings } }" }
 ```
+
+The full keyboard setup, including the actuation of every key:
+
+```json
+{ "query": "{ viewer { keyboard { name brand type keys switches { type feel model analog travelMm actuationMm rapidTrigger rapidTriggerMm keyActuation { key actuationMm } keySwitches { key model } } layout { row label slot key tap width actuationMm switchModel } } } }" }
+```
+
+`switches.analog` is the flag to branch on: it is true only for magnetic (hall effect)
+switches, and every actuation and rapid trigger field is null when it is false. On keypads
+whose keycaps carry no legend, `layout[].label` is null and the key the user taps with is
+in `layout[].key`, bound by `slot`. Another account's setup reads the same way through
+`user(username: "...") { keyboard { ... } }`.
 
 ## Errors
 

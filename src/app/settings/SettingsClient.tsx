@@ -24,7 +24,22 @@ import ConnectionField from "@/components/ConnectionField/ConnectionField";
 import LoadingIcon from "@/components/LoadingIcon/LoadingIcon";
 import KeyboardView, {
   type KeyboardDevice,
+  type KeyboardKeyClick,
 } from "@/components/KeyboardView/KeyboardView";
+import KeyboardSettingsForm from "@/components/KeyboardSettingsForm/KeyboardSettingsForm";
+import {
+  namedLabelsOf,
+  slotCountOf,
+  slotValues,
+  writeSlot,
+} from "@/lib/keyboardSlots";
+import {
+  DEFAULT_KEYBOARD_VIEW,
+  KEYBOARD_VIEWS,
+  readKeyboardSettings,
+  type KeyboardSettings,
+  type KeyboardViewVariant,
+} from "@/lib/keyboardSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -172,6 +187,14 @@ export default function SettingsClient({
   );
   const [keyInput, setKeyInput] = useState("");
   const [savingKeyboard, setSavingKeyboard] = useState(false);
+  const [keyboardView, setKeyboardView] = useState<KeyboardViewVariant>(
+    KEYBOARD_VIEWS.includes(data.keyboard_view)
+      ? data.keyboard_view
+      : DEFAULT_KEYBOARD_VIEW
+  );
+  const [keyboardSettings, setKeyboardSettings] = useState<KeyboardSettings>(
+    () => readKeyboardSettings(data.keyboard_settings)
+  );
 
   const [osuDraft, setOsuDraft] = useState<OsuSettings>(
     (data.osu_settings as OsuSettings) ?? { source: "manual" }
@@ -184,6 +207,7 @@ export default function SettingsClient({
   const [pendingTapKeys, setPendingTapKeys] = useState<string[] | null>(null);
   const [sentFieldsOpen, setSentFieldsOpen] = useState(false);
   const [capturingKeys, setCapturingKeys] = useState(false);
+  const [captureSlot, setCaptureSlot] = useState<number | null>(null);
 
   const [comboOpen, setComboOpen] = useState(false);
   const [hidSupported, setHidSupported] = useState(false);
@@ -207,6 +231,10 @@ export default function SettingsClient({
   useEffect(() => {
     if (!capturingKeys) return;
 
+    const device = keyboards.find((k) => String(k.id) === keyboardId) ?? null;
+    const named = namedLabelsOf(device);
+    const slotCount = slotCountOf(device);
+
     const ignoredKeys = new Set([
       "Shift",
       "Control",
@@ -220,6 +248,7 @@ export default function SettingsClient({
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setCapturingKeys(false);
+        setCaptureSlot(null);
         return;
       }
       const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
@@ -228,6 +257,26 @@ export default function SettingsClient({
 
       e.preventDefault();
       const label = e.key === " " ? "Space" : e.key.length === 1 ? e.key.toUpperCase() : e.key;
+
+      // Positional keypads (blank labels in the layout) bind the pressed key to
+      // one slot at a time, then move on to the next empty one.
+      if (slotCount > 0) {
+        const values = slotValues(tapKeys, named, slotCount);
+        const target = captureSlot ?? values.findIndex((v) => !v);
+        if (target < 0) {
+          setCapturingKeys(false);
+          return;
+        }
+        const next = writeSlot(tapKeys, named, target, label);
+        setTapKeys(next);
+        const remaining = slotValues(next, named, slotCount).findIndex(
+          (v) => !v
+        );
+        setCaptureSlot(remaining >= 0 ? remaining : null);
+        if (remaining < 0) setCapturingKeys(false);
+        return;
+      }
+
       setTapKeys((prev) =>
         prev.some((k) => k.toLowerCase() === label.toLowerCase())
           ? prev
@@ -237,7 +286,7 @@ export default function SettingsClient({
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [capturingKeys]);
+  }, [capturingKeys, captureSlot, tapKeys, keyboards, keyboardId]);
 
   const selectedDevice = useMemo(
     () => keyboards.find((k) => String(k.id) === keyboardId) ?? null,
@@ -263,6 +312,24 @@ export default function SettingsClient({
         ? prev.filter((k) => k.toLowerCase() !== label.toLowerCase())
         : [...prev, label]
     );
+  };
+
+  const slotCount = useMemo(() => slotCountOf(selectedDevice), [selectedDevice]);
+
+  // Named keys toggle. A blank slot starts listening so the next key pressed
+  // binds to it; clicking a bound slot clears it.
+  const onKeyClick = ({ label, slot }: KeyboardKeyClick) => {
+    if (slot === null) {
+      if (label) toggleTapKey(label);
+      return;
+    }
+    if (label) {
+      setTapKeys(writeSlot(tapKeys, namedLabelsOf(selectedDevice), slot, ""));
+      if (captureSlot === slot) setCaptureSlot(null);
+      return;
+    }
+    setCaptureSlot(slot);
+    setCapturingKeys(true);
   };
 
   const addTapKey = () => {
@@ -489,6 +556,8 @@ export default function SettingsClient({
     const result = await saveKeyboard({
       keyboard: keyboardId || null,
       keyboard_keys: keys,
+      keyboard_view: keyboardView,
+      keyboard_settings: keyboardSettings,
     });
     if (result.message === "done") {
       toast.success("Tap keys updated.");
@@ -505,6 +574,8 @@ export default function SettingsClient({
       const result = await saveKeyboard({
         keyboard: keyboardId || null,
         keyboard_keys: tapKeys,
+        keyboard_view: keyboardView,
+        keyboard_settings: keyboardSettings,
       });
       if (result.message === "done") {
         toast.success("Keyboard saved.");
@@ -1095,14 +1166,20 @@ export default function SettingsClient({
               {hasLayout ? (
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground">
-                    Click the keys you tap on to highlight them, or press them
-                    on your keyboard.
+                    {slotCount > 0
+                      ? capturingKeys
+                        ? `Press the key to bind to slot ${(captureSlot ?? 0) + 1}. Click a bound key to clear it.`
+                        : "This keypad has unlabeled keys: click one, then press the key you tap with. Click it again to clear it."
+                      : "Click the keys you tap on to highlight them, or press them on your keyboard."}
                   </p>
                   <Button
                     type="button"
                     variant={capturingKeys ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setCapturingKeys((v) => !v)}
+                    onClick={() => {
+                      setCapturingKeys((v) => !v);
+                      setCaptureSlot(null);
+                    }}
                   >
                     {capturingKeys ? (
                       <>
@@ -1183,9 +1260,19 @@ export default function SettingsClient({
                   device={selectedDevice}
                   tapKeys={tapKeys}
                   interactive={hasLayout}
-                  onToggleKey={toggleTapKey}
+                  onKeyClick={onKeyClick}
+                  variant={keyboardView}
+                  settings={keyboardSettings}
                 />
               </div>
+
+              <KeyboardSettingsForm
+                view={keyboardView}
+                onViewChange={setKeyboardView}
+                settings={keyboardSettings}
+                onSettingsChange={setKeyboardSettings}
+                tapKeys={tapKeys}
+              />
             </>
           )}
 

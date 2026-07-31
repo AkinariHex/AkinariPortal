@@ -37,13 +37,22 @@ export async function resolveApiKeyUser(
 
   const hash = hashApiKey(key);
 
-  // osu_settings ships with docs/osu-settings.sql; fall back to the older column
-  // set if that migration has not been run, same as src/app/users/[id]/data.ts.
+  // osu_settings ships with docs/osu-settings.sql and the keyboard view/settings
+  // with docs/keyboard-settings.sql; fall back to the older column sets if those
+  // migrations have not been run, same as src/app/users/[id]/data.ts.
   let res: any = await supabase
     .from("users")
-    .select(`${VIEWER_COLUMNS},osu_settings`)
+    .select(`${VIEWER_COLUMNS},osu_settings,keyboard_view,keyboard_settings`)
     .eq("secret_key_hash", hash)
     .maybeSingle();
+
+  if (res.error) {
+    res = await supabase
+      .from("users")
+      .select(`${VIEWER_COLUMNS},osu_settings`)
+      .eq("secret_key_hash", hash)
+      .maybeSingle();
+  }
 
   if (res.error) {
     res = await supabase

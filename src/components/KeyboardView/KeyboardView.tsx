@@ -1,7 +1,23 @@
 "use client";
 
-import { TriangleAlert } from "lucide-react";
+import { useMemo } from "react";
+import { Gauge, Plus, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  namedLabelsOf,
+  slotCountOf,
+  slotValues,
+} from "@/lib/keyboardSlots";
+import {
+  actuationFor,
+  DEFAULT_KEYBOARD_SETTINGS,
+  DEFAULT_KEYBOARD_VIEW,
+  hasSwitchOverride,
+  isAnalog,
+  switchModelFor,
+  type KeyboardSettings,
+  type KeyboardViewVariant,
+} from "@/lib/keyboardSettings";
 
 export type KeyboardDevice = {
   id: string;
@@ -12,168 +28,393 @@ export type KeyboardDevice = {
   model_url?: string | null;
 };
 
+// A key from the device layout, resolved against the user's tap keys. Layout
+// keys with a blank label are positional slots (keypads whose caps carry no
+// legend): they take their letter from the tap keys, in order.
+type ResolvedKey = {
+  label: string | null; // null = an empty slot
+  slot: number | null; // null = the layout names this key
+  active: boolean;
+  w?: number;
+};
+
+export type KeyboardKeyClick = { label: string | null; slot: number | null };
+
 type Props = {
   device?: KeyboardDevice | null;
   tapKeys?: string[];
   interactive?: boolean;
-  onToggleKey?: (label: string) => void;
+  onKeyClick?: (key: KeyboardKeyClick) => void;
+  variant?: KeyboardViewVariant;
+  settings?: KeyboardSettings;
   className?: string;
 };
 
-function isTap(tapKeys: string[], label: string) {
-  return tapKeys.some((k) => k.toLowerCase() === label.toLowerCase());
+function keyStyle(w = 1) {
+  return {
+    width: `calc(${w} * var(--u) - var(--kgap))`,
+    height: "calc(var(--u) - var(--kgap))",
+  };
 }
 
-function Keycap({
-  label,
-  active,
+function resolve(
+  rows: { label: string; w?: number }[][],
+  tapKeys: string[]
+): { rows: ResolvedKey[][]; slots: (string | null)[] } {
+  const device = { layout: { rows } };
+  const named = namedLabelsOf(device);
+  const values = slotValues(tapKeys, named, slotCountOf(device));
+
+  let slot = 0;
+  const resolvedRows = rows.map((row) =>
+    row.map<ResolvedKey>((key) => {
+      const label = key.label.trim();
+      if (label) {
+        return {
+          label,
+          slot: null,
+          active: tapKeys.some(
+            (k) => k.trim().toLowerCase() === label.toLowerCase()
+          ),
+          w: key.w,
+        };
+      }
+      const index = slot++;
+      const bound = values[index] || null;
+      return { label: bound, slot: index, active: Boolean(bound), w: key.w };
+    })
+  );
+
+  return { rows: resolvedRows, slots: values.map((v) => v || null) };
+}
+
+function Board({
+  rows,
   interactive,
-  onClick,
-  width = 1,
+  onKeyClick,
+  renderKey,
 }: {
-  label: string;
-  active: boolean;
+  rows: ResolvedKey[][];
   interactive?: boolean;
-  onClick?: () => void;
-  width?: number;
+  onKeyClick?: (key: KeyboardKeyClick) => void;
+  renderKey: (key: ResolvedKey) => {
+    style?: React.CSSProperties;
+    className?: string;
+    content: React.ReactNode;
+  };
 }) {
   return (
-    <button
-      type="button"
-      disabled={!interactive}
-      onClick={onClick}
-      style={{ width: `${width * 2.9}rem` }}
-      className={cn(
-        "flex h-[2.9rem] items-center justify-center rounded-md border-b-4 text-sm font-semibold transition-colors select-none",
-        active
-          ? "border-[#3f74b3] bg-accent-blue text-[#0b1220]"
-          : "border-black/40 bg-site-primary text-foreground/80",
-        interactive && "cursor-pointer hover:brightness-110"
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
-function WootingKeyBadge({ label }: { label?: string }) {
-  return (
-    <div
-      className={cn(
-        "flex size-14 shrink-0 items-center justify-center rounded-xl border text-base font-semibold select-none",
-        label
-          ? "border-wooting-key-border bg-wooting-key-bg text-wooting-key-text"
-          : "border-wooting-key-border bg-wooting-key-bg"
-      )}
-    >
-      {label ? label : <TriangleAlert className="size-6 text-wooting-warn" />}
+    <div className="flex flex-col gap-[var(--kgap)]">
+      {rows.map((row, ri) => (
+        <div key={ri} className="flex justify-center gap-[var(--kgap)]">
+          {row.map((key, ki) => {
+            const rendered = renderKey(key);
+            return (
+              <button
+                key={`${ri}-${ki}`}
+                type="button"
+                disabled={!interactive}
+                aria-pressed={key.active}
+                aria-label={key.label ?? "Empty key"}
+                onClick={() => onKeyClick?.({ label: key.label, slot: key.slot })}
+                style={rendered.style}
+                className={cn(rendered.className, interactive && "cursor-pointer")}
+              >
+                {rendered.content}
+              </button>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
 
-// Wootility-style key preview: a gradient pill card (the Wooting brand
-// gradient) holding a row of key badges. Unset key slots show a warning
-// triangle instead of a label.
-function WootingKeyCard({ tapKeys }: { tapKeys: string[] }) {
-  const keys = tapKeys.length > 0 ? tapKeys : [undefined];
-
+// Physical render: case, plate, keycaps with a skirt. The tapped keys are lit.
+function PlateView({
+  rows,
+  interactive,
+  onKeyClick,
+  deviceName,
+}: {
+  rows: ResolvedKey[][];
+  interactive?: boolean;
+  onKeyClick?: (key: KeyboardKeyClick) => void;
+  deviceName?: string;
+}) {
   return (
     <div
-      className="inline-flex rounded-[2.25rem] p-[5px]"
+      className="w-fit rounded-2xl p-[0.9rem]"
       style={{
+        ["--u" as string]: "clamp(1.45rem, 3.6vw, 2.7rem)",
+        ["--kgap" as string]: "0.28rem",
         background:
-          "conic-gradient(from 180deg, var(--color-wooting-purple), var(--color-wooting-magenta), var(--color-wooting-teal), var(--color-wooting-purple))",
+          "linear-gradient(180deg, #454f5c 0%, #2c333d 22%, #232931 100%)",
+        boxShadow:
+          "0 18px 40px -12px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 0 rgba(0,0,0,0.45)",
       }}
     >
-      <div className="flex items-center justify-center gap-3 rounded-[calc(2.25rem-5px)] bg-wooting-card-bg px-8 py-6">
-        {keys.map((k, i) => (
-          <WootingKeyBadge key={k ?? `empty-${i}`} label={k} />
-        ))}
+      <div className="rounded-xl bg-[#15181d] p-[0.55rem] shadow-[inset_0_2px_8px_rgba(0,0,0,0.7)]">
+        <Board
+          rows={rows}
+          interactive={interactive}
+          onKeyClick={onKeyClick}
+          renderKey={(key) => ({
+            style: {
+              ...keyStyle(key.w),
+              background: key.active
+                ? "linear-gradient(180deg, #8fbcf5 0%, #6ba2ed 55%, #4d84d1 100%)"
+                : "linear-gradient(180deg, #3d4652 0%, #333b46 55%, #272e37 100%)",
+              boxShadow: key.active
+                ? "inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 0 #2f5a8a, 0 0 18px rgba(107,162,237,0.45)"
+                : "inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 0 rgba(0,0,0,0.55)",
+              fontSize: "clamp(0.42rem, 1vw, 0.72rem)",
+            },
+            className: cn(
+              "flex items-center justify-center rounded-[0.35rem] px-1 text-center leading-none font-semibold select-none",
+              "transition-[filter,transform] duration-150 ease-out",
+              interactive && "hover:brightness-115 active:translate-y-[1px]",
+              key.active ? "text-[#0b1220]" : "text-foreground/75"
+            ),
+            content: key.label ?? (
+              <span className="text-foreground/25">
+                {interactive ? <Plus className="size-3" /> : ""}
+              </span>
+            ),
+          })}
+        />
+      </div>
+      {deviceName && (
+        <div className="mt-[0.55rem] flex justify-center">
+          <span className="text-[0.5rem] tracking-[0.35em] text-white/20 uppercase">
+            {deviceName}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Config render: the board is muted plumbing, the switch setup is the subject.
+// Each bound key is filled from the top down to its actuation point.
+function InstrumentedView({
+  rows,
+  entries,
+  interactive,
+  onKeyClick,
+  settings,
+}: {
+  rows: ResolvedKey[][];
+  entries: { label: string | null; slot: number | null }[];
+  interactive?: boolean;
+  onKeyClick?: (key: KeyboardKeyClick) => void;
+  settings: KeyboardSettings;
+}) {
+  const analog = isAnalog(settings.switch_tech);
+
+  return (
+    <div className="flex w-full flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center">
+      <div
+        className="w-fit rounded-xl border border-white/6 bg-site-secondary p-[0.7rem]"
+        style={{
+          ["--u" as string]: "clamp(1.35rem, 3.3vw, 2.5rem)",
+          ["--kgap" as string]: "0.24rem",
+        }}
+      >
+        <Board
+          rows={rows}
+          interactive={interactive}
+          onKeyClick={onKeyClick}
+          renderKey={(key) => {
+            const mm = key.label ? actuationFor(settings, key.label) : 0;
+            const fill = Math.min(100, (mm / settings.travel_mm) * 100);
+            return {
+              style: {
+                ...keyStyle(key.w),
+                fontSize: "clamp(0.38rem, 0.95vw, 0.66rem)",
+              },
+              className: cn(
+                "relative flex items-center justify-center overflow-hidden rounded-[0.28rem] px-1 leading-none select-none",
+                "transition-colors duration-150 ease-out",
+                key.active
+                  ? "bg-[#1b2430] text-accent-blue ring-1 ring-accent-blue/70"
+                  : cn(
+                      "bg-[#2a313b] text-foreground/35",
+                      key.slot !== null && "border border-dashed border-white/10",
+                      interactive && "hover:text-foreground/60"
+                    )
+              ),
+              content: (
+                <>
+                  {key.active && analog && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-0 bottom-0 bg-accent-blue/35"
+                      style={{ height: `${100 - fill}%` }}
+                    />
+                  )}
+                  <span className="relative font-semibold">
+                    {key.label ??
+                      (interactive ? <Plus className="size-3" /> : "")}
+                  </span>
+                </>
+              ),
+            };
+          }}
+        />
+      </div>
+
+      <div className="flex w-full max-w-[17rem] flex-col gap-2">
+        <div className="flex items-center gap-2 text-xs tracking-wide text-foreground/45 uppercase">
+          <Gauge className="size-3.5" />
+          {analog ? "Per-key actuation" : "Switches"}
+        </div>
+
+        {entries.length === 0 && (
+          <p className="text-sm text-foreground/45">No tap keys set.</p>
+        )}
+
+        {entries.map((entry, i) => {
+          if (!entry.label) {
+            return (
+              <div
+                key={`unset-${i}`}
+                className="rounded-lg border border-dashed border-white/10 px-3 py-2.5"
+              >
+                <span className="text-sm font-semibold text-foreground/35">
+                  Unset
+                </span>
+              </div>
+            );
+          }
+
+          const mm = actuationFor(settings, entry.label);
+          return (
+            <div
+              key={`${entry.label}-${i}`}
+              className="rounded-lg border border-white/6 bg-site-secondary px-3 py-2.5"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {entry.label}
+                </span>
+                {analog && (
+                  <span className="text-sm text-accent-blue tabular-nums">
+                    {mm.toFixed(2)} mm
+                  </span>
+                )}
+              </div>
+              {analog && (
+                <div className="mt-2 h-1.5 w-full rounded-full bg-black/40">
+                  <div
+                    className="h-full rounded-full bg-accent-blue"
+                    style={{
+                      width: `${Math.min(100, (mm / settings.travel_mm) * 100)}%`,
+                    }}
+                  />
+                </div>
+              )}
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[0.7rem] text-foreground/45">
+                {analog && settings.rapid_trigger && (
+                  <>
+                    <Zap className="size-3" />
+                    Rapid trigger {settings.rapid_trigger_mm.toFixed(2)} mm
+                    <span className="text-foreground/25">/</span>
+                  </>
+                )}
+                <span className="capitalize">{settings.feel}</span>
+                {switchModelFor(settings, entry.label) && (
+                  <>
+                    <span className="text-foreground/25">/</span>
+                    <span
+                      className={cn(
+                        hasSwitchOverride(settings, entry.label) &&
+                          "text-accent-blue/80"
+                      )}
+                    >
+                      {switchModelFor(settings, entry.label)}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        <p className="text-[0.7rem] text-foreground/35 tabular-nums">
+          {settings.polling_hz} Hz polling
+        </p>
       </div>
     </div>
   );
 }
 
-// Semi-3D keycap view. Renders the device's keypad layout (keys colored when
-// tapped), or — for keyboards without a layout — just the tap keys as keycaps.
-// If the device has a model_url image, it's shown instead. Wooting devices
-// get a Wootility-style gradient key preview card instead of plain keycaps.
+// Renders the device's layout with the tapped keys highlighted, in the style
+// the user picked (Instrumented by default). Devices without a layout fall back
+// to a single row built from the tap keys.
 export default function KeyboardView({
   device,
   tapKeys = [],
   interactive,
-  onToggleKey,
+  onKeyClick,
+  variant = DEFAULT_KEYBOARD_VIEW,
+  settings = DEFAULT_KEYBOARD_SETTINGS,
   className,
 }: Props) {
-  const rows = device?.layout?.rows;
-  const isWooting = device?.brand?.trim().toLowerCase() === "wooting";
+  const { rows, entries } = useMemo(() => {
+    const layoutRows = device?.layout?.rows;
+    const source =
+      layoutRows && layoutRows.length > 0
+        ? layoutRows
+        : tapKeys.length > 0
+          ? [tapKeys.map((label) => ({ label }))]
+          : [];
 
-  if (isWooting && !device?.model_url) {
-    return (
-      <div className={cn("flex justify-center", className)}>
-        <WootingKeyCard tapKeys={tapKeys} />
-      </div>
-    );
-  }
+    if (source.length === 0) return { rows: [], entries: [] };
 
-  if (device?.model_url) {
-    return (
-      <div className={cn("flex flex-col items-center gap-3", className)}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+    const resolved = resolve(source, tapKeys);
+    const hasSlots = resolved.slots.length > 0;
+
+    // Positional keypads list their slots (so an unset one still shows);
+    // named layouts list the keys the user actually tapped.
+    const entries: { label: string | null; slot: number | null }[] = hasSlots
+      ? resolved.slots.map((label, slot) => ({ label, slot }))
+      : resolved.rows
+          .flat()
+          .filter((k) => k.active)
+          .map((k) => ({ label: k.label, slot: null }));
+
+    return { rows: resolved.rows, entries };
+  }, [device, tapKeys]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className={cn("flex w-full flex-col items-center gap-3", className)}>
+      {device?.model_url && (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={device.model_url}
           alt={device.name}
-          className="max-h-52 w-auto rounded-lg object-contain"
+          className="max-h-40 w-auto rounded-lg object-contain"
         />
-        {tapKeys.length > 0 && (
-          <div className="flex gap-2 [perspective:600px]">
-            <div className="flex gap-2 [transform:rotateX(16deg)]">
-              {tapKeys.map((k) => (
-                <Keycap key={k} label={k} active />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Keypad with an explicit layout.
-  if (rows && rows.length > 0) {
-    return (
-      <div className={cn("flex justify-center [perspective:700px]", className)}>
-        <div className="flex flex-col gap-2 [transform:rotateX(18deg)]">
-          {rows.map((row, ri) => (
-            <div key={ri} className="flex justify-center gap-2">
-              {row.map((key, ki) => (
-                <Keycap
-                  key={`${ri}-${ki}`}
-                  label={key.label}
-                  width={key.w}
-                  active={isTap(tapKeys, key.label)}
-                  interactive={interactive}
-                  onClick={() => onToggleKey?.(key.label)}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Keyboard without a layout / no device: just show the tap keys.
-  if (tapKeys.length > 0) {
-    return (
-      <div className={cn("flex justify-center [perspective:600px]", className)}>
-        <div className="flex gap-2 [transform:rotateX(16deg)]">
-          {tapKeys.map((k) => (
-            <Keycap key={k} label={k} active />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+      {variant === "plate" ? (
+        <PlateView
+          rows={rows}
+          interactive={interactive}
+          onKeyClick={onKeyClick}
+          deviceName={device?.name}
+        />
+      ) : (
+        <InstrumentedView
+          rows={rows}
+          entries={entries}
+          interactive={interactive}
+          onKeyClick={onKeyClick}
+          settings={settings}
+        />
+      )}
+    </div>
+  );
 }
