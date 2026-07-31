@@ -74,7 +74,9 @@ type PublicUser {
   username: String!
   avatarUrl: String!
   profileUrl: String!
+  tablet: Tablet          # same tablet and mapped area the profile shows
   keyboard: Keyboard      # same device and switch setup the profile shows
+  osuSettings: OsuSettings # same osu! settings the profile shows
   skinCount: Int!
   totalDownloads: Int!
   skins(
@@ -97,7 +99,7 @@ type Viewer {
   badges: [Badge!]!
   tablet: Tablet
   keyboard: Keyboard
-  osuSettings: JSON       # the user's osu! game settings, or null
+  osuSettings: OsuSettings # the user's osu! game settings, or null
   skinCount: Int!
   totalDownloads: Int!
   skins(
@@ -124,7 +126,90 @@ type Skin {
 type Country { code: String  name: String }
 type Socials { twitch: String  twitter: String  youtube: String  github: String  discord: String }
 type Badge   { id: ID!  title: String!  imageUrl: String!  awardedAt: String }
-type Tablet  { name: String!  width: Float  height: Float }
+type Tablet {
+  name: String!
+  width: Float            # full surface, mm
+  height: Float           # full surface, mm
+  area: TabletArea        # the mapped area, null when no settings were uploaded
+}
+
+type TabletArea {
+  mode: String            # "absolute" | "relative"
+  width: Float            # mapped area, mm
+  height: Float
+  x: Float                # centre of the area, mm from the left edge
+  y: Float                # centre of the area, mm from the top edge
+  rotation: Float         # degrees
+  display: TabletDisplayArea       # screen region it maps onto, px
+  lockAspectRatio: Boolean
+  areaClipping: Boolean
+  areaLimiting: Boolean
+  relative: TabletRelativeSettings # null in absolute mode
+  updatedAt: String       # ISO 8601, when the settings were uploaded
+}
+
+type TabletDisplayArea { width: Float  height: Float  x: Float  y: Float  rotation: Float }
+type TabletRelativeSettings { xSensitivity: Float  ySensitivity: Float  rotation: Float }
+
+type OsuSettings {
+  source: String          # "stable" | "lazer" | "manual"
+  updatedAt: String       # ISO 8601
+  display: OsuDisplaySettings
+  audio: OsuAudioSettings
+  cursor: OsuCursorSettings
+  gameplay: OsuGameplaySettings
+  raw: JSON               # the same settings exactly as stored
+}
+
+type OsuDisplaySettings {
+  resolution: Resolution
+  windowMode: String      # "fullscreen" | "borderless" | "windowed"
+  letterboxing: Boolean
+  letterboxOffset: Offset # -100 to 100 on each axis
+  frameLimiter: String    # "vsync" | "120fps" | "240fps" | "custom" | "unlimited" | "2x" | "4x" | "8x"
+  customFrameLimit: Int   # fps, only when frameLimiter is "custom"
+  refreshRate: Int
+  renderer: String        # "automatic" | "opengl" | "direct3d11" | "vulkan" | "metal"
+  compatibilityMode: Boolean
+}
+
+type Resolution { width: Int!  height: Int! }
+type Offset     { x: Int!  y: Int! }
+
+type OsuAudioSettings {
+  master: Int             # 0-100
+  music: Int
+  effects: Int
+  offsetMs: Int           # universal offset
+  ignoreBeatmapHitsounds: Boolean
+  useSkinSamples: Boolean
+}
+
+type OsuCursorSettings {
+  size: Float             # 0.1-2
+  automaticSizing: Boolean
+  rawInput: Boolean
+  sensitivity: Float      # 0.1-6, only meaningful with raw input on
+  mapAbsoluteToWindow: Boolean
+  disableButtons: Boolean
+  disableWheel: Boolean
+  confine: String         # "never" | "fullscreen" | "during-gameplay" | "always"
+  useSkinCursor: Boolean
+  ripples: Boolean
+}
+
+type OsuGameplaySettings {
+  backgroundDim: Int      # 0-100
+  backgroundVideo: Boolean
+  storyboard: Boolean
+  snakingSliders: Boolean
+  hitLighting: Boolean
+  comboBursts: Boolean
+  maniaScrollSpeed: Int   # 1-40
+  maniaScaleWithBpm: Boolean
+  maniaSpeedPerBeatmap: Boolean
+}
+
 type Keyboard {
   id: ID!
   name: String!
@@ -168,8 +253,13 @@ type KeySwitch    { key: String!  model: String! }
 scalar JSON
 ```
 
-`osuSettings` is a nested JSON object (display, audio, gameplay, mouse, ... - keys are
-optional and absent when the user has not published them). Read it defensively.
+Every leaf of `osuSettings` and of `tablet.area` is nullable: a setting the user never
+touched is absent rather than defaulted, and a whole group is null when nothing in it is
+set. Select only the fields the command prints, or take `osuSettings { raw }` for the
+whole object in one go (same shape as the typed fields, one JSON blob).
+
+The uploaded tablet settings file is never served - no download link, no file name. Only
+the numbers of the profile the user picked come out, under `tablet.area`.
 
 Available tags: `lazer, current, tournaments, casual, old, aim, stream, tech, reading,
 speed, highAR, lowAR, highCS, lowCS, troll, NM, HD, HR, DT, EZ, FL`.
@@ -240,7 +330,19 @@ Look up someone else's public skins, authenticating with your own key:
 Hardware and settings in a single round trip:
 
 ```json
-{ "query": "{ viewer { tablet { name width height } keyboard { name brand keys } osuSettings } }" }
+{ "query": "{ viewer { tablet { name width height } keyboard { name brand keys } osuSettings { raw } } }" }
+```
+
+The tablet with the area the player actually maps:
+
+```json
+{ "query": "{ viewer { tablet { name width height area { mode width height x y rotation lockAspectRatio areaClipping areaLimiting display { width height x y } relative { xSensitivity ySensitivity rotation } updatedAt } } } }" }
+```
+
+The osu! settings a "settings" command usually prints:
+
+```json
+{ "query": "{ viewer { osuSettings { source updatedAt display { resolution { width height } windowMode letterboxing frameLimiter refreshRate renderer } audio { master music effects offsetMs } cursor { size automaticSizing rawInput sensitivity confine } gameplay { backgroundDim backgroundVideo storyboard snakingSliders hitLighting maniaScrollSpeed } } } }" }
 ```
 
 The full keyboard setup, including the actuation of every key:
@@ -253,7 +355,8 @@ The full keyboard setup, including the actuation of every key:
 switches, and every actuation and rapid trigger field is null when it is false. On keypads
 whose keycaps carry no legend, `layout[].label` is null and the key the user taps with is
 in `layout[].key`, bound by `slot`. Another account's setup reads the same way through
-`user(username: "...") { keyboard { ... } }`.
+`user(username: "...") { tablet { ... } keyboard { ... } osuSettings { ... } }` - the three
+setup fields exist on `PublicUser` too, since the profile page already shows them.
 
 ## Errors
 

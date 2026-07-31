@@ -72,9 +72,40 @@ introspection - needs the `Authorization` header set in the GraphiQL headers tab
 ## What is exposed
 
 Only what is already on the public profile: id, username, avatar, banner, country,
-playmode, socials, badges, tablet (name and dimensions), the keyboard setup, osu! settings,
-and skins. Never `secret_key`, `secret_key_hash`, `UUID`, `twitch_id`, or the tablet
-settings file fields.
+playmode, socials, badges, the tablet with its mapped area, the keyboard setup, osu!
+settings, and skins. Never `secret_key`, `secret_key_hash`, `UUID`, `twitch_id`, or the
+uploaded tablet settings file itself.
+
+### The tablet and its area
+
+`Tablet` carries the catalog row (`name`, `width`, `height`) and `area`, the region the
+player actually maps. `loadTablet` in `src/lib/graphql/schema.ts` reads `area` out of
+`users.tabletSettingsFile`, the OpenTabletDriver export, already narrowed on upload to the
+one profile the player picked - so the resolvers read `Profiles[0]`, same as
+`PlaystyleSection.jsx`. Exposed on both `viewer` and `user(id:/username:)`.
+
+- **Only numbers come out.** `width`, `height`, `x`, `y`, `rotation`, the display region,
+  the three toggles, and relative sensitivity. The file is never served: no download link,
+  no URL, and no `tabletFileUploadInfo.file` - that is the name of a file on the player's
+  machine, and only its timestamp is exposed, as `area.updatedAt`.
+- `mode` is derived from `OutputMode`, which older exports write as a bare type name and
+  newer ones as `{ Path: ... }`; both are handled, and an unrecognized one gives `null`
+  rather than a guess. `relative` is null unless the profile is in relative mode.
+- Every field is nullable. A profile that omits a key, or a file from a version that names
+  it differently, yields `null` for that field instead of failing the query.
+- `area` itself is null when the player published a tablet but never uploaded settings.
+
+### osu! settings
+
+`osuSettings` is a typed object rather than a JSON blob, so a client can select just the
+fields it prints. The groups mirror `src/lib/osuConfig.ts` (`display`, `audio`, `cursor`,
+`gameplay`) and resolve by name off `users.osu_settings` - the keys already match, because
+the zod schema in `src/app/settings/actions.ts` validates that shape on write. `raw`
+returns the same object untouched for clients that would rather walk it themselves.
+
+Every leaf is optional and a group is null when the user set nothing in it, which is the
+same rule the profile card renders by. Enum-like values stay `String`: `confine` can be
+`during-gameplay` and `frameLimiter` `2x`, neither of which is a legal GraphQL enum value.
 
 ### The keyboard
 

@@ -12,11 +12,14 @@ export function hashApiKey(raw: string): string {
 }
 
 // Everything the GraphQL schema is allowed to read. secret_key, secret_key_hash,
-// UUID, twitch_id and the tablet upload fields are deliberately absent: this is
-// the public profile and nothing more.
+// UUID and twitch_id are deliberately absent: this is the public profile and
+// nothing more. `tabletSettingsFile` is read for the mapped area only - the
+// schema exposes its numbers, never the file or a link to it - and
+// `tabletFileUploadInfo` only for its timestamp, never the uploaded file name.
 const VIEWER_COLUMNS =
   "id,username,banner,country,playmode,twitch,twitter,youtube,github,discord," +
-  "tablet(name,width,height),keyboard,keyboard_keys," +
+  "tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo," +
+  "keyboard,keyboard_keys," +
   "badges:users_badges(created_at,badge:badges(*))";
 
 export type ViewerRow = {

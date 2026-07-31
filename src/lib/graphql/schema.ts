@@ -52,7 +52,7 @@ const typeDefs = /* GraphQL */ `
     badges: [Badge!]!
     tablet: Tablet
     keyboard: Keyboard
-    osuSettings: JSON
+    osuSettings: OsuSettings
     skinCount: Int!
     totalDownloads: Int!
     skins(
@@ -72,8 +72,12 @@ const typeDefs = /* GraphQL */ `
     username: String!
     avatarUrl: String!
     profileUrl: String!
+    "Same tablet and area setup the profile page shows publicly."
+    tablet: Tablet
     "Same device and switch setup the profile page shows publicly."
     keyboard: Keyboard
+    "Same osu! settings the profile page shows publicly."
+    osuSettings: OsuSettings
     skinCount: Int!
     totalDownloads: Int!
     skins(
@@ -123,8 +127,141 @@ const typeDefs = /* GraphQL */ `
 
   type Tablet {
     name: String!
+    "Full width of the tablet surface, in millimetres."
+    width: Float
+    "Full height of the tablet surface, in millimetres."
+    height: Float
+    """
+    The area the user actually maps, read from their OpenTabletDriver export.
+    Null when they published a tablet without uploading its settings. The
+    uploaded file itself is never served.
+    """
+    area: TabletArea
+  }
+
+  type TabletArea {
+    "absolute | relative. Null when the export names a mode this API does not know."
+    mode: String
+    "Width of the mapped area in millimetres."
+    width: Float
+    "Height of the mapped area in millimetres."
+    height: Float
+    "Horizontal centre of the area, in millimetres from the left edge."
+    x: Float
+    "Vertical centre of the area, in millimetres from the top edge."
+    y: Float
+    "Rotation of the area in degrees."
+    rotation: Float
+    "Screen region the area maps onto, in pixels."
+    display: TabletDisplayArea
+    lockAspectRatio: Boolean
+    areaClipping: Boolean
+    areaLimiting: Boolean
+    "Relative-mode sensitivity. Null on tablets mapped in absolute mode."
+    relative: TabletRelativeSettings
+    "When the user last uploaded these settings."
+    updatedAt: String
+  }
+
+  type TabletDisplayArea {
     width: Float
     height: Float
+    x: Float
+    y: Float
+    rotation: Float
+  }
+
+  type TabletRelativeSettings {
+    "Horizontal sensitivity, in pixels per millimetre."
+    xSensitivity: Float
+    "Vertical sensitivity, in pixels per millimetre."
+    ySensitivity: Float
+    rotation: Float
+  }
+
+  type OsuSettings {
+    "stable | lazer | manual - the client the settings were imported from."
+    source: String
+    "When the user last published them."
+    updatedAt: String
+    display: OsuDisplaySettings
+    audio: OsuAudioSettings
+    cursor: OsuCursorSettings
+    gameplay: OsuGameplaySettings
+    """
+    The same settings exactly as stored. Every group and leaf is optional: a
+    setting the user never touched is absent rather than defaulted.
+    """
+    raw: JSON
+  }
+
+  type OsuDisplaySettings {
+    resolution: Resolution
+    "fullscreen | borderless | windowed"
+    windowMode: String
+    letterboxing: Boolean
+    "Letterbox position, -100 to 100 on each axis."
+    letterboxOffset: Offset
+    "vsync | 120fps | 240fps | custom | unlimited | 2x | 4x | 8x"
+    frameLimiter: String
+    "Frame cap in fps. Only set when frameLimiter is custom."
+    customFrameLimit: Int
+    refreshRate: Int
+    "automatic | opengl | direct3d11 | vulkan | metal"
+    renderer: String
+    compatibilityMode: Boolean
+  }
+
+  type Resolution {
+    width: Int!
+    height: Int!
+  }
+
+  type Offset {
+    x: Int!
+    y: Int!
+  }
+
+  type OsuAudioSettings {
+    "0-100."
+    master: Int
+    music: Int
+    effects: Int
+    "Universal offset in milliseconds."
+    offsetMs: Int
+    ignoreBeatmapHitsounds: Boolean
+    useSkinSamples: Boolean
+  }
+
+  type OsuCursorSettings {
+    "Cursor size multiplier, 0.1 to 2."
+    size: Float
+    automaticSizing: Boolean
+    rawInput: Boolean
+    "Mouse sensitivity, 0.1 to 6. Only meaningful with raw input on."
+    sensitivity: Float
+    mapAbsoluteToWindow: Boolean
+    "True when the mouse buttons are disabled in game."
+    disableButtons: Boolean
+    disableWheel: Boolean
+    "never | fullscreen | during-gameplay | always"
+    confine: String
+    useSkinCursor: Boolean
+    ripples: Boolean
+  }
+
+  type OsuGameplaySettings {
+    "0-100."
+    backgroundDim: Int
+    backgroundVideo: Boolean
+    storyboard: Boolean
+    snakingSliders: Boolean
+    hitLighting: Boolean
+    comboBursts: Boolean
+    "osu!mania scroll speed, 1-40."
+    maniaScrollSpeed: Int
+    maniaScaleWithBpm: Boolean
+    maniaSpeedPerBeatmap: Boolean
   }
 
   type Keyboard {
@@ -269,6 +406,49 @@ function applySkinFilters(
   return result.slice(0, limit);
 }
 
+type TabletPayload = {
+  device: any;
+  profile: any;
+  updatedAt: string | null;
+};
+
+// Shared by Viewer.tablet and PublicUser.tablet. `tabletSettingsFile` is the
+// OpenTabletDriver export, already narrowed to the one profile the user picked
+// (src/app/settings/SettingsClient.tsx). Only the numbers of that profile are
+// ever exposed - never the file, its name, or a link to it.
+function loadTablet(row: any): TabletPayload | null {
+  const device = row?.tablet;
+  if (!device) return null;
+
+  const stamp = Number(row?.tabletFileUploadInfo?.date);
+  const uploaded = Number.isFinite(stamp) ? new Date(stamp) : null;
+
+  return {
+    device,
+    profile: row?.tabletSettingsFile?.Profiles?.[0] ?? null,
+    updatedAt: uploaded ? uploaded.toISOString() : null,
+  };
+}
+
+function num(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function bool(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+// OpenTabletDriver writes the output mode either as a bare type name or as
+// { Path: "...", Settings: [...] }, depending on the version that exported.
+function outputMode(profile: any): string | null {
+  const raw = profile?.OutputMode;
+  const path = typeof raw === "string" ? raw : raw?.Path;
+  if (typeof path !== "string") return null;
+  if (path.includes("Absolute")) return "absolute";
+  if (path.includes("Relative")) return "relative";
+  return null;
+}
+
 type KeyboardPayload = {
   device: any;
   tapKeys: string[];
@@ -378,8 +558,9 @@ const resolvers = {
         throw new GraphQLError("Provide id or username.");
       }
 
-      // keyboard_view / keyboard_settings ship with docs/keyboard-settings.sql;
-      // fall back to the older column set until it has been run.
+      // keyboard_view / keyboard_settings ship with docs/keyboard-settings.sql
+      // and osu_settings with docs/osu-settings.sql; fall back through the older
+      // column sets until they have been run, same as resolveApiKeyUser.
       const lookup = (columns: string) =>
         id
           ? supabase.from("users").select(columns).eq("id", id).maybeSingle()
@@ -389,10 +570,13 @@ const resolvers = {
               .ilike("username", username as string)
               .maybeSingle();
 
-      const PUBLIC_COLUMNS = "id,username,keyboard,keyboard_keys";
+      const PUBLIC_COLUMNS =
+        "id,username,keyboard,keyboard_keys," +
+        "tablet(name,width,height),tabletSettingsFile,tabletFileUploadInfo";
       let res: any = await lookup(
-        `${PUBLIC_COLUMNS},keyboard_view,keyboard_settings`
+        `${PUBLIC_COLUMNS},keyboard_view,keyboard_settings,osu_settings`
       );
+      if (res.error) res = await lookup(`${PUBLIC_COLUMNS},osu_settings`);
       if (res.error) res = await lookup(PUBLIC_COLUMNS);
 
       const data: any = res.data;
@@ -447,7 +631,7 @@ const resolvers = {
           awardedAt: badge.awardedAt ?? null,
         })),
 
-    tablet: (user: ViewerRow) => user.tablet ?? null,
+    tablet: (user: ViewerRow) => loadTablet(user),
 
     keyboard: (user: ViewerRow) => loadKeyboard(user),
 
@@ -480,7 +664,9 @@ const resolvers = {
   PublicUser: {
     avatarUrl: (user: any) => `https://s.ppy.sh/a/${user.id}`,
     profileUrl: (user: any, _args: unknown, ctx: GraphQLContext) => `${ctx.origin}/users/${user.id}`,
+    tablet: (user: any) => loadTablet(user),
     keyboard: (user: any) => loadKeyboard(user),
+    osuSettings: (user: any) => user.osu_settings ?? null,
     skinCount: async (user: any) => (await user.loadSkins()).length,
     totalDownloads: async (user: any) =>
       (await user.loadSkins()).reduce((sum: number, skin: any) => sum + (skin.Downloads ?? 0), 0),
@@ -488,6 +674,59 @@ const resolvers = {
       user: any,
       args: { mode?: string; tag?: string; search?: string; limit?: number }
     ) => applySkinFilters(await user.loadSkins(), args),
+  },
+
+  Tablet: {
+    name: (t: TabletPayload) => t.device.name,
+    width: (t: TabletPayload) => num(t.device.width),
+    height: (t: TabletPayload) => num(t.device.height),
+    area: (t: TabletPayload) => (t.profile ? t : null),
+  },
+
+  // The parent is the whole TabletPayload: the area fields come from the
+  // OpenTabletDriver profile, `updatedAt` from the upload stamp beside it.
+  TabletArea: {
+    mode: (t: TabletPayload) => outputMode(t.profile),
+    width: (t: TabletPayload) => num(t.profile?.AbsoluteModeSettings?.Tablet?.Width),
+    height: (t: TabletPayload) => num(t.profile?.AbsoluteModeSettings?.Tablet?.Height),
+    x: (t: TabletPayload) => num(t.profile?.AbsoluteModeSettings?.Tablet?.X),
+    y: (t: TabletPayload) => num(t.profile?.AbsoluteModeSettings?.Tablet?.Y),
+    rotation: (t: TabletPayload) =>
+      num(t.profile?.AbsoluteModeSettings?.Tablet?.Rotation),
+    display: (t: TabletPayload) =>
+      t.profile?.AbsoluteModeSettings?.Display ?? null,
+    lockAspectRatio: (t: TabletPayload) =>
+      bool(t.profile?.AbsoluteModeSettings?.LockAspectRatio),
+    areaClipping: (t: TabletPayload) =>
+      bool(t.profile?.AbsoluteModeSettings?.EnableClipping),
+    areaLimiting: (t: TabletPayload) =>
+      bool(t.profile?.AbsoluteModeSettings?.EnableAreaLimiting),
+    relative: (t: TabletPayload) =>
+      outputMode(t.profile) === "relative"
+        ? (t.profile?.RelativeModeSettings ?? null)
+        : null,
+    updatedAt: (t: TabletPayload) => t.updatedAt,
+  },
+
+  TabletDisplayArea: {
+    width: (d: any) => num(d?.Width),
+    height: (d: any) => num(d?.Height),
+    x: (d: any) => num(d?.X),
+    y: (d: any) => num(d?.Y),
+    rotation: (d: any) => num(d?.Rotation),
+  },
+
+  TabletRelativeSettings: {
+    xSensitivity: (r: any) => num(r?.XSensitivity),
+    ySensitivity: (r: any) => num(r?.YSensitivity),
+    rotation: (r: any) => num(r?.RelativeRotation),
+  },
+
+  // Every other field of every osu! group resolves by name: the stored JSON
+  // already uses these keys, validated on write by the zod schema in
+  // src/app/settings/actions.ts.
+  OsuSettings: {
+    raw: (settings: any) => settings,
   },
 
   Keyboard: {
