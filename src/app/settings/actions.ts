@@ -33,12 +33,14 @@ export async function generateApiKey() {
     return { status: 'error' as const };
   }
 
+  // generate-api-key types the return as string | string[]; without `batch` it is
+  // always a single key.
   const newAPI = generateApiKeyLib({
     method: 'uuidv5',
     name: randomString(),
     namespace: data[0].UUID,
     prefix: String(data[0].id),
-  });
+  }) as string;
 
   // Only the digest is stored, so this is the one and only time the raw key can
   // be shown. See docs/api-graphql.sql.
@@ -55,7 +57,7 @@ export async function generateApiKey() {
     return { status: 'error' as const };
   }
 
-  return { status: 'success' as const, secret_key: newAPI as string };
+  return { status: 'success' as const, secret_key: newAPI };
 }
 
 export async function destroyApiKey() {
