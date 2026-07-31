@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   DiscordIcon,
   GithubIcon,
+  OsuIcon,
   TwitchIcon,
   TwitterIcon,
   YoutubeIcon,
@@ -18,7 +19,21 @@ type Props = {
 
 // Hover uses the muted `-text` tints, not the raw brand colors: at icon size
 // the saturated originals glare against the dark profile surfaces.
-const LINKS = [
+const LINKS: {
+  key: string;
+  field?: string;
+  icon: React.ReactNode;
+  href: (v: string) => string;
+  hover: string;
+}[] = [
+  {
+    key: "osu",
+    // Not a stored social: the osu! profile is derived from the account id.
+    field: "id",
+    icon: <OsuIcon />,
+    href: (v: string) => `https://osu.ppy.sh/users/${v}`,
+    hover: "hover:text-social-osu-text",
+  },
   {
     key: "twitch",
     icon: <TwitchIcon />,
@@ -54,10 +69,10 @@ export default function ProfileSocials({ user, className }: Props) {
         className
       )}
     >
-      {LINKS.filter((link) => user[link.key]).map((link) => (
+      {LINKS.filter((link) => user[link.field ?? link.key]).map((link) => (
         <a
           key={link.key}
-          href={link.href(user[link.key])}
+          href={link.href(user[link.field ?? link.key])}
           target="_blank"
           rel="noreferrer"
           aria-label={link.key}

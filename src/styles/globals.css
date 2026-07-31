@@ -65,6 +65,8 @@
   --color-tags-lazer-grid: hsl(333 37% 36%);
 
   /* socials */
+  --color-social-osu: #ff66ab;
+  --color-social-osu-text: #ffc7de;
   --color-social-twitch: #9146ff;
   --color-social-twitch-text: #dec8ff;
   --color-social-youtube: #ff0000;

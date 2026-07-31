@@ -12,6 +12,19 @@ function base(className?: string) {
   return className ?? "size-[18px]";
 }
 
+export function OsuIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={base(className)}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 1.25C6.063 1.25 1.25 6.063 1.25 12S6.063 22.75 12 22.75 22.75 17.937 22.75 12 17.937 1.25 12 1.25zm0 2a8.75 8.75 0 1 1 0 17.5 8.75 8.75 0 0 1 0-17.5z"
+      />
+      <circle cx="12" cy="12" r="4.25" />
+    </svg>
+  );
+}
+
 export function TwitchIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={base(className)}>
