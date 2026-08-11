@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/auth';
+import { isAdmin } from '@/lib/authz';
 import { hashApiKey } from '@/lib/apiKey';
 import { notifyKeyboardRequest } from '@/lib/discord';
 import {
@@ -74,6 +75,102 @@ export async function destroyApiKey() {
     .from('users')
     .update({ secret_key_hash: null, secret_key_created_at: null })
     .eq('id', session.id);
+
+  if (error) {
+    console.error(error);
+    return { status: 'error' as const };
+  }
+
+  return { status: 'success' as const };
+}
+
+// Admin-only: extra, independently revocable keys (docs/api-key-labels.sql),
+// e.g. one per external integration, so revoking/rotating one never touches
+// the personal key above.
+export async function createNamedApiKey(label: unknown) {
+  if (!(await isAdmin())) return { status: 'error' as const };
+
+  const session: any = await auth();
+  if (!session?.id) return { status: 'error' as const };
+
+  const parsed = z.string().trim().min(1).max(60).safeParse(label);
+  if (!parsed.success) return { status: 'error' as const };
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('id,UUID')
+    .eq('id', session.id);
+
+  if (error || !data?.length) {
+    console.error(error);
+    return { status: 'error' as const };
+  }
+
+  const newAPI = generateApiKeyLib({
+    method: 'uuidv5',
+    name: randomString(),
+    namespace: data[0].UUID,
+    prefix: String(data[0].id),
+  }) as string;
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('api_keys')
+    .insert({
+      user_id: session.id,
+      label: parsed.data,
+      key_hash: hashApiKey(newAPI),
+    })
+    .select('id,label,created_at')
+    .single();
+
+  if (insertError || !inserted) {
+    console.error(insertError);
+    return { status: 'error' as const };
+  }
+
+  return {
+    status: 'success' as const,
+    secret_key: newAPI,
+    id: inserted.id,
+    label: inserted.label,
+    created_at: inserted.created_at,
+  };
+}
+
+export async function listNamedApiKeys() {
+  if (!(await isAdmin())) return { status: 'error' as const, keys: [] };
+
+  const session: any = await auth();
+  if (!session?.id) return { status: 'error' as const, keys: [] };
+
+  const { data, error } = await supabase
+    .from('api_keys')
+    .select('id,label,created_at')
+    .eq('user_id', session.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return { status: 'error' as const, keys: [] };
+  }
+
+  return { status: 'success' as const, keys: data ?? [] };
+}
+
+export async function deleteNamedApiKey(id: unknown) {
+  if (!(await isAdmin())) return { status: 'error' as const };
+
+  const session: any = await auth();
+  if (!session?.id) return { status: 'error' as const };
+
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return { status: 'error' as const };
+
+  const { error } = await supabase
+    .from('api_keys')
+    .delete()
+    .eq('id', parsed.data)
+    .eq('user_id', session.id);
 
   if (error) {
     console.error(error);

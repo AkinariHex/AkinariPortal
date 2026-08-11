@@ -101,6 +101,8 @@ import {
 import {
   generateApiKey,
   destroyApiKey,
+  createNamedApiKey,
+  deleteNamedApiKey,
   saveOsuSettings as saveOsuSettingsAction,
   saveProfileLayout as saveProfileLayoutAction,
   saveSkinView as saveSkinViewAction,
@@ -119,18 +121,24 @@ const select_options = [
   { value: "grid", label: "Grid" },
 ];
 
+type NamedApiKey = { id: string; label: string; created_at: string };
+
 export default function SettingsClient({
   session,
   userData,
   keyboards = [],
   hasApiKey = false,
   apiKeyCreatedAt = null,
+  isAdmin = false,
+  namedApiKeys = [],
 }: {
   session: any;
   userData: any;
   keyboards?: KeyboardDevice[];
   hasApiKey?: boolean;
   apiKeyCreatedAt?: string | null;
+  isAdmin?: boolean;
+  namedApiKeys?: NamedApiKey[];
 }) {
   const router = useRouter();
   const data: any = userData ?? {};
@@ -147,6 +155,22 @@ export default function SettingsClient({
     null
   );
   const [keyBusy, setKeyBusy] = useState(false);
+
+  // Labeled keys (admin only, docs/api-key-labels.sql) - independent of the
+  // personal key above, one row per external integration.
+  const [namedKeys, setNamedKeys] = useState<NamedApiKey[]>(namedApiKeys);
+  const [namedKeyLabel, setNamedKeyLabel] = useState("");
+  const [namedKeyDialogOpen, setNamedKeyDialogOpen] = useState(false);
+  const [namedKeyBusy, setNamedKeyBusy] = useState(false);
+  const [freshNamedKey, setFreshNamedKey] = useState<{
+    id: string;
+    label: string;
+    secret_key: string;
+  } | null>(null);
+  const [hideNamedKey, setHideNamedKey] = useState(false);
+  const [namedKeyToDelete, setNamedKeyToDelete] = useState<NamedApiKey | null>(
+    null
+  );
 
   const [tabletSettingsInfo, setTabletSettingsInfo] = useState<any>(
     data.tabletFileUploadInfo !== null && data.tabletFileUploadInfo !== undefined
@@ -782,6 +806,67 @@ export default function SettingsClient({
     }
   }
 
+  function copyNamedKeyToClipboard() {
+    if (!freshNamedKey) return;
+    navigator.clipboard.writeText(freshNamedKey.secret_key);
+    toast.success("Secret key copied to clipboard.");
+  }
+
+  async function createNamedKey() {
+    const label = namedKeyLabel.trim();
+    if (!label) return;
+
+    setNamedKeyBusy(true);
+    try {
+      const result = await createNamedApiKey(label);
+      if (result.status === "success") {
+        setFreshNamedKey({
+          id: result.id,
+          label: result.label,
+          secret_key: result.secret_key,
+        });
+        setHideNamedKey(false);
+        setNamedKeys((prev) => [
+          { id: result.id, label: result.label, created_at: result.created_at },
+          ...prev,
+        ]);
+        setNamedKeyLabel("");
+        toast.success("Secret key generated. Copy it now.");
+      } else {
+        toast.error("Failed to generate secret key.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate secret key.");
+    } finally {
+      setNamedKeyBusy(false);
+    }
+  }
+
+  async function deleteNamedKey() {
+    if (!namedKeyToDelete) return;
+
+    setNamedKeyBusy(true);
+    try {
+      const result = await deleteNamedApiKey(namedKeyToDelete.id);
+      if (result.status === "success") {
+        setNamedKeys((prev) =>
+          prev.filter((k) => k.id !== namedKeyToDelete.id)
+        );
+        if (freshNamedKey?.id === namedKeyToDelete.id) setFreshNamedKey(null);
+        toast.success("Secret key revoked.");
+      } else {
+        toast.error("Failed to revoke secret key.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to revoke secret key.");
+    } finally {
+      setNamedKeyBusy(false);
+      setNamedKeyToDelete(null);
+    }
+  }
+
   const connectionsChanged =
     twitchData !== prevTwitchData ||
     twitterData !== prevTwitterData ||
@@ -927,6 +1012,198 @@ export default function SettingsClient({
             </DialogContent>
           </Dialog>
         </section>
+
+        {/* API Keys (admin only) */}
+        {isAdmin && (
+          <section
+            id="apikeys"
+            className="flex flex-col gap-4 rounded-xl border border-border bg-site-secondary p-6"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-foreground">
+                API Keys
+              </h2>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setNamedKeyDialogOpen(true)}
+              >
+                New API Key
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Extra keys for individual integrations, each with its own label.
+              Revoking one never affects your secret key above or your other
+              API keys.
+            </p>
+
+            {freshNamedKey && (
+              <div className="flex flex-col gap-2 rounded-md border border-border bg-site-primary px-4 py-3">
+                <span className="text-sm font-medium text-foreground">
+                  {freshNamedKey.label}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={
+                      hideNamedKey
+                        ? "*".repeat(45)
+                        : freshNamedKey.secret_key
+                    }
+                    disabled
+                    className="flex-1 font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setHideNamedKey((prev) => !prev)}
+                    aria-label={hideNamedKey ? "Show secret key" : "Hide secret key"}
+                  >
+                    {hideNamedKey ? <Eye /> : <EyeOff />}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={copyNamedKeyToClipboard}
+                    aria-label="Copy secret key"
+                  >
+                    <Copy />
+                  </Button>
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  Copy it now. Once you leave this page it cannot be shown
+                  again.
+                </span>
+              </div>
+            )}
+
+            {namedKeys.length === 0 ? (
+              <div className="flex flex-col rounded-md border border-border bg-site-primary px-4 py-3">
+                <span className="text-sm font-medium text-foreground">
+                  No API keys yet.
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {namedKeys.map((key) => (
+                  <div
+                    key={key.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-site-primary px-4 py-3"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground">
+                        {key.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Generated{" "}
+                        {moment(key.created_at).format("DD MMM YYYY, kk:mm")}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setNamedKeyToDelete(key)}
+                      disabled={namedKeyBusy}
+                    >
+                      Revoke
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Dialog
+              open={namedKeyDialogOpen}
+              onOpenChange={(open) => {
+                if (!open && !namedKeyBusy) {
+                  setNamedKeyDialogOpen(false);
+                  setNamedKeyLabel("");
+                }
+              }}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>New API key</DialogTitle>
+                  <DialogDescription>
+                    Give it a label so you remember what it's for, e.g. the
+                    site or bot that will use it.
+                  </DialogDescription>
+                </DialogHeader>
+                <Input
+                  type="text"
+                  value={namedKeyLabel}
+                  onChange={(e) => setNamedKeyLabel(e.target.value)}
+                  placeholder="e.g. ith-website"
+                  maxLength={60}
+                  disabled={namedKeyBusy}
+                />
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setNamedKeyDialogOpen(false);
+                      setNamedKeyLabel("");
+                    }}
+                    disabled={namedKeyBusy}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      await createNamedKey();
+                      setNamedKeyDialogOpen(false);
+                    }}
+                    disabled={namedKeyBusy || !namedKeyLabel.trim()}
+                  >
+                    {namedKeyBusy ? <LoadingIcon /> : "Generate"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog
+              open={namedKeyToDelete !== null}
+              onOpenChange={(open) => {
+                if (!open && !namedKeyBusy) setNamedKeyToDelete(null);
+              }}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    Revoke &quot;{namedKeyToDelete?.label}&quot;?
+                  </DialogTitle>
+                  <DialogDescription>
+                    Anything connected with this key loses access immediately.
+                    Your secret key and other API keys are unaffected.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setNamedKeyToDelete(null)}
+                    disabled={namedKeyBusy}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={deleteNamedKey}
+                    disabled={namedKeyBusy}
+                  >
+                    {namedKeyBusy ? <LoadingIcon /> : "Revoke"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </section>
+        )}
 
         {/* Tablet Settings */}
         <section

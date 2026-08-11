@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { isAdmin } from "@/lib/authz";
 import supabase from "@/lib/supabaseServer";
 import { getAllKeyboards } from "@/lib/data";
 import SettingsClient from "./SettingsClient";
@@ -21,7 +22,11 @@ export default async function SettingsPage() {
   // The secret key is only ever stored hashed (docs/api-graphql.sql), so it is
   // queried separately and only for its presence and age - it can never be
   // shown again after generation.
-  const [fullRes, keyboards, keyRes] = await Promise.all([
+  const admin = await isAdmin();
+
+  // api_keys ships with docs/api-key-labels.sql; treat a missing table as "no
+  // labeled keys" so the page still renders before that migration runs.
+  const [fullRes, keyboards, keyRes, apiKeysRes] = await Promise.all([
     supabase
       .from("users")
       .select(
@@ -34,6 +39,13 @@ export default async function SettingsPage() {
       .select("secret_key_hash,secret_key_created_at")
       .eq("id", session.id)
       .maybeSingle(),
+    admin
+      ? supabase
+          .from("api_keys")
+          .select("id,label,created_at")
+          .eq("user_id", session.id)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   // `any` because each fallback selects a different column set, so the inferred
@@ -62,6 +74,7 @@ export default async function SettingsPage() {
   // keyRes errors until docs/api-graphql.sql has been run: treat that as "no
   // key" so the page still renders.
   const keyRow: any = keyRes.error ? null : keyRes.data;
+  const namedApiKeys = apiKeysRes.error ? [] : apiKeysRes.data ?? [];
 
   return (
     <SettingsClient
@@ -70,6 +83,8 @@ export default async function SettingsPage() {
       keyboards={keyboards ?? []}
       hasApiKey={Boolean(keyRow?.secret_key_hash)}
       apiKeyCreatedAt={keyRow?.secret_key_created_at ?? null}
+      isAdmin={admin}
+      namedApiKeys={namedApiKeys}
     />
   );
 }

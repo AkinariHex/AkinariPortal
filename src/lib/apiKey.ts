@@ -32,6 +32,40 @@ export type ViewerRow = {
 // could match a row whose hash column is empty rather than null.
 const MIN_KEY_LENGTH = 16;
 
+// osu_settings ships with docs/osu-settings.sql and the keyboard view/settings
+// with docs/keyboard-settings.sql; fall back to the older column sets if those
+// migrations have not been run, same as src/app/users/[id]/data.ts.
+async function fetchViewerByColumn(
+  column: string,
+  value: string
+): Promise<ViewerRow | null> {
+  let res: any = await supabase
+    .from("users")
+    .select(`${VIEWER_COLUMNS},osu_settings,keyboard_view,keyboard_settings`)
+    .eq(column, value)
+    .maybeSingle();
+
+  if (res.error) {
+    res = await supabase
+      .from("users")
+      .select(`${VIEWER_COLUMNS},osu_settings`)
+      .eq(column, value)
+      .maybeSingle();
+  }
+
+  if (res.error) {
+    res = await supabase
+      .from("users")
+      .select(VIEWER_COLUMNS)
+      .eq(column, value)
+      .maybeSingle();
+  }
+
+  if (res.error || !res.data) return null;
+
+  return res.data as ViewerRow;
+}
+
 export async function resolveApiKeyUser(
   raw: string | null | undefined
 ): Promise<ViewerRow | null> {
@@ -40,32 +74,20 @@ export async function resolveApiKeyUser(
 
   const hash = hashApiKey(key);
 
-  // osu_settings ships with docs/osu-settings.sql and the keyboard view/settings
-  // with docs/keyboard-settings.sql; fall back to the older column sets if those
-  // migrations have not been run, same as src/app/users/[id]/data.ts.
-  let res: any = await supabase
-    .from("users")
-    .select(`${VIEWER_COLUMNS},osu_settings,keyboard_view,keyboard_settings`)
-    .eq("secret_key_hash", hash)
+  // Personal key first (users.secret_key_hash, docs/api-graphql.sql).
+  const viewer = await fetchViewerByColumn("secret_key_hash", hash);
+  if (viewer) return viewer;
+
+  // Fall back to a labeled key (api_keys, docs/api-key-labels.sql) - lets
+  // admins mint extra keys per integration without touching their personal
+  // one. Missing table (migration not run) is treated as "no match".
+  const { data: keyRow, error: keyError } = await supabase
+    .from("api_keys")
+    .select("user_id")
+    .eq("key_hash", hash)
     .maybeSingle();
 
-  if (res.error) {
-    res = await supabase
-      .from("users")
-      .select(`${VIEWER_COLUMNS},osu_settings`)
-      .eq("secret_key_hash", hash)
-      .maybeSingle();
-  }
+  if (keyError || !keyRow) return null;
 
-  if (res.error) {
-    res = await supabase
-      .from("users")
-      .select(VIEWER_COLUMNS)
-      .eq("secret_key_hash", hash)
-      .maybeSingle();
-  }
-
-  if (res.error || !res.data) return null;
-
-  return res.data as ViewerRow;
+  return fetchViewerByColumn("id", keyRow.user_id);
 }
