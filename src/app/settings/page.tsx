@@ -4,6 +4,7 @@ import { isAdmin } from "@/lib/authz";
 import supabase from "@/lib/supabaseServer";
 import { getAllKeyboards } from "@/lib/data";
 import SettingsClient from "./SettingsClient";
+import CreateTournamentForm from "@/components/CreateTournamentForm/CreateTournamentForm";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +86,7 @@ export default async function SettingsPage() {
       apiKeyCreatedAt={keyRow?.secret_key_created_at ?? null}
       isAdmin={admin}
       namedApiKeys={namedApiKeys}
+      tournamentSection={admin ? <CreateTournamentForm /> : null}
     />
   );
 }

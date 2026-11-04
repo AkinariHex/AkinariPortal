@@ -12,6 +12,7 @@ import {
   Settings,
   Search,
   ShieldCheck,
+  Trophy,
 } from "lucide-react";
 import { useSearch } from "@/components/Search/SearchProvider";
 import { useNavbarSurface } from "@/components/Navbar/NavbarSurface";
@@ -134,6 +135,12 @@ export default function Navbar({
                     </Link>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem asChild>
+                  <Link href="/tournaments">
+                    <Trophy className="size-4" />
+                    Tournaments
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings">
                     <Settings className="size-4" />

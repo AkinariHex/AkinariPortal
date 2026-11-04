@@ -131,6 +131,7 @@ export default function SettingsClient({
   apiKeyCreatedAt = null,
   isAdmin = false,
   namedApiKeys = [],
+  tournamentSection = null,
 }: {
   session: any;
   userData: any;
@@ -139,6 +140,8 @@ export default function SettingsClient({
   apiKeyCreatedAt?: string | null;
   isAdmin?: boolean;
   namedApiKeys?: NamedApiKey[];
+  // Admin-only "New tournament" card, rendered by the server page.
+  tournamentSection?: React.ReactNode;
 }) {
   const router = useRouter();
   const data: any = userData ?? {};
@@ -2090,6 +2093,8 @@ export default function SettingsClient({
             </div>
           )}
         </section>
+
+        {tournamentSection}
       </div>
     </div>
   );
